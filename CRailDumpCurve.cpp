@@ -51,32 +51,32 @@ void CRailDumpCurve::FinishTrace(
 	if(m_RailPlugin){
 		if(g_MultiTrackDummy){
 			m_RailPlugin->BeforeDump(
-				tpos1, right1, VEC3(up1),
-				tpos2, right2, VEC3(up2));
+				tpos1, right1, R2L(VEC3(up1)),
+				tpos2, right2, R2L(VEC3(up2)));
 			m_RailPlugin->AfterDump(
-				tpos1, VEC3(up1), ipos1, icup1,
-				tpos2, VEC3(up2), ipos2, icup2);
+				tpos1, R2L(VEC3(up1)), ipos1, icup1,
+				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
 			m_RailPlugin->Dump(
-				tpos1, right1, VEC3(up1), ipos1, icright1, icup1,
-				tpos2, right2, VEC3(up2), ipos2, icright2, icup2, seglen, 4);
+				tpos1, right1, R2L(VEC3(up1)), ipos1, icright1, icup1,
+				tpos2, right2, R2L(VEC3(up2)), ipos2, icright2, icup2, seglen, 4);
 		}
 	}
 	if(m_TiePlugin){
 		if(g_MultiTrackDummy){
 			m_TiePlugin->AfterDump(
-				tpos1, VEC3(up1), ipos1, icup1,
-				tpos2, VEC3(up2), ipos2, icup2);
+				tpos1, R2L(VEC3(up1)), ipos1, icup1,
+				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
 			m_TiePlugin->Dump(
-				tpos1, right1, VEC3(up1), ipos1, icright1, icup1,
-				tpos2, right2, VEC3(up2), ipos2, icright2, icup2, seglen, 4);
+				tpos1, right1, R2L(VEC3(up1)), ipos1, icright1, icup1,
+				tpos2, right2, R2L(VEC3(up2)), ipos2, icright2, icup2, seglen, 4);
 		}
 	}
 	if(m_GirderPlugin && g_MultiTrackDummy==m_GirderPlugin->IsMultiTrack())
 		m_GirderPlugin->Dump(
-			tpos1, right1, VEC3(up1), ipos1, icright1, icup1,
-			tpos2, right2, VEC3(up2), ipos2, icright2, icup2, seglen, 4);
+			tpos1, right1, R2L(VEC3(up1)), ipos1, icright1, icup1,
+			tpos2, right2, R2L(VEC3(up2)), ipos2, icright2, icup2, seglen, 4);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,54 +106,64 @@ void CRailRenderCurve::FinishTrace(
 			&& m_RailWay->GetSpeedLimit()==CRailDetectCurve2D::GetDetect().m_Link->GetSpeedLimit())){
 		tmp_selected = 4;
 	}
-	MAT8 *altmat = g_ShowRailSelect && tmp_selected
-		? &g_MatSelect[tmp_selected] : NULL;
-	MAT8 *altmat2 = g_ShowRailSelect && tmp_selected
-		? &g_MatSelectA[tmp_selected] : NULL;
+	bool use_altmat = g_ShowRailSelect && tmp_selected;
+	MAT8 *altmat = use_altmat ? &g_MatSelect[tmp_selected] : NULL;
+	MAT8 *altmat2 = use_altmat ? &g_MatSelectA[tmp_selected] : NULL;
+	int render_mode;
 	if(m_RailPlugin){
 		if(g_MultiTrackDummy){
 			m_RailPlugin->BeforeDump(
-				tpos1, right1, VEC3(up1),
-				tpos2, right2, VEC3(up2));
+				tpos1, right1, R2L(VEC3(up1)),
+				tpos2, right2, R2L(VEC3(up2)));
 			m_RailPlugin->AfterDump(
-				tpos1, VEC3(up1), ipos1, icup1,
-				tpos2, VEC3(up2), ipos2, icup2);
+				tpos1, R2L(VEC3(up1)), ipos1, icup1,
+				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
-			if(g_ShowRailSelect && tmp_selected){
+			if(use_altmat || m_RailWay->GetParent()){
 				devSetTexture(0, NULL);
-				devSetMaterial(altmat2);
+				if(use_altmat){
+					devSetMaterial(altmat2);
+					render_mode = 1;
+				}else{
+					render_mode = 7;
+				}
 				devResetMatrix();
 				m_RailPlugin->Dump(
-					VEC3(tpos1), VEC3(right1), VEC3(up1),
-					VEC3(ipos1), VEC3(icright1), VEC3(icup1),
-					VEC3(tpos2), VEC3(right2), VEC3(up2),
-					VEC3(ipos2), VEC3(icright2), VEC3(icup2), seglen, 1);
+					R2L(VEC3(tpos1)), R2L(VEC3(right1)), R2L(VEC3(up1)),
+					R2L(VEC3(ipos1)), R2L(VEC3(icright1)), R2L(VEC3(icup1)),
+					R2L(VEC3(tpos2)), R2L(VEC3(right2)), R2L(VEC3(up2)),
+					R2L(VEC3(ipos2)), R2L(VEC3(icright2)), R2L(VEC3(icup2)), seglen, render_mode);
 			}
 			m_RailPlugin->Render(
-				tpos1, right1, VEC3(up1), dir1, ipos1, icright1, icup1,
-				tpos2, right2, VEC3(up2), dir2, ipos2, icright2, icup2,
+				tpos1, right1, R2L(VEC3(up1)), dir1, ipos1, icright1, icup1,
+				tpos2, right2, R2L(VEC3(up2)), dir2, ipos2, icright2, icup2,
 				terminate, seglen, altmat);
 		}
 	}
 	if(m_TiePlugin){
 		if(g_MultiTrackDummy){
 			m_TiePlugin->AfterDump(
-				tpos1, VEC3(up1), ipos1, icup1,
-				tpos2, VEC3(up2), ipos2, icup2);
+				tpos1, R2L(VEC3(up1)), ipos1, icup1,
+				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
-			if(g_ShowRailSelect && tmp_selected){
+			if(use_altmat || m_RailWay->GetParent()){
 				devSetTexture(0, NULL);
-				devSetMaterial(altmat2);
+				if(use_altmat){
+					devSetMaterial(altmat2);
+					render_mode = 1;
+				}else{
+					render_mode = 7;
+				}
 				devResetMatrix();
 				m_TiePlugin->Dump(
-					VEC3(tpos1), VEC3(right1), VEC3(up1),
-					VEC3(ipos1), VEC3(icright1), VEC3(icup1),
-					VEC3(tpos2), VEC3(right2), VEC3(up2),
-					VEC3(ipos2), VEC3(icright2), VEC3(icup2), seglen, 1);
+					R2L(VEC3(tpos1)), R2L(VEC3(right1)), R2L(VEC3(up1)),
+					R2L(VEC3(ipos1)), R2L(VEC3(icright1)), R2L(VEC3(icup1)),
+					R2L(VEC3(tpos2)), R2L(VEC3(right2)), R2L(VEC3(up2)),
+					R2L(VEC3(ipos2)), R2L(VEC3(icright2)), R2L(VEC3(icup2)), seglen, render_mode);
 			}
 			m_TiePlugin->Render(
-				tpos1, right1, VEC3(up1), dir1, ipos1, icright1, icup1,
-				tpos2, right2, VEC3(up2), dir2, ipos2, icright2, icup2,
+				tpos1, right1, R2L(VEC3(up1)), dir1, ipos1, icright1, icup1,
+				tpos2, right2, R2L(VEC3(up2)), dir2, ipos2, icright2, icup2,
 				terminate, seglen, altmat);
 		}
 	}
@@ -163,19 +173,24 @@ void CRailRenderCurve::FinishTrace(
 		V3Norm(&up2, V3Cross(&up2, &dir2, V3Norm(&right2, &right2)));
 	}
 	if(m_GirderPlugin && g_MultiTrackDummy==m_GirderPlugin->IsMultiTrack()){
-		if(g_ShowRailSelect && tmp_selected){
+		if(use_altmat || m_RailWay->GetParent()){
 			devSetTexture(0, NULL);
-			devSetMaterial(altmat2);
+			if(use_altmat){
+				devSetMaterial(altmat2);
+				render_mode = 1;
+			}else{
+				render_mode = 7;
+			}
 			devResetMatrix();
 			m_GirderPlugin->Dump(
-				VEC3(tpos1), VEC3(right1), VEC3(up1),
-				VEC3(ipos1), VEC3(icright1), VEC3(icup1),
-				VEC3(tpos2), VEC3(right2), VEC3(up2),
-				VEC3(ipos2), VEC3(icright2), VEC3(icup2), seglen, 1);
+				R2L(VEC3(tpos1)), R2L(VEC3(right1)), R2L(VEC3(up1)),
+				R2L(VEC3(ipos1)), R2L(VEC3(icright1)), R2L(VEC3(icup1)),
+				R2L(VEC3(tpos2)), R2L(VEC3(right2)), R2L(VEC3(up2)),
+				R2L(VEC3(ipos2)), R2L(VEC3(icright2)), R2L(VEC3(icup2)), seglen, render_mode);
 		}
 		m_GirderPlugin->Render(
-			tpos1, right1, VEC3(up1), dir1, ipos1, icright1, icup1,
-			tpos2, right2, VEC3(up2), dir2, ipos2, icright2, icup2, terminate, seglen, altmat);
+			tpos1, right1, R2L(VEC3(up1)), dir1, ipos1, icright1, icup1,
+			tpos2, right2, R2L(VEC3(up2)), dir2, ipos2, icright2, icup2, terminate, seglen, altmat);
 	}else if(g_MultiTrackDummy){
 		if(g_ShowRailSelect && tmp_selected){
 			devSetTexture(0, NULL);

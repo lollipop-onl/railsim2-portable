@@ -7,7 +7,7 @@
 char *LANG_FILE_NAME = "Language.txt";
 
 //	外部グローバル
-char *g_DayOfWeek[];
+extern char *g_DayOfWeek[];
 
 //	内部グローバル1
 string g_LanguageName;

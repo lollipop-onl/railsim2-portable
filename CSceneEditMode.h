@@ -37,7 +37,7 @@ public:
 	CModelPlugin *GetModelPlugin();
 	void AddScene(CSurfacePlugin *);
 	void DeleteScene(CScene *);
-	char *PluginDirName(){ return "Scene"; }
+	char *PluginDirName(){ return "Surface"; }
 	CPluginList *GetPluginList();
 	void EnterModelPlugin();
 	CModelInst *ScanInputModelPlugin();

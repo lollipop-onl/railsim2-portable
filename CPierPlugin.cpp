@@ -7,7 +7,7 @@
 #include "CRailBuildMode.h"
 
 //	ŠO•”’è”
-extern const int RAIL_PREV_LEN;
+extern const float RAIL_PREV_LEN;
 extern const float RAIL_SEG_MAX;
 extern const float TAPER_DIV_RATIO;
 

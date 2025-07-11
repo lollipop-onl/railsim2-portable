@@ -55,7 +55,6 @@ void InitCapture(){
 	CountPicture();
 	CountVideoAVI();
 	chdir(g_BaseDir);
-
 }
 /*
  *	ŽB‰e‰ð•ú

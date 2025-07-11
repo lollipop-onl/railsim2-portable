@@ -247,8 +247,8 @@ bool CRailBuilder::Curve(
 			}
 			CalcRight(&right1, &dir1, &right2, &dir2);
 			if(linked2) right2 = V3ZERO;
-			curve->Curve(pos1+CalcTrackPos(&right1), dir1,
-				pos2+CalcTrackPos(&right2), dir2, comp, true);
+			curve->Curve(R2L(pos1+CalcTrackPos(&right1)), dir1,
+				R2L(pos2+CalcTrackPos(&right2)), dir2, comp, true);
 			return true;
 		}
 	}else{
@@ -312,8 +312,8 @@ bool CRailBuilder::Curve(
 			CalcRight(&right1, &dir1, &right2, &dir2);
 			if(linked1) right1 = V3ZERO;
 			if(linked2) right2 = V3ZERO;
-			curve->Curve(pos1+CalcTrackPos(&right1), dir1,
-				pos2+CalcTrackPos(&right2), dir2, comp, true);
+			curve->Curve(R2L(pos1+CalcTrackPos(&right1)), dir1,
+				R2L(pos2+CalcTrackPos(&right2)), dir2, comp, true);
 			return true;
 		}
 	}
@@ -422,7 +422,7 @@ void CRailBuilder::BuildRail(
 		CRailBuildCurve curve(begin, end, rpi, tpi, gpi);
 		Curve(&curve, rpi, tpi, gpi);
 	}else{
-		CRailBuildCurve curve(begin, CRailConnectorLink(), rpi, tpi, gpi);
+		CRailBuildCurve curve(begin, R2L(CRailConnectorLink()), rpi, tpi, gpi);
 		Curve(&curve, rpi, tpi, gpi);
 		g_MultiTrackSegment++;
 		m_Next->BuildRail(curve.GetNext(), end, rpi, tpi, gpi);

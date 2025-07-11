@@ -40,12 +40,20 @@ bool CRailCurve::CalcSplit(
 			goto LINECOMP;
 		}
 	}else{
-		cctmp = 0.5f*(m1+m2); to1 = cctmp-pos1; to2 = cctmp-pos2;
-		dot1 = V3Dot(&to1, &dir1); dot2 = V3Dot(&to2, &dir2);
-		tl1 = V3Len(&to1); tl2 = V3Len(&to2); dif = tl1-tl2;
+		cctmp = 0.5f*(m1+m2);
+		to1 = cctmp-pos1;
+		to2 = cctmp-pos2;
+		dot1 = V3Dot(&to1, &dir1);
+		dot2 = V3Dot(&to2, &dir2);
+		tl1 = V3Len(&to1);
+		tl2 = V3Len(&to2);
+		dif = tl1-tl2;
+
 		if(tl1<0.001f || tl2<0.001f || dot1*dot2>=0.0f){
 			m_CompSplit = true;
-			dot1 = V3Dot(&m_SplitDir, &dir1); dot2 = V3Dot(&m_SplitDir, &dir2);
+			dot1 = V3Dot(&m_SplitDir, &dir1);
+			dot2 = V3Dot(&m_SplitDir, &dir2);
+
 			if(fabsf(dot1)<fabsf(dot2)){
 				V3Norm(&to1, &(m_SplitDir-dir1*dot1));
 				V3Norm(&to2, &(dir1-dir2*V3Dot(&dir1, &dir2)));

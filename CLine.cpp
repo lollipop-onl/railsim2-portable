@@ -101,8 +101,8 @@ CPole::CPole(){
  *	コンストラクタ
  */
 CPole::CPole(
-	VEC3 &pos,		//	座標
-	VEC3 &dir,		//	方向
+	const VEC3 &pos,		//	座標
+	const VEC3 &dir,		//	方向
 	CPolePlugin *pp	//	架線柱プラグイン
 ){
 	m_Selected = 0;
@@ -309,8 +309,8 @@ CLine::CLine(){
  *	コンストラクタ
  */
 CLine::CLine(
-	CPoleLink &link1,	//	始点
-	CPoleLink &link2,	//	終点
+	CPoleLink link1,	//	始点
+	CPoleLink link2,	//	終点
 	CLinePlugin *lp		//	架線プラグイン
 ){
 	m_Selected = 0;
@@ -398,13 +398,13 @@ void CLine::Dump(){
 	VEC3 p1 = m_Link[0].GetPos()-m_LinePlugin->m_Height*V3UP;
 	VEC3 p2 = m_Link[1].GetPos()-m_LinePlugin->m_Height*V3UP;
 	m_LinePlugin->Dump(
-		p1, -m_Link[0].GetRight(), m_Link[0].GetUp(),
-		p1, -m_Link[0].GetRight(), m_Link[0].GetUp(),
-		p2, m_Link[1].GetRight(), m_Link[1].GetUp(),
-		p2, m_Link[1].GetRight(), m_Link[1].GetUp(), V3Len(&(p2-p1)), 4);
+		p1, R2L(-m_Link[0].GetRight()), R2L(m_Link[0].GetUp()),
+		p1, R2L(-m_Link[0].GetRight()), R2L(m_Link[0].GetUp()),
+		p2, R2L(m_Link[1].GetRight()), R2L(m_Link[1].GetUp()),
+		p2, R2L(m_Link[1].GetRight()), R2L(m_Link[1].GetUp()), V3Len(&(p2-p1)), 4);
 }
 
-/*
+/*	
  *	等間隔オブジェクトをレンダリング
  */
 void CLine::Render(){
@@ -419,12 +419,12 @@ void CLine::Render(){
 		devSetTexture(0, NULL);
 		devSetMaterial(altmat2);
 		devResetMatrix();
-		m_LinePlugin->Dump(p1, m_Right, V3UP, p1, m_Right, V3UP,
-			p2, m_Right, V3UP, p2, m_Right, V3UP, seglen, 1);
+		m_LinePlugin->Dump(p1, m_Right, R2L(V3UP), p1, m_Right, R2L(V3UP),
+			p2, m_Right, R2L(V3UP), p2, m_Right, R2L(V3UP), seglen, 1);
 	}
 	m_LinePlugin->SetMapTemp(m_LineMapV);
-	m_LinePlugin->Render(p1, m_Right, V3UP, m_Dir, p1, m_Right, V3UP,
-		p2, m_Right, V3UP, m_Dir, p2, m_Right, V3UP, 3, seglen, altmat);
+	m_LinePlugin->Render(p1, m_Right, R2L(V3UP), m_Dir, p1, m_Right, R2L(V3UP),
+		p2, m_Right, R2L(V3UP), m_Dir, p2, m_Right, R2L(V3UP), 3, seglen, altmat);
 }
 
 /*

@@ -434,8 +434,8 @@ CModelInst *CTrainEditMode::ScanInputModelPlugin(){
 		int move_to = m_GroupListView.GetInsertRow();
 		if(move_from<0) ErrorDialog("invalid value: move_from");
 		vector<CTrainGroup *> group_list = g_SaveFile->GetTrainGroupByVector();
-		group_list.insert(&group_list[move_to], group_list[move_from]);
-		group_list.erase(&group_list[move_to<=move_from ? move_from+1 : move_from]);
+		group_list.insert(group_list.begin()+move_to, group_list[move_from]);
+		group_list.erase(group_list.begin()+(move_to<=move_from ? move_from+1 : move_from));
 		g_SaveFile->SetTrainGroupByVector(group_list);
 		g_SaveFile->ListGroup(&m_GroupListView);
 	}
@@ -448,8 +448,8 @@ CModelInst *CTrainEditMode::ScanInputModelPlugin(){
 			int move_to = m_TrainListView.GetInsertRow();
 			if(move_from<0) ErrorDialog("invalid value: move_from");
 			vector<CTrain *> train_list = g_TrainGroup->GetTrainByVector();
-			train_list.insert(&train_list[move_to], train_list[move_from]);
-			train_list.erase(&train_list[move_to<=move_from ? move_from+1 : move_from]);
+			train_list.insert(train_list.begin()+move_to, train_list[move_from]);
+			train_list.erase(train_list.begin()+(move_to<=move_from ? move_from+1 : move_from));
 			g_TrainGroup->SetTrainByVector(train_list);
 			g_TrainGroup->ListTrain(&m_TrainListView);
 			m_TrainListView.SetSelectionMark(move_from<move_to ? move_to-1 : move_to, 0);

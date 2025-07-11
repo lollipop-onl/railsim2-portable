@@ -386,9 +386,9 @@ void CPointDialog::SetElementValue(
 void CDiaDialog::Init(
 	CInterface *p	//	e
 ){
-	int ww = TILE_UNIT*16, wh = TILE_UNIT*24;
+	int ww = TILE_UNIT*16, wh = TILE_UNIT*25;
 	CDiaDialogBase::Init(TILE_UNIT, g_DispHeight-wh-TILE_UNIT,
-		ww, wh, lang(DiaSetting), p, lang(Action), TILE_UNIT*7);
+		ww, wh, lang(DiaSetting), p, lang(Action), TILE_UNIT*8);
 	char *alabel[3] = {lang(Stop), lang(Return), lang(Pass)};
 	char *tlabel[2] = {lang(StopDuration), lang(DeptTime)};
 	int i;
@@ -403,6 +403,8 @@ void CDiaDialog::Init(
 	m_SecondEdit.Init(0, 0, TILE_UNIT*2, TILE_UNIT, "", &m_DiaGroup, 2);
 	m_SecondLabel.Init(0, 0, TILE_UNIT, TILE_UNIT, lang(Sec), &m_DiaGroup, 0, 1);
 //	m_JointCheck.Init(0, 0, 1, 1, "‘¼•Ò¬‚Æ‚Ì˜AŒ‹‚ð‹–‰Â", &m_DiaGroup);
+	m_StopPosEdit.Init(0, 0, TILE_UNIT*8-TILE_HALF, TILE_UNIT, "", &m_DiaGroup, 9);
+	m_StopPosButton.Init(0, 0, TILE_UNIT*3, TILE_UNIT, lang(Apply), &m_DiaGroup);
 	InitFoot();
 	m_OffsetSlide = 0;
 }
@@ -431,6 +433,8 @@ void CDiaDialog::ResizeDiaDialogBase(
 	m_SecondLabel.SetPos(tx+TILE_UNIT*11+TILE_HALF, TILE_UNIT*3+TILE_QUAD);
 //	m_JointCheck.SetPos(TILE_UNIT, TILE_UNIT*4+TILE_QUAD);
 //	m_JointCheck.SetSize(w-TILE_UNIT*2, TILE_UNIT);
+	m_StopPosEdit.SetPos(tx+TILE_UNIT, TILE_UNIT*6+TILE_QUAD);
+	m_StopPosButton.SetPos(tx+TILE_UNIT*9, TILE_UNIT*6+TILE_QUAD);
 }
 
 /*
@@ -468,6 +472,19 @@ void CDiaDialog::ScanInputDiaDialogBase(){
 //		de->m_Joint = jt;
 //		update = true;
 //	}
+	if(m_StopPosEdit.IsFocus() && !m_StopPosEdit.IsComp()
+		&& (GetKey(DIK_RETURN)|GetKey(DIK_NUMPADENTER))==S_PUSH){
+		m_StopPosEdit.FinishInput();
+		m_StopPosButton.SetPush(true);
+	}
+	if(m_StopPosButton.IsPushed()){
+		de->m_Offset = 0.0f;
+		sscanf(m_StopPosEdit.GetText(), "%f", &de->m_Offset);
+		ValueArea(&de->m_Offset, -1.0f, 1.0f);
+		m_StopPosEdit.SetText(FlashIn("%f", de->m_Offset));
+		m_StopPosEdit.GiveFocus(false);
+		return;
+	}
 	if(GetButton(DIM_LEFT)>=S_PUSH){
 		int px, py, tw = m_DiaGroup.GetWidth()-TILE_UNIT*2;
 		m_DiaGroup.GetAbsPos(&px, &py);
@@ -481,6 +498,8 @@ void CDiaDialog::ScanInputDiaDialogBase(){
 			de->m_Offset = (pos.x-px-tw*0.5f)*3.0f/tw;
 			if(py+TILE_UNIT<pos.y) de->m_Offset = Round(de->m_Offset*10.0f)*0.1f;
 			ValueArea(&de->m_Offset, -1.0f, 1.0f);
+			m_StopPosEdit.FinishInput();
+			m_StopPosEdit.SetText(FlashIn("%f", de->m_Offset));
 			update = true;
 		}
 	}else{
@@ -533,12 +552,14 @@ void CDiaDialog::SetElementValue(
 		m_MinuteEdit.SetText(FlashIn("%02d", de->m_Minute));
 		m_SecondEdit.SetText(FlashIn("%02d", de->m_Second));
 	//	m_JointCheck.SetCheck(de->m_Joint);
+		m_StopPosEdit.SetText(FlashIn("%f", de->m_Offset));
 	}else{
 		m_Action[0].SetCheck();
 		m_TimeType[0].SetCheck();
 		m_HourEdit.SetText("");
 		m_MinuteEdit.SetText("");
 		m_SecondEdit.SetText("");
+		m_StopPosEdit.SetText("");
 	//	m_JointCheck.SetCheck(0);
 	}
 }

@@ -2,6 +2,7 @@
 #define HIGHTIMER_H_INCLUDED
 
 bool InitHighTimer();
-double HighTimer();
+LONGLONG HighTimer();
+double FromHighTimerCountToMs(LONGLONG t);
 
 #endif

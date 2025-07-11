@@ -1,6 +1,15 @@
 //	Copyright (c) 2002 Midikyou
 
+
 using namespace std;
+
+#define UDX_TEXTURE_MEASURE (0)
+
+#if UDX_TEXTURE_MEASURE
+#include <vector>
+#include <string>
+#include "..\CJobTimer.h"
+#endif
 
 /*
  *	テクスチャーの読込み
@@ -129,6 +138,9 @@ inline void devSetTexState(DWORD stage, D3DTEXTURESTAGESTATETYPE pram, DWORD sta
  *	pTex	: テクスチャ
  */
 inline void devSetTexture(DWORD n, LPTEX8 pTex){
+#if UDX_TEXTURE_MEASURE
+	TIMER_RAII("devSetTexture");
+#endif
 	sv3.pDev->SetTexture(n, pTex);
 }
 

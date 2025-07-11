@@ -20,15 +20,15 @@
 #include "draw.h"
 #include "texture.h"
 #include "font.h"
-#include "sprite.h"
+//#include "sprite.h"
 #include "mesh.h"
 #include "object.h"
 #include "anim.h"
 
 #include "offscreen.h"
-#include "water_mesh.h"
-#include "height_field.h"
-#include "particle.h"
+//#include "water_mesh.h"
+//#include "height_field.h"
+//#include "particle.h"
 #include "effect.h"
 
 #include "input.h"
@@ -36,10 +36,10 @@
 #include "editbox.h"
 
 #include "sound.h"
-#include "music.h"
+//#include "music.h"
 #include "wave.h"
 #include "wave_stream.h"
-#include "movie.h"
+//#include "movie.h"
 
 #include "comm.h"
 

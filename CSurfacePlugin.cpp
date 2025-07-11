@@ -31,7 +31,7 @@ CSurfacePlugin::~CSurfacePlugin(){
 /*
  *	ロード
  */
-char *CSurfacePlugin::LoadStruct(
+char *CSurfacePlugin::LoadStructBefore(
 	char *str	//	対象文字列
 ){
 	g_NamedObjectMipMap = g_SurfaceMipMap;
@@ -59,7 +59,7 @@ bool CSurfacePlugin::LoadOldForm(){
 	float oldscale = 2.0f/sc;
 	m_SizeX = sizex*oldscale;
 	m_SizeZ = sizez*oldscale;
-	m_FreeObject.push_back(CFreeObject3D("MainObject", "Model.x", oldscale));
+	m_FreeObject.push_back(CFreeObjectContainer(new CFreeObject3D("MainObject", "Model.x", oldscale)));
 	m_FreeObject.begin()->LoadModel(this);
 	m_PartsNum = 1;
 	return true;
@@ -95,21 +95,23 @@ bool CSurfacePlugin::PickSurface(
 	int inv		//	裏面フラグ
 ){
 	VEC3 hit2, tri2[3];
-	IFreeObject3D ifo = m_FreeObject.begin();
-	int i;
+	IFreeObjectContainer ifo = m_FreeObject.begin();
+	int i, j;
 	float mindist;
 	bool flag = false;
 	int ccc = 0;
 	for(; ifo!=m_FreeObject.end(); ifo++){
 		ccc++;
-		if(ifo->GetPartsObject()->Pick(pos, dir, &hit2, tri2, inv)){
-			float tmpdist = V3Len(&(pos-hit2));
-			if(!flag || mindist>tmpdist){
-				mindist = tmpdist;
-				if(hit) *hit = hit2;
-				if(tri) for(i = 0; i<3; i++) tri[i] = tri2[i];
+		for(j = 0; j<ifo->GetNamedObjectNum(); ++j){
+			if(ifo->GetNamedObject(j)->GetPartsObject()->Pick(pos, dir, &hit2, tri2, inv)){
+				float tmpdist = V3Len(&(pos-hit2));
+				if(!flag || mindist>tmpdist){
+					mindist = tmpdist;
+					if(hit) *hit = hit2;
+					if(tri) for(i = 0; i<3; i++) tri[i] = tri2[i];
+				}
+				flag = true;
 			}
-			flag = true;
 		}
 	}
 	return flag;

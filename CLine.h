@@ -62,7 +62,7 @@ public:
 	static bool IsDetected(){ return ms_MinDist>=0.0f; }
 	static CPoleLink &GetDetect(){ return ms_Detect; }
 	CPole();
-	CPole(VEC3 &, VEC3 &, CPolePlugin *);
+	CPole(const VEC3 &, const VEC3 &, CPolePlugin *);
 	~CPole();
 	void Delete(CScene *);
 	CPole *Next(){ return m_Next; }
@@ -102,7 +102,7 @@ public:
 	static bool IsDetected(){ return ms_MinDist>=0.0f; }
 	static CLine *GetDetect(){ return ms_Detect; }
 	CLine();
-	CLine(CPoleLink &, CPoleLink &, CLinePlugin *);
+	CLine(CPoleLink, CPoleLink, CLinePlugin *);
 	~CLine();
 	void Delete();
 	CLine *Next(){ return m_Next; }

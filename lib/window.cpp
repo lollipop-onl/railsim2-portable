@@ -1,15 +1,21 @@
 //	Copyright (c) 2002 Midikyou
 
+#include <windows.h>
+#include <windowsx.h>
+
 #include "headers.h"
 #include "debug.h"
 #include "graphic.h"	//	sv3.fWindowes
 #include "window.h"
+#include "input.h"
 
 #if defined(__BORLANDC__)	//	for BC++
 	#define IDI_ICON1 1001
 #else
 	#include "..\resource.h"
 #endif
+
+void AdjustMovieLayer();	//	movie.cpp
 
 //	外部グローバル
 extern int g_DispWidth;
@@ -64,7 +70,7 @@ BOOL CreateMainWindow(HINSTANCE hInst){
 	AdjustWindow();
 
 	//	アクティブフラグを立てる
-	svw.fActive = TRUE;
+	svw.fActive = FALSE;
 
 	return TRUE;
 }
@@ -158,9 +164,11 @@ LRESULT WINAPI MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 		break;
 
 	//	DirectShowメッセージ
+#ifdef UDX_USE_MOVIE
 	case WM_GRAPHNOTIFY:
 		OnGrapNotify();	//	movie.cpp
 		break;
+#endif // #ifdef UDX_USE_MOVIE
 
 	//	ウインドウが放棄されようとした
 	case WM_CLOSE:
@@ -181,6 +189,13 @@ LRESULT WINAPI MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 void OnActivateApp(WPARAM wParam){
 	svw.fActive = (BOOL)wParam;
 	Debug(svw.fActive ? "<アクティブ>\n" : "<非アクティブ>\n");
+	if(svw.fActive){
+		svi.wheel = 0;
+		ShowCursor(FALSE);
+	}else{
+		ShowCursor(TRUE);
+		ClipCursor(NULL);
+	}
 }
 
 /*
@@ -203,18 +218,20 @@ void OnSize(WPARAM wParam){
 
 	Debug("<クライアント領域 %d x %d>\n", svw.winW, svw.winH);
 
+#ifdef UDX_USE_MOVIE
 	//	ムービーレイヤーのリサイズ
-	void AdjustMovieLayer();	//	movie.cpp
 	AdjustMovieLayer();
+#endif // #ifdef UDX_USE_MOVIE
 }
 
 /*
  *	ウインドウ移動への応答
  */
 void OnMove(WPARAM wParam){
+#ifdef UDX_USE_MOVIE
 	//	ムービーレイヤーの移動
-	void AdjustMovieLayer();
 	AdjustMovieLayer();
+#endif // #ifdef UDX_USE_MOVIE
 }
 
 /*

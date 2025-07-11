@@ -6,7 +6,7 @@
 #include "CRailBuildMode.h"
 
 //	ŠO•”’è”
-extern const int RAIL_PREV_LEN;
+extern const float RAIL_PREV_LEN;
 
 /*
  *	[static]

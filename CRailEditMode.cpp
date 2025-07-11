@@ -6,6 +6,12 @@
 #include "CSaveFile.h"
 #include "CRailDetectCurve.h"
 #include "CRailEditMode.h"
+#include "CRailPlugin.h"
+#include "CTiePlugin.h"
+#include "CGirderPlugin.h"
+#include "CPierPlugin.h"
+#include "CLinePlugin.h"
+#include "CPolePlugin.h"
 #include "CSkinPlugin.h"
 
 //	関数宣言
@@ -49,18 +55,18 @@ void ResetShowRailSelect(){
  *	コンストラクタ
  */
 CRailEditMode::CRailEditMode(){
-	int i, gww = TILE_UNIT*14, gwh = TILE_UNIT*(3+5);
+	int i, gww = TILE_UNIT*14, gwh = TILE_UNIT*(3+6);
 	m_EditWindow.Init(TILE_UNIT, g_DispHeight-gwh-TILE_UNIT,
 		gww, gwh, lang(EditOption), &m_Interface, true);
 	m_ModeLabel.Init(TILE_HALF, TILE_QUAD+TILE_UNIT,
 		gww-TILE_UNIT, TILE_UNIT, lang(EditMode_UpDn), &m_EditWindow, 0, 1);
 	char *modelabel[RAIL_EDIT_MODES] = {
-		lang(SelectEditRail), lang(SelectEditPier),
-		lang(SelectEditPole), lang(SelectEditLine), lang(ConnectLine),
+		lang(SelectEditRail), lang(SelectAddPier), lang(SelectEditPier),
+		lang(SelectAddPole), lang(SelectEditPole), lang(SelectEditLine), lang(ConnectLine),
 		lang(SelectWarp), lang(ConnectWarp), lang(RailBlock), lang(SpeedLimit)};
 	for(i = 0; i<RAIL_EDIT_MODES; i++) m_Mode[i].Init(
-		TILE_HALF+(i/5)*((gww-TILE_UNIT-TILE_QUAD)/2+TILE_QUAD),
-		TILE_QUAD+TILE_UNIT*(2+i%5), (gww-TILE_UNIT-TILE_QUAD)/2, TILE_UNIT,
+		TILE_HALF+(i/6)*((gww-TILE_UNIT-TILE_QUAD)/2+TILE_QUAD),
+		TILE_QUAD+TILE_UNIT*(2+i%6), (gww-TILE_UNIT-TILE_QUAD)/2, TILE_UNIT,
 		modelabel[i], &m_EditWindow, i ? &m_Mode[i-1] : NULL);
 	m_EditMode = EM_EDIT_RAIL;
 	m_Mode[m_EditMode].SetCheck();
@@ -183,6 +189,11 @@ void CRailEditMode::ScanInputCursorScenery(){
 	EditMode editmode = (EditMode)m_Mode->GetNumber();
 	ResetShowRailSelect();
 	switch(m_EditMode){
+	case EM_ADD_PIER:
+	case EM_ADD_POLE:
+		g_ShowRailSelect = true;
+		g_ShowRailWaySelect = true;
+		break;
 	case EM_EDIT_RAIL:
 	case EM_EDIT_RAIL_BLOCK:
 	case EM_EDIT_SPEED_LIMIT:
@@ -221,8 +232,32 @@ void CRailEditMode::ScanInputCursorScenery(){
 					g_Scene->Dump();
 				}
 				break;
-			case 0:
-				break;
+			}
+			break;
+		}
+	}else if(m_EditMode==EM_ADD_PIER || m_EditMode==EM_ADD_POLE){
+		g_Scene->ScanInputRailWay(1, g_Cursor.GetVEC3(), V3ZERO, true);
+		switch(GetCamera()->ScanInput(1)){
+		case 12:
+			if(CRailDetectCurve2D::IsDetected()){
+				PushUndoStack();
+				CRailLinkTemp &detect = CRailDetectCurve2D::GetDetect();
+				VEC3 tpos = detect.m_Pos, tright = detect.m_Right, tup = detect.m_Up, tdir = detect.m_Dir;
+				if(!detect.m_Side) tright=-tright;
+				float ofs = detect.m_Side ? detect.m_Link->GetSegLen()-detect.m_SumLen : detect.m_SumLen;
+				if(m_EditMode==EM_ADD_PIER && g_Pier){
+					float pickalt = tpos.y;
+					if(g_Rail) g_Rail->CalcPierPos(&tpos, &tright, &tup, &tdir);
+					if(g_Tie) g_Tie->CalcPierPos(&tpos, &tright, &tup, &tdir);
+					if(g_Girder) g_Girder->CalcPierPos(&tpos, &tright, &tup, &tdir);
+					CPier *pier = new CPier(tpos, tdir, tup, pickalt, g_Pier);
+					if(pier->Confirm()) detect.m_Link->InsertPier(ofs, pier);
+				}else if(m_EditMode==EM_ADD_POLE && g_Pole){
+					CPole *pole = new CPole(tpos+g_Line->GetTrolleyAlt()*tup
+						+g_Line->GetHeight()*V3UP, tdir, g_Pole);
+					detect.m_Link->InsertPole(ofs, pole, 0, false);
+				}
+				g_Scene->Dump();
 			}
 			break;
 		}
@@ -382,11 +417,11 @@ void CRailEditMode::ScanInputCursorScenery(){
 								PushUndoStack();
 								g_SaveFile->SetWarpRoot();
 								CRailWay *warp = new CRailWay(
-									m_WarpLinkFrom.SplitLink(NULL),
-									linkto.SplitLink(NULL), NULL, NULL, NULL);
+									R2L(m_WarpLinkFrom.SplitLink(NULL)),
+									R2L(linkto.SplitLink(NULL)), NULL, NULL, NULL);
 								warp->SetWarpDummy();
 								m_WarpLinkFrom.m_Link = NULL;
-								g_Scene->ResetRailRoot();
+								g_Scene->ResetRailWayRoot();
 							}
 						}else{
 							m_WarpLinkFrom = CRailDetectCurve2D::GetDetect();
@@ -449,6 +484,10 @@ void CRailEditMode::RenderCursorScenery(){
 		switch(m_EditMode){
 		case EM_EDIT_RAIL:
 			if(CheckAlt()) CRailDetectCurve2D::RenderLink();
+			break;
+		case EM_ADD_PIER:
+		case EM_ADD_POLE:
+			CRailDetectCurve2D::RenderLink();
 			break;
 		case EM_CONNECT_LINE:
 			CPole::RenderLink();

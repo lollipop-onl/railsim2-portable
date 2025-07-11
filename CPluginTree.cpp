@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CSkinPlugin.h"
 #include "CInterfaceMode.h"
+#include "CConfigMode.h"
 
 /*
  *	コンストラクタ
@@ -135,7 +136,9 @@ char *CPluginTree::Load(
 	CPluginMode *pimode	//	プラグインモード
 ){
 	char *eee;
-	if(!(str = BeginBlock(eee = str, FlashIn("%sPluginTree", head)))) throw CSynErr(eee);
+	char *tmp_head = head;
+	if(g_ConfigVersion<=2.12f && !strcmp(head, "Surface")) tmp_head = "Scene";
+	if(!(str = BeginBlock(eee = str, FlashIn("%sPluginTree", tmp_head)))) throw CSynErr(eee);
 	if(!(str = m_Root->Load(eee = str, pimode))) throw CSynErr(eee);
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	return str;

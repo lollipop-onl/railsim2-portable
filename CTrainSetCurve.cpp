@@ -214,16 +214,16 @@ CTrainSetCurve::CTrainSetCurve(
 	bool rev,				//	逆方向フラグ
 	CGroupEndLocator loc,	//	設置位置
 	CGroupEndLocator *tail,	//	終端格納先
-	ITrainSetBuffer *cur,	//	現在位置
-	ITrainSetBuffer *end	//	終了位置
+	ITrainSetBuffer *icur,	//	現在位置
+	ITrainSetBuffer *iend	//	終了位置
 ):
 	CRailTraceCurve(rpi, tpi, gpi, NULL)	//	基本クラス
 {
 	m_Reverse = rev;
 	m_Location = loc;
 	m_Tail = tail;
-	m_Current = cur;
-	m_End = end;
+	m_Current = icur;
+	m_End = iend;
 }
 
 /*

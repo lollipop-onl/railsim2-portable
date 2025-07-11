@@ -38,8 +38,8 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "Release"
-# PROP Intermediate_Dir "Release"
+# PROP Output_Dir "Release_vc6"
+# PROP Intermediate_Dir "Release_vc6"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"RailSim2\RailSim2.exe"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"RailSim2\RailSim2_Release_vc6.exe"
 
 !ELSEIF  "$(CFG)" == "RailSim2 - Win32 Debug"
 
@@ -64,8 +64,8 @@ LINK32=link.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "Debug"
-# PROP Intermediate_Dir "Debug"
+# PROP Output_Dir "Debug_vc6"
+# PROP Intermediate_Dir "Debug_vc6"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"RailSim2\RailSim2.exe" /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"RailSim2\RailSim2_Debug_vc6.exe" /pdbtype:sept
 # SUBTRACT LINK32 /profile /incremental:no
 
 !ENDIF 
@@ -107,6 +107,10 @@ SOURCE=.\CCursor.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\CJobTimer.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\CPixelbit.cpp
 # End Source File
 # Begin Source File
@@ -128,6 +132,10 @@ SOURCE=.\CVertexDump.cpp
 # Begin Source File
 
 SOURCE=.\CWaveArray.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CWindowDivInfo.cpp
 # End Source File
 # End Group
 # Begin Group "Interface Class Source"
@@ -681,7 +689,6 @@ SOURCE=.\WakeUp.cpp
 # Begin Source File
 
 SOURCE=.\lib\anim.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
@@ -690,132 +697,82 @@ SOURCE=.\lib\comm.cpp
 # Begin Source File
 
 SOURCE=.\lib\debug.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\draw.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\editbox.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\effect.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\font.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\graphic.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\height_field.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\input.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\light.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\main.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\mesh.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\movie.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\music.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\object.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\offscreen.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\particle.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\sound.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\sprite.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\texture.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\vertex.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\view.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\view_ctrl.cpp
-# SUBTRACT CPP /YX
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\water_mesh.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\wave.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\wave_stream.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\window.cpp
-# SUBTRACT CPP /YX
 # End Source File
 # End Group
 # End Group
@@ -842,6 +799,10 @@ SOURCE=.\CCursor.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\CJobTimer.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\CPixelbit.h
 # End Source File
 # Begin Source File
@@ -859,6 +820,10 @@ SOURCE=.\CVertexDump.h
 # Begin Source File
 
 SOURCE=.\CWaveArray.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\CWindowDivInfo.h
 # End Source File
 # End Group
 # Begin Group "Interface Class Header"
@@ -1483,10 +1448,6 @@ SOURCE=.\lib\headers.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\lib\height_field.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\lib\input.h
 # End Source File
 # Begin Source File
@@ -1503,14 +1464,6 @@ SOURCE=.\lib\mesh.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\lib\movie.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\music.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\lib\mutex.h
 # End Source File
 # Begin Source File
@@ -1523,19 +1476,11 @@ SOURCE=.\lib\offscreen.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\lib\particle.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\lib\render.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib\sound.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\sprite.h
 # End Source File
 # Begin Source File
 
@@ -1560,10 +1505,6 @@ SOURCE=.\lib\view.h
 # Begin Source File
 
 SOURCE=.\lib\view_ctrl.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\lib\water_mesh.h
 # End Source File
 # Begin Source File
 

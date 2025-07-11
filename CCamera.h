@@ -71,7 +71,7 @@ public:
 	int ScanInput(int, CObject *tlocal = NULL);
 	void Slide(int, CObject *tlocal = NULL);
 	char *Read(char *);
-	void Save(FILE *);
+	void Save(FILE *, string indent = "\t\t");
 };
 
 //	外部グローバル

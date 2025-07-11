@@ -167,6 +167,7 @@ CFileMode::CFileMode(){
 	m_NetworkWindow.Show(false);
 	m_YesNoDialog = NULL;
 	m_InputDialog = NULL;
+	m_MultiInputDialog = NULL;
 	m_FileMenu = new CPopMenu("", NULL);
 	new CPopMenu(lang(Open), m_FileMenu);
 	new CPopMenu(lang(Overwrite), m_FileMenu);

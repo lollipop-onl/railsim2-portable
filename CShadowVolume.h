@@ -46,11 +46,11 @@ public:
 			m_Large = m_Index1; m_Small = m_Index2;
 		}
 	}
-	int Compare(const CEdgeIndex &rhs){
+	int Compare(const CEdgeIndex &rhs) const{
 		return m_Large==rhs.m_Large && m_Small==rhs.m_Small
 			? (m_Index1==rhs.m_Index1 ? 1 : -1) : 0;
 	}
-	bool operator<(const CEdgeIndex &rhs){
+	bool operator<(const CEdgeIndex &rhs) const{
 		return m_Large<rhs.m_Large || m_Large==rhs.m_Large && m_Small<rhs.m_Small;
 	}
 };

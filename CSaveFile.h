@@ -62,6 +62,7 @@ public:
 	void ScanInputWarp(int, VEC3, VEC3);
 	void ScanInputInst(int, VEC3, VEC3);
 	int GetGroupNum(){ return m_GroupNum; }
+	CScene *GetSceneList(){ return m_SceneList; }
 	void AddScene(CSurfacePlugin *);
 	void DeleteScene(CScene *);
 	void ListScene(CListView *);

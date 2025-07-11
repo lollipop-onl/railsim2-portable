@@ -28,6 +28,7 @@ const float POINT_DEC_MIN = 5.0f;	//	ポイント左右決定最小距離
 //	外部グローバル
 extern bool g_ShowWarpSelect;
 extern D3DCOLOR g_ColorSelect[];
+extern CDetectInfo g_StationPlatformParentDetectInfo;
 
 //	内部グローバル
 bool g_MultiTrackDummy = false;
@@ -35,6 +36,16 @@ int g_DummyTrackNum;
 float g_DummyTrackInterval;
 CGroupEndLocator g_HitTrainGroup;	//	衝突列車代入先
 map<std::string, CTrainGroup *> g_RailBlockMap;	//	閉塞情報
+
+/*
+ *	動くレールの親オブジェクト情報
+ */
+class CRailWayParentLink{
+	friend class CRailWay;
+private:
+	CDetectInfo m_DetectInfo;			//	親オブジェクト
+	list<CRailSplitter> m_SplitList;	//	分割点リスト
+};
 
 //	static メンバ
 CRailWay **CRailWay::ms_Root = NULL;
@@ -47,6 +58,7 @@ CRailWayLink CRailWay::ms_Detect;
 CRailWay::CRailWay(){
 	m_OldAdr = NULL;
 	m_Selected = 0;
+	m_Parent = NULL;
 	m_Platform = NULL;
 	m_BuildLine = true;
 	m_MultiTrackDummy = false;
@@ -82,6 +94,7 @@ CRailWay::CRailWay(
 ){
 	m_OldAdr = NULL;
 	m_Selected = 0;
+	m_Parent = NULL;
 	m_Platform = NULL;
 	m_BuildLine = false;
 	if(m_MultiTrackDummy = g_MultiTrackDummy){
@@ -117,7 +130,20 @@ CRailWay::CRailWay(
  *	デストラクタ
  */
 CRailWay::~CRailWay(){
+	DELETE_V(m_Parent);
 	DELETE_V(m_Next);
+}
+
+/*
+ *	親オブジェクト設定
+ */
+void CRailWay::SetParent(CDetectInfo *d_info){
+	DELETE_V(m_Parent);
+	if(d_info){
+		m_Parent = new CRailWayParentLink;
+		m_Parent->m_DetectInfo = *d_info;
+		m_Parent->m_SplitList = m_SplitList;
+	}
 }
 
 /*
@@ -137,8 +163,9 @@ bool CRailWay::IsLinkable(
 	int s,		//	サイド
 	VEC3 &pos	//	座標
 ){
-	if(pos!=m_Link[s].GetPos()) return true;
-	CRailWayLink *link = m_Link[s].m_Link->m_Link[!m_Link[s].m_Side];
+	CRailConnectorLink& rlink = m_Link[s];
+	if(pos!=rlink.GetPos()) return true;
+	CRailWayLink *link = rlink.m_Link->m_Link[!rlink.m_Side];
 	int i;
 	for(i = 0; i<2; i++) if(link[i].m_Link && !link[i].m_Link->m_Scene) return false;
 	return !link[0].m_Link || !link[1].m_Link;
@@ -166,8 +193,8 @@ float CRailWay::GetSegLen(){
  */
 void CRailWay::Stabilize(){
 	m_BuildLine = true;
-	m_Link[0].Connect(CreateLink(0));
-	m_Link[1].Connect(CreateLink(1));
+	m_Link[0].Connect(R2L(CreateLink(0)));
+	m_Link[1].Connect(R2L(CreateLink(1)));
 	//	コンストラクタでやってるので不要
 	//	if(m_RailPlugin) m_RailPlugin->CopyMapTemp(&m_RailMapV);
 	//	if(m_TiePlugin) m_TiePlugin->CopyMapTemp(&m_TieMapV);
@@ -192,11 +219,11 @@ CRailConnectorLink CRailWay::SplitLink(
 		if(wadr) *wadr = this;
 		return con->CreateLink(!cs, link[0].m_Link ? 1 : 0);
 	}
-	CRailConnector *con = new CRailConnector(spl->m_Pos, s ? spl->m_Dir : -spl->m_Dir);
+	CRailConnector *con = new CRailConnector(spl->m_Pos, R2L(s ? spl->m_Dir : -spl->m_Dir));
 	con->Stabilize(spl->m_Up);
 	CRailConnectorLink cl1 = con->CreateLink(1, 0), cl2 = m_Link[1];
 	m_Link[1] = con->CreateLink(0, 0);
-	m_Link[1].Connect(CreateLink(1));
+	m_Link[1].Connect(R2L(CreateLink(1)));
 	m_SegLen = -1.0f;
 	//GetSegLen(); CopyMapTemp で求めるので不要
 	list<CRailSplitter> splist;
@@ -268,7 +295,7 @@ void CRailWay::SplitSelect(){
 		if(sel!=(irs->m_Selected&2)){
 			CRailWay *newway;
 			SplitLink(&CRailLinkTemp(0, 0.0f,
-				spl->m_Pos, -spl->m_Right, spl->m_Up, -spl->m_Dir,
+				spl->m_Pos, R2L(-spl->m_Right), spl->m_Up, R2L(-spl->m_Dir),
 				NULL, IRailSplitter()), &newway, IRailSplitter());
 			newway->SplitSelect();
 			return;
@@ -311,6 +338,70 @@ CRailWay *CRailWay::Delete(){
 	m_Next = NULL;
 	delete this;
 	return next;
+}
+
+/*
+ *	別のレールを接続
+ */
+void CRailWay::ConnectRailWay(int my_side, CRailWay *o_rail, int o_side, CScene *scene){
+	CRailConnectorLink& rlink = m_Link[my_side];
+	CRailConnectorLink& orlink = o_rail->m_Link[o_side];
+	CRailWayLink *link = rlink.m_Link->m_Link[!rlink.m_Side];
+	if(link[0].m_Link==o_rail || link[1].m_Link==o_rail) return;
+	if(rlink.m_Link->GetUser() || orlink.m_Link->GetUser()) return;
+	scene->ResetRailWayRoot();
+	CRailSplitter spl = rlink.GetSplitter(false);
+	CRailConnector *con = new CRailConnector(spl.m_Pos, spl.m_Dir);
+	con->Stabilize(spl.m_Up);
+	rlink.Disconnect();
+	orlink.Disconnect();
+	rlink = con->CreateLink(0, 0);
+	rlink.Connect(R2L(CreateLink(my_side)));
+	orlink = con->CreateLink(1, 0);
+	orlink.Connect(R2L(o_rail->CreateLink(o_side)));
+	scene->DeleteRailConnector();
+	g_Scene->ResetRailConnectorRoot();
+//	Dialog("CONNECTED!");
+}
+
+/*
+ *	別のレールに分岐
+ */
+void CRailWay::BranchRailWay(int my_side, CRailWay *o_rail, int o_side, CScene *scene){
+	CRailConnectorLink& rlink = m_Link[my_side];
+	CRailConnectorLink& orlink = o_rail->m_Link[o_side];
+	CRailWayLink *link = rlink.m_Link->m_Link[!rlink.m_Side];
+	if(link[0].m_Link==o_rail || link[1].m_Link==o_rail) return;
+	if(link[0].m_Link && link[1].m_Link) return;
+	if(rlink.m_Link->GetUser() || orlink.m_Link->GetUser()) return;
+	scene->ResetRailWayRoot();
+	CRailConnector *con = rlink.m_Link;
+	orlink.Disconnect();
+	orlink = con->CreateLink(!rlink.m_Side, !!link[0].m_Link);
+	orlink.Connect(R2L(o_rail->CreateLink(o_side)));
+	scene->DeleteRailConnector();
+	g_Scene->ResetRailConnectorRoot();
+//	Dialog("BRANCHED!");
+}
+
+/*
+ *	レールの接続を解除
+ */
+void CRailWay::DisconnectRailWay(int my_side, CScene *scene){
+	CRailConnectorLink& rlink = m_Link[my_side];
+	CRailWayLink *link = rlink.m_Link->m_Link[!rlink.m_Side];
+	if(!link[0].m_Link && !link[1].m_Link) return;
+	if(rlink.m_Link->GetUser()) return;
+	scene->ResetRailWayRoot();
+	CRailSplitter spl = rlink.GetSplitter(false);
+	CRailConnector *con = new CRailConnector(spl.m_Pos, spl.m_Dir);
+	con->Stabilize(spl.m_Up);
+	rlink.Disconnect();
+	rlink = con->CreateLink(0, 0);
+	rlink.Connect(R2L(CreateLink(my_side)));
+	scene->DeleteRailConnector();
+	g_Scene->ResetRailConnectorRoot();
+//	Dialog("DISCONNECTED!");
 }
 
 /*
@@ -360,6 +451,10 @@ void CRailWay::SetMapTemp(){
 	if(m_GirderPlugin){
 		m_GirderPlugin->CopyMapTemp(m_GirderMapV);
 		m_GirderPlugin->AddMapTemp(m_SegLen);
+	}
+	if(m_LinePlugin){
+		m_LinePlugin->CopyMapTemp(m_LineMapV);
+		m_LinePlugin->AddMapTemp(m_SegLen); // 本当は架線の折れ線距離を計算する必要があるが…
 	}
 }
 
@@ -485,6 +580,20 @@ void CRailWay::AddPole(
 }
 
 /*
+ *	架線柱をリストに追加
+ */
+void CRailWay::InsertPole(
+	float ofs,		//	端からのオフセット
+	CPole *pole,	//	架線柱
+	int track,		//	軌道番号
+	bool multi		//	複線用リンク
+){
+	IPolePos ipo = m_PoleList.begin();
+	while(ipo!=m_PoleList.end() && ipo->m_Pos<ofs) ipo++;
+	m_PoleList.insert(ipo, CPolePos(ofs, pole, track, multi));
+}
+
+/*
  *	架線柱をリストから削除
  */
 void CRailWay::DeletePole(
@@ -505,6 +614,18 @@ void CRailWay::AddPier(
 	CPier *pier	//	架線柱
 ){
 	m_PierList.push_back(CPierPos(m_PierPos+ofs, pier));
+}
+
+/*
+ *	橋脚をリストに追加
+ */
+void CRailWay::InsertPier(
+	float ofs,	//	端からのオフセット
+	CPier *pier	//	架線柱
+){
+	IPierPos ipi = m_PierList.begin();
+	while(ipi!=m_PierList.end() && ipi->m_Pos<ofs) ipi++;
+	m_PierList.insert(ipi, CPierPos(ofs, pier));
 }
 
 /*
@@ -539,9 +660,9 @@ void CRailWay::BuildLine(
 		AddSplitter(m_Link[0].GetSplitter(true));
 		CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, this);
 		curve.Trace(
-			m_Link[0].GetPos(), -m_Link[0].GetRight(), m_Link[0].GetUp(), -m_Link[0].GetDir(),
-			m_Link[1].GetPos(), m_Link[1].GetRight(), m_Link[1].GetUp(), m_Link[1].GetDir(),
-			m_Link[0].GetPos(), -m_Link[0].GetCant(), m_Link[1].GetPos(), m_Link[1].GetCant());
+			R2L(m_Link[0].GetPos()), R2L(-m_Link[0].GetRight()), R2L(m_Link[0].GetUp()), R2L(-m_Link[0].GetDir()),
+			R2L(m_Link[1].GetPos()), R2L(m_Link[1].GetRight()), R2L(m_Link[1].GetUp()), R2L(m_Link[1].GetDir()),
+			R2L(m_Link[0].GetPos()), R2L(-m_Link[0].GetCant()), R2L(m_Link[1].GetPos()), R2L(m_Link[1].GetCant()));
 	}
 	if(m_Next) m_Next->BuildLine(m_PierPlugin, m_LinePlugin, m_PolePlugin);
 	if(initialsplit) SetMapTemp();
@@ -559,6 +680,11 @@ FOUND:;
 	if(g_PlatformInst){
 		m_Platform = g_PlatformInst;
 		g_PlatformInst->AddRailWay(this);
+		if(g_StationPlatformParentDetectInfo.GetObject()){
+			m_Parent = new CRailWayParentLink;
+			m_Parent->m_DetectInfo = g_StationPlatformParentDetectInfo;
+			m_Parent->m_SplitList = m_SplitList;
+		}
 	}
 }
 
@@ -602,8 +728,8 @@ void CRailWay::ScanInput(
 		if(m_MultiTrackDummy) return;
 		CRailDetectCurve2D(this, m_RailPlugin, m_TiePlugin, m_GirderPlugin,
 			mode, rect1, rect2).FinishTrace(
-			m_Link[0].GetPos(), -m_Link[0].GetRight(), m_Link[0].GetUp(), -m_Link[0].GetDir(),
-			m_Link[1].GetPos(), m_Link[1].GetRight(), m_Link[1].GetUp(), m_Link[1].GetDir(),
+			R2L(m_Link[0].GetPos()), R2L(-m_Link[0].GetRight()), R2L(m_Link[0].GetUp()), R2L(-m_Link[0].GetDir()),
+			R2L(m_Link[1].GetPos()), R2L(m_Link[1].GetRight()), R2L(m_Link[1].GetUp()), R2L(m_Link[1].GetDir()),
 			(m_Link[0].GetLinkCount()>1 ? 0 : 1)+(m_Link[1].GetLinkCount()>1 ? 0 : 2),
 			0.0f, *m_SplitList.begin());
 		break;
@@ -654,6 +780,30 @@ void CRailWay::ScanInputWarp(
 	}
 }
 
+class CRailWay_TraceRail_CTempTracer{
+public:
+	template<class _II>
+	CRailWay_TraceRail_CTempTracer(_II from, _II to, CRailTraceCurve *curve, bool rev){
+		float sumlen = 0.0f;
+		bool t1 = true;
+		CRailSplitter tspl = (from++)->Get(rev);
+		while(true){
+			CRailTraceCurve::SetSplitItr(from);
+			CRailTraceCurve::SetTerminate(t1, from==to);
+			CRailSplitter nspl = from->Get(rev);
+			float seglen = nspl.CalcDist(tspl);
+			if(!curve->Confirm(tspl.m_Pos, nspl.m_Pos)) return;
+			curve->FinishTrace(tspl.m_Pos, tspl.m_Right, tspl.m_Up, tspl.m_Dir,
+				nspl.m_Pos, nspl.m_Right, nspl.m_Up, nspl.m_Dir, sumlen, seglen, *from);
+			if(from==to) return;
+			from++;
+			sumlen += seglen;
+			tspl = nspl;
+			t1 = false;
+		}
+	}
+};
+
 /*
  *	トレース
  */
@@ -661,32 +811,52 @@ void CRailWay::TraceRail(
 	int side,				//	方向
 	CRailTraceCurve *curve	//	トレーサ
 ){
-	class CTempTracer{
-	public:
-		template<class _II>
-		CTempTracer(_II from, _II to, CRailTraceCurve *curve, bool rev){
-			float sumlen = 0.0f;
-			bool t1 = true;
-			CRailSplitter tspl = (from++)->Get(rev);
-			while(true){
+	if(side) CRailWay_TraceRail_CTempTracer(m_SplitList.begin(), --m_SplitList.end(), curve, false);
+	else CRailWay_TraceRail_CTempTracer(m_SplitList.rbegin(), --m_SplitList.rend(), curve, true);
+}
+
+class CRailWay_TraceRailSplit_CTempTracerSplit{
+public:
+	template<class _II>
+	CRailWay_TraceRailSplit_CTempTracerSplit(_II from, _II to, CRailTraceCurve *curve, bool rev){
+		float sumlen = 0.0f;
+		bool t1 = true, t2;
+		CRailSplitter tspl = (from++)->Get(rev);
+		while(true){
+			CRailTraceCurve::SetTerminate(t1, t2 = from==to);
+			CRailSplitter nspl = from->Get(rev);
+			float seglen = nspl.CalcDist(tspl), sumnext = sumlen+seglen;
+			int i, div = (int)(seglen/RAIL_SEG_MIN);
+			if(div>1){
+				float seglen2 = seglen/div;
+				CRailSplitter tspl2 = tspl;
+				for(i = 1; i<=div; i++){
+					CRailTraceCurve::SetSplitItr(from);
+					CRailTraceCurve::SetTerminate(t1, t2 && i==div);
+					CRailSplitter nspl2 = nspl.CalcMid(&tspl, (float)i/div);
+					if(!curve->Confirm(tspl2.m_Pos, nspl2.m_Pos)) return;
+					curve->FinishTrace(
+						tspl2.m_Pos, tspl2.m_Right, tspl2.m_Up, tspl2.m_Dir,
+						nspl2.m_Pos, nspl2.m_Right, nspl2.m_Up, nspl2.m_Dir,
+						sumlen, seglen2, *from);
+					sumlen += seglen2;
+					tspl2 = nspl2;
+					t1 = false;
+				}
+			}else{
 				CRailTraceCurve::SetSplitItr(from);
-				CRailTraceCurve::SetTerminate(t1, from==to);
-				CRailSplitter nspl = from->Get(rev);
-				float seglen = nspl.CalcDist(tspl);
 				if(!curve->Confirm(tspl.m_Pos, nspl.m_Pos)) return;
 				curve->FinishTrace(tspl.m_Pos, tspl.m_Right, tspl.m_Up, tspl.m_Dir,
 					nspl.m_Pos, nspl.m_Right, nspl.m_Up, nspl.m_Dir, sumlen, seglen, *from);
-				if(from==to) return;
-				from++;
-				sumlen += seglen;
-				tspl = nspl;
-				t1 = false;
 			}
+			if(from==to) return;
+			from++;
+			sumlen = sumnext;
+			tspl = nspl;
+			t1 = false;
 		}
-	};
-	if(side) CTempTracer(m_SplitList.begin(), --m_SplitList.end(), curve, false);
-	else CTempTracer(m_SplitList.rbegin(), --m_SplitList.rend(), curve, true);
-}
+	}
+};
 
 /*
  *	詳細トレース
@@ -695,51 +865,26 @@ void CRailWay::TraceRailSplit(
 	int side,				//	方向
 	CRailTraceCurve *curve	//	トレーサ
 ){
-	class CTempTracerSplit{
-	public:
-		template<class _II>
-		CTempTracerSplit(_II from, _II to, CRailTraceCurve *curve, bool rev){
-			float sumlen = 0.0f;
-			bool t1 = true, t2;
-			CRailSplitter tspl = (from++)->Get(rev);
-			while(true){
-				CRailTraceCurve::SetTerminate(t1, t2 = from==to);
-				CRailSplitter nspl = from->Get(rev);
-				float seglen = nspl.CalcDist(tspl), sumnext = sumlen+seglen;
-				int i, div = (int)(seglen/RAIL_SEG_MIN);
-				if(div>1){
-					float seglen2 = seglen/div;
-					CRailSplitter tspl2 = tspl;
-					for(i = 1; i<=div; i++){
-						CRailTraceCurve::SetSplitItr(from);
-						CRailTraceCurve::SetTerminate(t1, t2 && i==div);
-						CRailSplitter nspl2 = nspl.CalcMid(&tspl, (float)i/div);
-						if(!curve->Confirm(tspl2.m_Pos, nspl2.m_Pos)) return;
-						curve->FinishTrace(
-							tspl2.m_Pos, tspl2.m_Right, tspl2.m_Up, tspl2.m_Dir,
-							nspl2.m_Pos, nspl2.m_Right, nspl2.m_Up, nspl2.m_Dir,
-							sumlen, seglen2, *from);
-						sumlen += seglen2;
-						tspl2 = nspl2;
-						t1 = false;
-					}
-				}else{
-					CRailTraceCurve::SetSplitItr(from);
-					if(!curve->Confirm(tspl.m_Pos, nspl.m_Pos)) return;
-					curve->FinishTrace(tspl.m_Pos, tspl.m_Right, tspl.m_Up, tspl.m_Dir,
-						nspl.m_Pos, nspl.m_Right, nspl.m_Up, nspl.m_Dir, sumlen, seglen, *from);
-				}
-				if(from==to) return;
-				from++;
-				sumlen = sumnext;
-				tspl = nspl;
-				t1 = false;
-			}
-		}
-	};
-	if(side) CTempTracerSplit(m_SplitList.begin(), --m_SplitList.end(), curve, false);
-	else CTempTracerSplit(m_SplitList.rbegin(), --m_SplitList.rend(), curve, true);
+	if(side) CRailWay_TraceRailSplit_CTempTracerSplit(m_SplitList.begin(), --m_SplitList.end(), curve, false);
+	else CRailWay_TraceRailSplit_CTempTracerSplit(m_SplitList.rbegin(), --m_SplitList.rend(), curve, true);
 }
+
+class CRailWay_GetFirstDir_CSolver{
+public:
+	template<class _II>
+	VEC3 operator()(_II from, _II to){
+		VEC3 first = from->m_Pos, dir;
+		_II prev = from++;
+		float sumlen = 0.0f;
+		while(true){
+			dir = from->m_Pos-first;
+			sumlen += V3Len(&(from->m_Pos-prev->m_Pos));
+			if(from==to || sumlen>=POINT_DEC_MIN) break;
+			prev = from++;
+		}
+		return dir;
+	}
+};
 
 /*
  *	最初の分割点までの dir ベクトルを求める
@@ -747,24 +892,8 @@ void CRailWay::TraceRailSplit(
 VEC3 CRailWay::GetFirstDir(
 	int side	//	サイド
 ){
-	class CSolver{
-	public:
-		template<class _II>
-		VEC3 operator()(_II from, _II to){
-			VEC3 first = from->m_Pos, dir;
-			_II prev = from++;
-			float sumlen = 0.0f;
-			while(true){
-				dir = from->m_Pos-first;
-				sumlen += V3Len(&(from->m_Pos-prev->m_Pos));
-				if(from==to || sumlen>=POINT_DEC_MIN) break;
-				prev = from++;
-			}
-			return dir;
-		}
-	};
-	return side ? CSolver()(m_SplitList.rbegin(), --m_SplitList.rend())
-		: CSolver()(m_SplitList.begin(), --m_SplitList.end());
+	return side ? CRailWay_GetFirstDir_CSolver()(m_SplitList.rbegin(), --m_SplitList.rend())
+		: CRailWay_GetFirstDir_CSolver()(m_SplitList.begin(), --m_SplitList.end());
 }
 
 /*
@@ -837,8 +966,8 @@ bool CRailWay::SetTrain(
 	float ofs,				//	オフセット
 	CGroupEndLocator *tail,	//	最後尾レール格納先
 	bool rev,				//	後退フラグ
-	ITrainSetBuffer *cur,	//	現在位置
-	ITrainSetBuffer *end,	//	終了位置
+	ITrainSetBuffer *icur,	//	現在位置
+	ITrainSetBuffer *iend,	//	終了位置
 	CTrainGroup *group,		//	編成
 	bool extend,			//	拡張トレール
 	bool hittest			//	衝突判定
@@ -846,13 +975,13 @@ bool CRailWay::SetTrain(
 	if(!CheckRailBlock(group)) return false;
 	CRailWay *ptr = this, *prev = NULL;
 	float tmp;
-	if(extend && ofs+(rev ? -(*cur)->m_SumLen : (*cur)->m_SumLen)<0.0f){
+	if(extend && ofs+(rev ? -(*icur)->m_SumLen : (*icur)->m_SumLen)<0.0f){
 		CRailConnectorLink &con = ptr->m_Link[!side];
 		VEC3 pos = con.GetPos(), dir = -con.GetDir(), up = con.GetUp();
-		while((tmp = (rev ? -(*cur)->m_SumLen : (*cur)->m_SumLen)+ofs)<0.0f){
-			(*cur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, ptr);
-			if(rev) (*cur)--; else (*cur)++;
-			if(*cur==*end){
+		while((tmp = (rev ? -(*icur)->m_SumLen : (*icur)->m_SumLen)+ofs)<0.0f){
+			(*icur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, ptr);
+			if(rev) (*icur)--; else (*icur)++;
+			if(*icur==*iend){
 				tail->m_Side = !side;
 				tail->m_Offset = tmp;
 				tail->m_SetRail = ptr;
@@ -867,21 +996,21 @@ bool CRailWay::SetTrain(
 			group->NotifyWarp();
 		}else{
 			if(hittest){
-				tmp = (rev ? ++ITrainSetBuffer(*end)
-					: --ITrainSetBuffer(*end))->m_SumLen+ofs;
+				tmp = (rev ? ++ITrainSetBuffer(*iend)
+					: --ITrainSetBuffer(*iend))->m_SumLen+ofs;
 				IPGroupEndLocator ipge = ptr->m_GroupEnd.begin();
 				for(; ipge!=ptr->m_GroupEnd.end(); ipge++){
-					float end = (*ipge)->m_Offset;
-					if((*ipge)->m_Side==side) end = ptr->GetSegLen()-end;
-					if(ofs-0.001f<=end && end<=tmp+0.001f){
+					float fend = (*ipge)->m_Offset;
+					if((*ipge)->m_Side==side) fend = ptr->GetSegLen()-fend;
+					if(ofs-0.001f<=fend && fend<=tmp+0.001f){
 						return false;
 					}
 				}
 			}
 			CTrainSetCurve curve(ptr->m_RailPlugin, ptr->m_TiePlugin, ptr->m_GirderPlugin,
-				rev, CGroupEndLocator(!side, ofs, ptr, group), tail, cur, end);
+				rev, CGroupEndLocator(!side, ofs, ptr, group), tail, icur, iend);
 			ptr->TraceRail(side, &curve);
-			if(*cur==*end) return true;
+			if(*icur==*iend) return true;
 			ofs -= ptr->GetSegLen();
 		}
 		prev = ptr;
@@ -898,10 +1027,10 @@ bool CRailWay::SetTrain(
 	if(extend && prev){
 		CRailConnectorLink &con = prev->m_Link[side];
 		VEC3 pos = con.GetPos(), dir = con.GetDir(), up = con.GetUp();
-		while(*cur!=*end){
-			tmp = (rev ? -(*cur)->m_SumLen : (*cur)->m_SumLen)+ofs;
-			(*cur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, prev);
-			if(rev) (*cur)--; else (*cur)++;
+		while(*icur!=*iend){
+			tmp = (rev ? -(*icur)->m_SumLen : (*icur)->m_SumLen)+ofs;
+			(*icur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, prev);
+			if(rev) (*icur)--; else (*icur)++;
 		}
 		tail->m_Side = !side;
 		tail->m_Offset = prev->GetSegLen()+tmp;
@@ -1062,10 +1191,30 @@ int CRailWay::GetPlatformState(){
 }
 
 /*
+ *	動くレールの処理
+ */
+void CRailWay::UpdateSplitList(){
+	if(!m_Parent) return;
+	MTX4 mtx = m_Parent->m_DetectInfo.GetPartsInst()->GetObject()->GetMatrix();
+	NormalizeMatrix(&mtx);
+	if(m_SplitList.size()!=m_Parent->m_SplitList.size()) m_SplitList = m_Parent->m_SplitList;
+	list<CRailSplitter>::iterator itr1 = m_SplitList.begin(), itr2 = m_Parent->m_SplitList.begin();
+	for(; itr1!=m_SplitList.end(); ++itr1, ++itr2){
+		D3DXVec3TransformCoord(&itr1->m_Pos, &itr2->m_Pos, &mtx);
+		D3DXVec3TransformNormal(&itr1->m_Right, &itr2->m_Right, &mtx);
+		D3DXVec3TransformNormal(&itr1->m_Up, &itr2->m_Up, &mtx);
+		D3DXVec3TransformNormal(&itr1->m_Dir, &itr2->m_Dir, &mtx);
+	}
+	m_Link[0].m_Link->m_Splitter = m_SplitList.front();
+	m_Link[1].m_Link->m_Splitter = m_SplitList.back();
+}
+
+/*
  *	断面をダンプ
  */
 void CRailWay::Dump(){
 	if(!m_RailPlugin && !m_TiePlugin && !m_GirderPlugin) return;
+	if(m_Parent) return;
 	if(m_RailPlugin) m_RailPlugin->SetMapTemp(m_RailMapV);
 	if(m_TiePlugin) m_TiePlugin->SetMapTemp(m_TieMapV);
 	if(m_GirderPlugin) m_GirderPlugin->SetMapTemp(m_GirderMapV);
@@ -1143,7 +1292,15 @@ void CRailWay::RestoreAddress(){
 	IPolePos ipo = m_PoleList.begin();
 	for(; ipo!=m_PoleList.end(); ipo++) ipo->RestoreAddress();
 	IPGroupEndLocator ipge = m_GroupEnd.begin();
-	for(; ipge!=m_GroupEnd.end(); ipge++) *ipge = (CGroupEndLocator *)ReplaceAdr(*ipge);
+	for(; ipge!=m_GroupEnd.end();){
+		*ipge = (CGroupEndLocator *)ReplaceAdr(*ipge);
+		if(*ipge){
+			++ipge;
+		}else{
+			//Dialog("GroupEnd not found!");
+			ipge = m_GroupEnd.erase(ipge);
+		}
+	}
 }
 
 /*
@@ -1292,8 +1449,9 @@ void CRailWay::Save(
 	if(IsSpeedLimit()) fprintf(df, "\t\t\t\tSpeedLimit = %d;\n", m_SpeedLimit);
 
 	fprintf(df, "\t\t\t\tSplitList{\n");
-	IRailSplitter irs = m_SplitList.begin();
-	for(; irs!=m_SplitList.end(); irs++) irs->Save(df, "\t\t\t\t\t");
+	list<CRailSplitter> *saving_split_list = m_Parent ? &m_Parent->m_SplitList : &m_SplitList;
+	IRailSplitter irs = saving_split_list->begin();
+	for(; irs!=saving_split_list->end(); irs++) irs->Save(df, "\t\t\t\t\t");
 	fprintf(df, "\t\t\t\t}\n");
 
 	fprintf(df, "\t\t\t\tPierList{\n");

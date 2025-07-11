@@ -190,6 +190,7 @@ void CModelInst::ResetState(){
  *	シミュレーション進行
  */
 void CModelInst::Simulate(){
+	ms_CurrentInst = this;
 	ITexAnimState itas = m_AnimationState.begin();
 	for(; itas!=m_AnimationState.end(); itas++) itas->Step();
 	SimulateModelInst();

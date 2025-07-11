@@ -38,6 +38,7 @@ private:
 	CStruct *m_Struct;					//	施設
 	CSurfacePlugin *m_SurfacePlugin;	//	地形プラグイン
 	CEnvPlugin *m_EnvPlugin;			//	環境プラグイン
+	bool m_IsDumpReady;					//	ダンプ完了
 	CScene *m_Next;						//	次
 public:
 	CScene();
@@ -58,7 +59,8 @@ public:
 	void SetSeason();
 	void Enter(bool);
 	void SetGlobalAxis();
-	void ResetRailRoot();
+	void ResetRailWayRoot();
+	void ResetRailConnectorRoot();
 	void Delete();
 	void DeleteGroup(CTrainGroup *);
 	void DeletePierLink(CPier *);
@@ -84,6 +86,7 @@ public:
 	bool PickScene(VEC3, VEC3, VEC3 *, VEC3 *tri = NULL, int inv = 1);
 	bool ClipAlt(VEC3 *, VEC3 *, VEC3 *, int);
 	void Dump();
+	void SetDumpReady(bool r){ m_IsDumpReady = r; }
 	void RenderScene();
 	void RenderAfter();
 	void SimulateScene();

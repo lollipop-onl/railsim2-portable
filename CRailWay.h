@@ -16,6 +16,8 @@ class CGirderPlugin;
 class CPierPlugin;
 class CLinePlugin;
 class CPolePlugin;
+class CDetectInfo;
+class CRailWayParentLink;
 
 /*
  *	橋脚位置データ
@@ -91,6 +93,7 @@ private:
 	int m_SpeedLimit;						//	制限速度
 	CRailConnectorLink m_Link[2];			//	接続コネクタ
 	list<CRailSplitter> m_SplitList;		//	分割点リスト
+	CRailWayParentLink *m_Parent;			//	親オブジェクト
 	CPlatformInst *m_Platform;				//	プラットフォーム
 	CScene *m_Scene;						//	シーン
 	CRailPlugin *m_RailPlugin;				//	レールプラグイン
@@ -125,6 +128,8 @@ public:
 	CRailPlugin *GetRailPlugin(){ return m_RailPlugin; }
 	CTiePlugin *GetTiePlugin(){ return m_TiePlugin; }
 	CGirderPlugin *GetGirderPlugin(){ return m_GirderPlugin; }
+	CRailWayParentLink *GetParent(){ return m_Parent; }
+	void SetParent(CDetectInfo *);
 	CPlatformInst *GetPlatform(){ return m_Platform; }
 	void SetPlatform(CPlatformInst *pl){ m_Platform = pl; }
 	void SetWarpDummy();
@@ -136,6 +141,9 @@ public:
 	CRailConnectorLink SplitLink(CRailLinkTemp *, CRailWay **, IRailSplitter);
 	void SplitSelect();
 	CRailWay *Delete();
+	void ConnectRailWay(int, CRailWay *, int, CScene *);
+	void BranchRailWay(int, CRailWay *, int, CScene *);
+	void DisconnectRailWay(int, CScene *);
 	bool SetRailBlock(char *rb);
 	bool IsRailBlock(){ return !m_RailBlock.empty(); }
 	std::string& GetRailBlock(){ return m_RailBlock; }
@@ -149,9 +157,11 @@ public:
 	CPoleLink GetPoleLink(int);
 	void AddPolePos(float p){ m_PolePos += p; }
 	void AddPole(float, CPole *, int, bool);
+	void InsertPole(float, CPole *, int, bool);
 	void DeletePole(CPole *);
 	void AddPierPos(float p){ m_PierPos += p; }
 	void AddPier(float, CPier *);
+	void InsertPier(float, CPier *);
 	void DeletePier(CPier *);
 	void BuildLine(CPierPlugin *, CLinePlugin *, CPolePlugin *);
 	void ShowSegment();
@@ -168,6 +178,7 @@ public:
 	int MarchTrain(float *, CGroupEndLocator *, CTrainGroup *, CTrainGroup *);
 	bool CheckPlatformExtend(int, CPlatformInst *);
 	int GetPlatformState();
+	void UpdateSplitList();
 	void Dump();
 	void Render();
 	void RenderWarp();

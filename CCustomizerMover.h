@@ -26,7 +26,7 @@ public:
  */
 class CDynamicMoverBase: public CMoverBase{
 protected:
-	int m_ApplyFlag;		//	適用フラグ
+	int m_ApplyFlag;	//	適用フラグ
 public:
 	virtual CCustomizerBase *Duplicate() = 0;
 	virtual void SetOffListCustomizer(CNamedObject *);

@@ -4,7 +4,7 @@
 #include "CRailWay.h"
 #include "CSceneryMode.h"
 
-const int RAIL_EDIT_MODES = 9;	//	モード数
+const int RAIL_EDIT_MODES = 11;	//	モード数
 
 /*
  *	レール編集モード
@@ -14,7 +14,9 @@ private:
 	int m_DragState;				//	範囲選択状態
 	enum EditMode{
 		EM_EDIT_RAIL,
+		EM_ADD_PIER,
 		EM_EDIT_PIER,
+		EM_ADD_POLE,
 		EM_EDIT_POLE,
 		EM_EDIT_LINE,
 		EM_CONNECT_LINE,

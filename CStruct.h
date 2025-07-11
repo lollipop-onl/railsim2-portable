@@ -24,6 +24,7 @@ public:
 	CStruct(CStructPlugin *, VEC3, VEC3, VEC3, bool);
 	virtual ~CStruct();
 	virtual bool IsSelectVisible();
+	virtual CPartsInst *FindParts(CNamedObject *);
 	void Remove();
 	void Delete();
 	void PrintInfo();
@@ -31,6 +32,7 @@ public:
 	void ScanInput(int, VEC3 &, VEC3 &);
 	void Render();
 	void SimulateModelInst();
+	virtual void SimulateStruct(){}
 	virtual void SetSwitchStruct(){}
 	virtual CScene *GetScene(){ return m_Scene; }
 	CMODELINST_CASTFUNC(CStruct);

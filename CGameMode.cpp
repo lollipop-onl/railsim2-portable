@@ -2,6 +2,7 @@
 #include "HighTimer.h"
 #include "Capture.h"
 #include "RSPV.h"
+#include "CJobTimer.h"
 #include "CScene.h"
 #include "CSaveFile.h"
 #include "CToggleIcon.h"
@@ -61,11 +62,12 @@ const float PANEL_HIDE_RATIO = 0.1f;				//	パネル隠蔽速度
 extern bool g_IgnoreAcceleration;
 
 //	内部グローバル
-int g_BlinkCounter = 0;		//	汎用点滅カウンタ (0..MAXFPS-1)
-float g_BlinkAlpha = 0.0f;	//	汎用点滅アルファ (0.0..1.0)
-bool g_RenderBlink = false;	//	レンダリング点滅フラグ
-double g_SoundSync = 0.0;	//	サウンド同期用タイマ
-float g_FrameDelta = 0.0f;	//	フレーム時間 [ms]
+int g_BlinkCounter = 0;			//	汎用点滅カウンタ (0..MAXFPS-1)
+float g_BlinkAlpha = 0.0f;		//	汎用点滅アルファ (0.0..1.0)
+bool g_RenderBlink = false;		//	レンダリング点滅フラグ
+LONGLONG g_SoundSync = 0;		//	サウンド同期用タイマ
+float g_FrameDelta = 0.0f;		//	フレーム時間 [ms]
+bool g_CursorLockable = false;	//	カーソルロック開始
 
 CNeutralMode *g_NeutralMode;				//	ニュートラルモード
 CRailSelectMode *g_RailSelectMode;			//	レール選択モード
@@ -522,6 +524,7 @@ bool CGameMode::ScanInputFrame(
 void CGameMode::RenderFrame(
 	int option	//	1: speedinfo, 2: photomode
 ){
+	TIMER_RAII("CGameMode::RenderFrame");
 	int i, j, top1, top2, right1, right2;
 	if(g_RSPV && g_RSPV!=RSPV_SKIN) option = 2;
 	if(option&2){
@@ -668,8 +671,11 @@ void CGameMode::RenderCompass(){
 		g_WindDirObject.RenderA(alpha);
 	}
 	devResetMatrix();
-	g_StrTex->RenderRight(g_DispWidth*45/100, g_DispHeight-TILE_UNIT,
-		0xffffffff, 0xff000000, FlashIn("%s: %.1f [m/s]", lang(WindSpeed), MAXFPS*windspeed));
+	if(ms_ActiveMode!=g_NeutralMode || !g_ConfigMode->IsWindowDiv()){
+		int vp_w = g_DispWidth, vp_h = g_DispHeight;
+		g_StrTex->RenderRight(vp_w*45/100, vp_h-TILE_UNIT,
+			0xffffffff, 0xff000000, FlashIn("%s: %.1f [m/s]", lang(WindSpeed), MAXFPS*windspeed));
+	}
 }
 
 /*
@@ -696,6 +702,7 @@ CGameMode::CGameMode(){
  *	モードを有効化
  */
 void CGameMode::Enter(){
+	SetViewport(0, 0, sv3.width, sv3.height);
 	ms_TopPanelTime = PANEL_HIDE_FRAME*3;
 	ModelPluginFreeInst();
 	CPopMenu::ResetCurrentMenu();
@@ -716,27 +723,34 @@ void CGameMode::Spin(){
 	SetMasterVolume();
 	while(PeekAllMessage()){
 		if(IsActive()){
-			POINT wp = {0, 0};
-			ClientToScreen(svw.hWnd, &wp);
-			RECT crc = {wp.x, wp.y, wp.x+g_DispWidth, wp.y+g_DispHeight};
-			ClipCursor(&crc);
-			//カーソル描画直前に
-			//ScanInputDevice();
-			//g_Cursor.FixCursor();
-			g_BlinkCounter = (g_BlinkCounter+1)%MAXFPS;
-			g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/MAXFPS)+1.0f);
-			g_ConfigMode->SetSpecularLight();
-			g_ManualControl = !!g_SimulationMode->GetManualControl() || g_NetworkInitialized;
-			g_IgnoreAcceleration = !!g_SimulationMode->GetIgnoreAcceleration();
-			void CheckNetworkState();
-			CheckNetworkState();
-			SpinGame();
-			if(CheckAlt() && GetKey(DIK_F4)==S_PUSH){
-				Exit();
-				break;
+			g_JobTimer.Start();
+			{
+				TIMER_RAII("All");
+				if(g_CursorLockable) g_Cursor.Clip();
+				//カーソル描画直前に
+				//ScanInputDevice();
+				//g_Cursor.FixCursor();
+				g_BlinkCounter = (g_BlinkCounter+1)%MAXFPS;
+				g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/MAXFPS)+1.0f);
+				g_ConfigMode->SetSpecularLight();
+				g_ManualControl = !!g_SimulationMode->GetManualControl() || g_NetworkInitialized;
+				g_IgnoreAcceleration = !!g_SimulationMode->GetIgnoreAcceleration();
+				void CheckNetworkState();
+				CheckNetworkState();
+				SpinGame();
+				if(CheckAlt() && GetKey(DIK_F4)==S_PUSH){
+					Exit();
+					break;
+				}
+				if(GetButton(DIM_LEFT)<=S_PULL){
+					CDragContainer::EndDrag();
+				}
 			}
-			if(GetButton(DIM_LEFT)<=S_PULL) CDragContainer::EndDrag();
-			SyncFrame();
+			{
+				TIMER_RAII("SyncFrame");
+				SyncFrame();
+			}
+			g_JobTimer.Stop();
 		}else{
 			SetMasterVolume();
 			ClipCursor(NULL);
@@ -756,7 +770,7 @@ void CGameMode::Spin(){
  *	サウンド定常処理
  */
 void CGameMode::SpinSound(){
-	double t = HighTimer();
+	LONGLONG t = HighTimer();
 	g_FrameDelta = (float)(t-g_SoundSync);
 	g_SoundSync = t;
 	SetListenerPos(GetVPos());

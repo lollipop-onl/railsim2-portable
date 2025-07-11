@@ -22,6 +22,7 @@ extern bool g_EnableCant;
 
 //	内部グローバル
 CStationPlugin *g_Station = NULL;
+CDetectInfo g_StationPlatformParentDetectInfo;
 
 //	static メンバ
 CRailPlugin *CPlatform::ms_PlatformRail = NULL;
@@ -58,6 +59,7 @@ CPlatform::CPlatform(){
 	m_OpenDoor[0] = m_OpenDoor[1] = false;
 	m_LiftRailSurface = true;
 	m_EnableCant = true;
+	m_ParentObject = NULL;
 }
 
 /*
@@ -110,6 +112,8 @@ char *CPlatform::Read(
 	else m_LiftRailSurface = true;
 	if(tmp = AsgnYesNo(eee = str, "EnableCant", &m_EnableCant)) str = tmp;
 	else m_EnableCant = true;
+	if(tmp = AsgnString(eee = str, "ParentObject", &m_ParentObjectName)) str = tmp;
+	m_ParentObjectScriptPos = eee;
 	m_CoordList.clear();
 	VEC3 coord;
 	while(tmp = AsgnVector3D(eee = str, "Coord", &coord)){
@@ -119,6 +123,16 @@ char *CPlatform::Read(
 	if(m_CoordList.size()<2) throw CSynErr(eee, lang(TwoControlPointNeeded));
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	return str;
+}
+
+/*
+ *	プラットフォーム親オブジェクト設定
+ */
+void CPlatform::SetPlatformParent(CStationPlugin *spi){
+	if(!m_ParentObjectName.size()) return;
+	CNamedObject *pobj = spi->FindObject(m_ParentObjectName);
+	if(!pobj) throw CSynErr(m_ParentObjectScriptPos, "%s: \"%s\"", lang(UndefinedObject), m_ParentObjectName.c_str());
+	m_ParentObject = pobj;
 }
 
 /*
@@ -145,7 +159,8 @@ CRailBuilder *CPlatform::SetBuilder(
 	CRailBuilder *builder = NULL, *prev = NULL;
 	for(; iv!=m_CoordList.end(); iv++){
 		VEC3 p;
-		D3DXVec3TransformCoord(&p, &*iv, mtx);
+		if(m_ParentObject) p = *iv;
+		else D3DXVec3TransformCoord(&p, &*iv, mtx);
 		prev = new CRailBuilder(p, prev);
 		if(!builder) builder = prev;
 	}
@@ -174,7 +189,7 @@ void CPlatform::Preview(
  */
 void CPlatform::Build(
 	MTX4 *mtx,			//	ローカル座標系
-	CStation *station	//	プラットフォームリスト
+	CStation *station	//	親ステーション
 ){
 	CRailBuilder *builder = SetBuilder(mtx);
 	CRailBuilder::ResetDirSum();
@@ -202,13 +217,20 @@ void CPlatform::Build(
 		}
 		CRailBuilder::SetTrack(i, m_TrackNum, m_TrackInterval, m_LiftRailSurface);
 		if(i<m_TrackNum) g_PlatformInst =
-			station->PushPlatformInst(CPlatformInst(station, m_Stoppable, m_OpenDoor));
-		builder->BuildRail(CRailConnectorLink(),
-			CRailConnectorLink(), ms_PlatformRail, ms_PlatformTie, ms_PlatformGirder);
+			station->PushPlatformInst(R2L(CPlatformInst(station, m_Stoppable, m_OpenDoor)));
+		if(m_ParentObject){
+			CPartsInst *parts = station->FindParts(m_ParentObject);
+			if(!parts) ErrorDialog("INTERNAL ERROR: PLATFORM PARENT PARTS NOT FOUND: %s", m_ParentObject->GetName());
+			g_StationPlatformParentDetectInfo = CDetectInfo(m_ParentObject, station, parts);
+		}
+		builder->BuildRail(R2L(CRailConnectorLink()),
+			R2L(CRailConnectorLink()), ms_PlatformRail, ms_PlatformTie, ms_PlatformGirder);
 		g_Scene->BuildLine(ms_PlatformPier, ms_PlatformLine, ms_PlatformPole);
+		if(m_ParentObject) g_StationPlatformParentDetectInfo = CDetectInfo();
 		g_PlatformInst = NULL;
 		g_MultiTrackDummy = false;
 	}
+	station->MakePlatformArray();
 	delete builder;
 }
 
@@ -242,7 +264,7 @@ CStationPlugin::~CStationPlugin(){
 /*
  *	ロード
  */
-char *CStationPlugin::LoadStruct(
+char *CStationPlugin::LoadStructBefore(
 	char *str	//	対象文字列
 ){
 	char *tmp, *eee;
@@ -254,6 +276,17 @@ char *CStationPlugin::LoadStruct(
 		m_Platform.push_back(platform);
 	}
 	ChDir();
+	return str;
+}
+
+/*
+ *	ロード
+ */
+char *CStationPlugin::LoadStructAfter(
+	char *str	//	対象文字列
+){
+	IPlatform ip = m_Platform.begin();
+	for(; ip!=m_Platform.end(); ip++) ip->SetPlatformParent(this);
 	return str;
 }
 
@@ -291,7 +324,7 @@ bool CStationPlugin::LoadOldForm(){
 	for(; ip!=m_Platform.end(); ip++) if(ip->GetCoordNum()<2)
 		ErrorDialog("Station <%s>\n%s", m_ID.c_str(), lang(TwoControlPointNeeded));
 	fclose(file);
-	m_FreeObject.push_back(CFreeObject3D("MainObject", "Model.x", oldscale));
+	m_FreeObject.push_back(CFreeObjectContainer(new CFreeObject3D("MainObject", "Model.x", oldscale)));
 	m_FreeObject.begin()->LoadModel(this);
 	m_PartsNum = 1;
 	return true;

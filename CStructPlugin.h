@@ -1,7 +1,7 @@
 #ifndef CSTRUCTPLUGIN_H_INCLUDED
 #define CSTRUCTPLUGIN_H_INCLUDED
 
-#include "CModelPlugin.h"
+#include "CTrainPlugin.h"
 
 /*
  *	施設プラグイン
@@ -9,7 +9,7 @@
 class CStructPlugin: public CModelPlugin{
 	friend class CStruct;
 protected:
-	list<CFreeObject3D> m_FreeObject;	//	フリーオブジェクト
+	list<CFreeObjectContainer> m_FreeObject;	//	フリーオブジェクト
 public:
 	static void RenderPreview(VEC3, VEC3, VEC3);
 	CStructPlugin(char *id): CModelPlugin(id){}
@@ -18,7 +18,8 @@ public:
 	char *TextName(){ return "Struct.txt"; }
 	char *TextName2(){ return "Struct2.txt"; }
 	bool Load();
-	virtual char *LoadStruct(char *);
+	virtual char *LoadStructBefore(char *);
+	virtual char *LoadStructAfter(char *str){ return str; }
 	virtual bool LoadOldForm();
 	virtual void SetPreview();
 	void Preview();

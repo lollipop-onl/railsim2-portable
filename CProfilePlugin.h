@@ -3,8 +3,24 @@
 
 #include "CPlugin.h"
 
+class CScene;
 class CQuadDumpNX;
 class CLineDumpN;
+
+/*
+ *	デフォルト NULL で初期化されるポインタ
+ */
+template< typename TYPE >
+class MapPtrValue {
+private:
+	TYPE *m_Ptr;
+public:
+	MapPtrValue(): m_Ptr(NULL){}
+	operator TYPE*(){ return m_Ptr; }
+	TYPE* operator->(){ return m_Ptr; }
+	TYPE*& operator=(TYPE* p){ return m_Ptr = p; }
+	void SafeDelete(){ if(m_Ptr){ delete m_Ptr; m_Ptr = NULL; } }
+};
 
 /*
  *	断面頂点データ
@@ -58,11 +74,12 @@ private:
 	string m_TexFileName;		//	テクスチャファイル名
 	LPTEX8 m_Texture;			//	テクスチャ
 	list<CProfileFace> m_Face;	//	断面
-	CQuadDumpN *m_DumpN;		//	ダンパ (テクスチャなし)
-	CQuadDumpNX *m_DumpNX;		//	ダンパ (テクスチャあり)
+	map<CScene *, MapPtrValue<CQuadDumpN> > m_DumpN;	//	ダンパ (テクスチャなし)
+	map<CScene *, MapPtrValue<CQuadDumpNX> > m_DumpNX;	//	ダンパ (テクスチャあり)
 public:
 	CProfile();
 	~CProfile();
+	void ClearAll();
 	char *Read(char *);
 	void LoadTexture();
 	void PrepareDump();
@@ -113,10 +130,11 @@ private:
 	float m_MinInterval;			//	最小間隔
 	float m_MaxInterval;			//	最大間隔
 	list<CWireframeLine> m_Line;	//	断面
-	CLineDumpN *m_DumpN;			//	ダンパ
+	map<CScene *, MapPtrValue<CLineDumpN> > m_DumpN;	//	ダンパ
 public:
 	CWireframe();
 	~CWireframe();
+	void ClearAll();
 	char *Read(char *);
 	void PrepareDump();
 	bool CheckInterval(float l){
@@ -190,6 +208,7 @@ public:
 	void AddMapTemp(float);
 	void SetMapTemp(vector<float> &);
 	void ClearDump();
+	void ClearDumpAll();
 	void PrepareVertex();
 	void RenderAll();
 	CPLUGIN_CASTFUNC(CProfilePlugin);
@@ -204,6 +223,7 @@ public:
 	virtual char *DirName() = 0;
 	virtual char *TextName2() = 0;
 	void ClearDump();
+	void ClearDumpAll();
 	void PrepareVertex();
 	void RenderAll();
 	virtual CPlugin *NewEntry(char *) = 0;

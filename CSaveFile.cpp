@@ -2,6 +2,7 @@
 #include "md5.h"
 #include "RailMap.h"
 #include "Network.h"
+#include "CJobTimer.h"
 #include "CListView.h"
 #include "CSimpleDialog.h"
 #include "CRailWay.h"
@@ -16,6 +17,11 @@
 #include "CSimulationMode.h"
 #include "CConfigMode.h"
 #include "CNeutralMode.h"
+#include "CRailPlugin.h"
+#include "CTiePlugin.h"
+#include "CGirderPlugin.h"
+#include "CPierPlugin.h"
+#include "CLinePlugin.h"
 
 //	ŠÖ”éŒ¾
 bool IsLeapYear(int);
@@ -74,6 +80,7 @@ CSaveFile::CSaveFile(
  */
 CSaveFile::~CSaveFile(){
 	g_Scene = NULL;
+	if(g_ConfigMode) g_ConfigMode->FreeWindowDiv();
 	DELETE_V(m_WarpList);
 	DELETE_V(m_GroupList);
 	DELETE_V(m_SceneList);
@@ -343,6 +350,12 @@ void CSaveFile::DeleteScene(
 	}
 	DeleteWarp();
 	CScene **adr = &m_SceneList;
+	g_Scene = sc;
+	g_RailPluginList->ClearDumpAll();
+	g_TiePluginList->ClearDumpAll();
+	g_GirderPluginList->ClearDumpAll();
+	g_PierPluginList->ClearDumpAll();
+	g_LinePluginList->ClearDumpAll();
 	g_Scene = NULL;
 	while(*adr){
 		if(*adr==sc){
@@ -361,8 +374,14 @@ void CSaveFile::DeleteScene(
 		g_Scene = m_SceneList = new CScene(g_DefaultSurface, g_DefaultEnv, lang(InitialScene));
 		m_SceneNum = 1;
 	}
+	CScene *ptr = m_SceneList;
+	while(ptr){
+		ptr->SetDumpReady(false);
+		ptr = ptr->Next();
+	}
 	NumberScene();
 	g_Scene->Enter(false);
+	g_ConfigMode->GetRootWindow()->OnDeleteScene(sc);
 }
 
 /*
@@ -405,6 +424,9 @@ void CSaveFile::NumberScene(){
 void CSaveFile::NextScene(
 	bool prev	//	‹t•ûŒü
 ){
+	CWindowInfo* active_wnd = g_ConfigMode->GetActiveWindow();
+	CScene *origscene = g_Scene;
+	if(active_wnd && active_wnd->GetScene()) g_Scene = active_wnd->GetScene();
 	CScene *oldscene = g_Scene;
 	if(prev){
 		CScene *ptr = m_SceneList;
@@ -419,6 +441,10 @@ void CSaveFile::NextScene(
 		g_Scene = g_Scene && g_Scene->Next() ? g_Scene->Next() : m_SceneList;
 	}
 	if(g_Scene!=oldscene) g_Scene->Enter(true);
+	if(active_wnd){
+		active_wnd->SetScene(g_Scene);
+		g_Scene = origscene;
+	}
 }
 
 /*
@@ -451,6 +477,7 @@ void CSaveFile::SetSceneByVector(vector<CScene *> scene_list){
 void CSaveFile::RenderScene(
 	int option	//	1: renderwarp
 ){
+	TIMER_RAII("CSaveFile::RenderScene()");
 	InitShadow();
 	InitRailMap();
 	CNamedObject::InitAfterRenderList();
@@ -459,10 +486,13 @@ void CSaveFile::RenderScene(
 	g_Scene->RenderScene();
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
-	CTrainGroup *group = m_GroupList;
-	while(group){
-		group->Render();
-		group = group->Next();
+	{
+		TIMER_RAII("train group");
+		CTrainGroup *group = m_GroupList;
+		while(group){
+			group->Render();
+			group = group->Next();
+		}
 	}
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
@@ -472,8 +502,11 @@ void CSaveFile::RenderScene(
 	CNamedObject::AfterRenderAll();
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
-	CParticle::RenderAll();
-	CHeadlight::RenderAll();
+	{
+		TIMER_RAII("effect");
+		CParticle::RenderAll();
+		CHeadlight::RenderAll();
+	}
 	g_Scene->RenderAfter();
 	devResetMatrix();
 	devSetTexture(0, NULL);
@@ -501,6 +534,7 @@ void CSaveFile::RenderScene(
 void CSaveFile::Simulate(
 	int num	//	‰ñ”
 ){
+	TIMER_RAII("CSaveFile::Simulate()");
 	int scale = g_SimulationMode->GetTimeScale();
 	int speed = num<0 ? g_SimulationMode->GetSimSpeed() : num;
 	int i;
@@ -514,6 +548,7 @@ void CSaveFile::Simulate(
 		speed = g_SimulationMode->GetOldSpeed();
 	}
 	for(i = 0; i<speed; i++){
+		TIMER_RAII("single simulation");
 		if(g_NetworkInitialized){
 			if(exceed) ExceedNetworkSyncLimit(m_NetworkSyncCount);
 			if(m_NetworkSyncCount){
@@ -552,15 +587,15 @@ void CSaveFile::Simulate(
 		ResetSwitch();
 
 		CParticle::SimulateAll();
-		CTrainGroup *group = m_GroupList;
-		while(group){
-			group->Simulate();
-			group = group->Next();
-		}
 		CScene *scene = m_SceneList;
 		while(scene){
 			scene->SimulateScene();
 			scene = scene->Next();
+		}
+		CTrainGroup *group = m_GroupList;
+		while(group){
+			group->Simulate();
+			group = group->Next();
 		}
 		g_CabinViewTrain = NULL;
 	}
@@ -636,6 +671,7 @@ bool CSaveFile::Load(
 	void ClearStaticSwitchTable();
 	ClearStaticSwitchTable();
 	g_Scene = NULL;
+	g_ConfigMode->FreeWindowDiv();
 	g_TrainGroup = NULL;
 	g_AddressMap.clear();
 	g_AddressMap[NULL] = NULL;
@@ -773,6 +809,11 @@ bool CSaveFile::Load(
 		g_Scene = NULL;
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
+		if(m_Version>=2.14f){
+			if(!(str = BeginBlock(eee = str, "Window"))) throw CSynErr(eee);
+			str = g_ConfigMode->GetRootWindow()->Read(str);
+			if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
+		}
 	}
 	catch(CSynErr err){
 		err.Handle(FlashIn("%s <%s>", m_FileName.c_str(), "Layout"), buf);
@@ -930,6 +971,10 @@ int CSaveFile::Save(
 		scene->Save(df);
 		scene = scene->Next();
 	}
+	fprintf(df, "}\n\n");
+
+	fprintf(df, "Window{\n");
+	g_ConfigMode->GetRootWindow()->Save(df, "\t");
 	fprintf(df, "}\n\n");
 
 	fclose(df);

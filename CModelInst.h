@@ -58,6 +58,7 @@ public:
 	static bool IsDetected(){ return ms_MinDist>=0.0f; }
 	static float GetMinDist(){ return ms_MinDist; }
 	static CDetectInfo GetDetectInfo(){ return ms_DetectInfo; }
+	static CModelInst *GetCurrentInst(){ return ms_CurrentInst; }
 	CModelInst();
 	CModelInst(CModelPlugin *);
 	virtual ~CModelInst();
@@ -74,6 +75,7 @@ public:
 	VEC3 GetUp(){ return m_Up; }
 	VEC3 GetDir(){ return m_Dir; }
 	IPartsInst BeginParts(){ return m_PartsInst.begin(); }
+	virtual CPartsInst *FindParts(CNamedObject *){ return NULL; }
 	void StopSound();
 	void SetLocalAxis();
 	void FixPosture(VEC3, VEC3, VEC3);

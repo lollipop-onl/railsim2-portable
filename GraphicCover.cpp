@@ -37,6 +37,15 @@ float LinePointDistance(
 }
 
 /*
+ *	行列正規化
+ */
+void NormalizeMatrix(MTX4 *mtx){
+	V3Norm((VEC3 *)&mtx->_11, (VEC3 *)&mtx->_11);
+	V3Norm((VEC3 *)&mtx->_21, (VEC3 *)&mtx->_21);
+	V3Norm((VEC3 *)&mtx->_31, (VEC3 *)&mtx->_31);
+}
+
+/*
  *	2 直線の最近点を求める
  *
  *	戻り値: 平行なら true を返す
@@ -168,7 +177,7 @@ void DrawGrid(
 	float xs = vdir.x<0.0f ? -1.0f : 1.0f, zs = vdir.z<0.0f ? -1.0f : 1.0f;
 	float uinv = vdir.y<0.0f ? 1.0f : -1.0f;
 	for(i = -lim; i<=lim; i += step){
-		char *fmt = gscale<1.0f ? "%.1f" : "%.0f";
+		char *fmt = (char *)(gscale<1.0f ? "%.1f" : "%.0f");
 		D3DCOLOR col = ((255*(3-abs(i))/3)<<24)|0x00ffffff;
 		if(vdir.x<0.0f) g_StrTex->RenderRight3D(-zofs+5.0f*i*V3RIGHT, -V3DIR*xs, uinv*xs*V3RIGHT,
 			col, 0xff000000, FlashIn(fmt, tpos.x+i*gstep), fscale);

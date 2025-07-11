@@ -12,9 +12,9 @@
 	#pragma link "dinput8.lib"
 	#pragma link "c_dinput.lib"
 	#pragma link "dsound.lib"
-	#pragma link "strmiids.lib"
-	//	#pragma link "winmm.lib"	//	不要
-	//	#pragma link "imm32.lib"
+	//#pragma link "strmiids.lib"
+	//#pragma link "winmm.lib"	//	不要
+	#pragma link "imm32.lib"
 
 	int _matherr(struct _exception *e){e; return 1;}
 
@@ -26,7 +26,7 @@
 	#pragma comment(lib, "d3dxof.lib")
 	#pragma comment(lib, "dinput8.lib")
 	#pragma comment(lib, "dsound.lib")
-	#pragma comment(lib, "strmiids.lib")
+	//#pragma comment(lib, "strmiids.lib")
 	#pragma comment(lib, "winmm.lib")
 	#pragma comment(lib, "imm32.lib")	//	IME関係
 #endif

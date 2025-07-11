@@ -102,7 +102,7 @@ public:
 /*
  *	NULL でなければプラグイン ID、NULL なら空文字列を返す
  */
-inline char *CheckPluginID(CPlugin *pi){ return pi ? pi->GetID() : ""; }
+inline char *CheckPluginID(CPlugin *pi){ return (char *)(pi ? pi->GetID() : ""); }
 
 //	関数宣言
 char *LoadBinaryText(FILE *, int maxbyte = -1);

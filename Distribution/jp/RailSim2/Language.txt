@@ -3,7 +3,7 @@
  */
 
 DatafileHeader{
-	RailSimVersion = 2.12;
+	RailSimVersion = 2.15;
 	DatafileType = Language;
 }
 
@@ -289,6 +289,8 @@ Resource{
 	SceneOperation = "シーン操作";
 	SceneOperationModeExp = "シーンの編集、シミュレーションの設定を行います。";
 	Sec = "秒";
+	SelectAddPier = "橋脚追加";
+	SelectAddPole = "架線柱追加";
 	SelectEditLine = "架線選択";
 	SelectEditPier = "橋脚選択";
 	SelectEditPole = "架線柱選択";

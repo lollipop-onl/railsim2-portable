@@ -17,7 +17,7 @@ public:
 	char *DirName(){ return "Surface"; }
 	char *TextName(){ return "Surface.txt"; }
 	char *TextName2(){ return "Surface2.txt"; }
-	char *LoadStruct(char *);
+	char *LoadStructBefore(char *);
 	bool LoadOldForm();
 	void SetPreview();
 	float GetSizeX(){ return m_SizeX; }

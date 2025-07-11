@@ -4,6 +4,7 @@
 #include "CProfilePlugin.h"
 
 //	外部グローバル
+extern CScene *g_Scene;
 extern bool g_RailMipMap;
 extern CShadowVolume g_ShadowVolume;
 
@@ -101,8 +102,6 @@ char *CProfileFace::Read(
  *	コンストラクタ
  */
 CProfile::CProfile(){
-	m_DumpN = NULL;
-	m_DumpNX = NULL;
 	m_Texture = NULL;
 }
 
@@ -110,8 +109,21 @@ CProfile::CProfile(){
  *	デストラクタ
  */
 CProfile::~CProfile(){
-	DELETE_V(m_DumpN);
-	DELETE_V(m_DumpNX);
+	ClearAll();
+}
+
+/*
+ *	すべて解放
+ */
+void CProfile::ClearAll(){
+	map<CScene *, MapPtrValue<CQuadDumpN> >::iterator itr_n;
+	for(itr_n = m_DumpN.begin(); itr_n!=m_DumpN.end(); ++itr_n){
+		itr_n->second.SafeDelete();
+	}
+	map<CScene *, MapPtrValue<CQuadDumpNX> >::iterator itr_nx;
+	for(itr_nx = m_DumpNX.begin(); itr_nx!=m_DumpNX.end(); ++itr_nx){
+		itr_nx->second.SafeDelete();
+	}
 }
 
 /*
@@ -157,9 +169,11 @@ void CProfile::LoadTexture(){
  */
 void CProfile::PrepareDump(){
 	if(m_UseTexture){
-		if(!m_DumpNX) m_DumpNX = new CQuadDumpNX(QUAD_DUMP_MAX, m_Texture);
+		MapPtrValue<CQuadDumpNX> &dump_nx = m_DumpNX[g_Scene];
+		if(!dump_nx) dump_nx = new CQuadDumpNX(QUAD_DUMP_MAX, m_Texture);
 	}else{
-		if(!m_DumpN) m_DumpN = new CQuadDumpN(QUAD_DUMP_MAX);
+		MapPtrValue<CQuadDumpN> &dump_n = m_DumpN[g_Scene];
+		if(!dump_n) dump_n = new CQuadDumpN(QUAD_DUMP_MAX);
 	}
 }
 
@@ -215,14 +229,23 @@ char *CWireframeLine::Read(
  *	コンストラクタ
  */
 CWireframe::CWireframe(){
-	m_DumpN = NULL;
 }
 
 /*
  *	デストラクタ
  */
 CWireframe::~CWireframe(){
-	DELETE_V(m_DumpN);
+	ClearAll();
+}
+
+/*
+ *	すべて解放
+ */
+void CWireframe::ClearAll(){
+	map<CScene *, MapPtrValue<CLineDumpN> >::iterator itr_n;
+	for(itr_n = m_DumpN.begin(); itr_n!=m_DumpN.end(); ++itr_n){
+		itr_n->second.SafeDelete();
+	}
 }
 
 /*
@@ -254,7 +277,8 @@ char *CWireframe::Read(
  *	ダンパ準備
  */
 void CWireframe::PrepareDump(){
-	if(!m_DumpN) m_DumpN = new CLineDumpN(LINE_DUMP_MAX);
+	MapPtrValue<CLineDumpN> &dump_n = m_DumpN[g_Scene];
+	if(!dump_n) dump_n = new CLineDumpN(LINE_DUMP_MAX);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -353,13 +377,13 @@ void CProfilePlugin::Dump(
 		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float,
 		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float);
 	if(prev&1){
-		f_ll = CLineDumpN::Preview;
-		f_qn = CQuadDumpN::Preview;
-		f_qnx = CQuadDumpNX::Preview;
+		f_ll = &CLineDumpN::Preview;
+		f_qn = &CQuadDumpN::Preview;
+		f_qnx = &CQuadDumpNX::Preview;
 	}else{
-		f_ll = CLineDumpN::Add;
-		f_qn = CQuadDumpN::Add;
-		f_qnx = CQuadDumpNX::Add;
+		f_ll = &CLineDumpN::Add;
+		f_qn = &CQuadDumpN::Add;
+		f_qnx = &CQuadDumpNX::Add;
 	}
 	BeforeDump(p1, r1, u1, p2, r2, u2);
 	IProfile ip = m_Profile.begin();
@@ -368,6 +392,8 @@ void CProfilePlugin::Dump(
 		devResetMaterial();
 	}
 	for(; ip!=m_Profile.end(); ip++){
+		MapPtrValue<CQuadDumpNX> &dump_nx = ip->m_DumpNX[g_Scene];
+		MapPtrValue<CQuadDumpN> &dump_n = ip->m_DumpN[g_Scene];
 		float v1 = ip->m_TexMapVTemp, v2 = v1+ip->m_TexVPerMeter*len;
 		if(prev&2) devSetTexture(0, ip->m_Texture);
 		else ip->PrepareDump();
@@ -382,23 +408,23 @@ void CProfilePlugin::Dump(
 				if(ip->m_UseTexture){
 					float &tu1 = iv1->m_TexU, &tu2 = iv2->m_TexU;
 					if(iv1->m_IgnoreCant){
-						if(iv2->m_IgnoreCant) (ip->m_DumpNX->*f_qnx)(
+						if(iv2->m_IgnoreCant) (dump_nx->*f_qnx)(
 							ip1+ir1*c1.x+iu1*c1.y, ir1*n1.x+iu1*n1.y, df1, tu1, v1,
 							ip2+ir2*c1.x+iu2*c1.y, ir2*n1.x+iu2*n1.y, df1, tu1, v2,
 							ip2+ir2*c2.x+iu2*c2.y, ir2*n2.x+iu2*n2.y, df2, tu2, v2,
 							ip1+ir1*c2.x+iu1*c2.y, ir1*n2.x+iu1*n2.y, df2, tu2, v1);
-						else (ip->m_DumpNX->*f_qnx)(
+						else (dump_nx->*f_qnx)(
 							ip1+ir1*c1.x+iu1*c1.y, ir1*n1.x+iu1*n1.y, df1, tu1, v1,
 							ip2+ir2*c1.x+iu2*c1.y, ir2*n1.x+iu2*n1.y, df1, tu1, v2,
 							p2+r2*c2.x+u2*c2.y, r2*n2.x+u2*n2.y, df2, tu2, v2,
 							p1+r1*c2.x+u1*c2.y, r1*n2.x+u1*n2.y, df2, tu2, v1);
 					}else{
-						if(iv2->m_IgnoreCant) (ip->m_DumpNX->*f_qnx)(
+						if(iv2->m_IgnoreCant) (dump_nx->*f_qnx)(
 							p1+r1*c1.x+u1*c1.y, r1*n1.x+u1*n1.y, df1, tu1, v1,
 							p2+r2*c1.x+u2*c1.y, r2*n1.x+u2*n1.y, df1, tu1, v2,
 							ip2+ir2*c2.x+iu2*c2.y, ir2*n2.x+iu2*n2.y, df2, tu2, v2,
 							ip1+ir1*c2.x+iu1*c2.y, ir1*n2.x+iu1*n2.y, df2, tu2, v1);
-						else (ip->m_DumpNX->*f_qnx)(
+						else (dump_nx->*f_qnx)(
 							p1+r1*c1.x+u1*c1.y, r1*n1.x+u1*n1.y, df1, tu1, v1,
 							p2+r2*c1.x+u2*c1.y, r2*n1.x+u2*n1.y, df1, tu1, v2,
 							p2+r2*c2.x+u2*c2.y, r2*n2.x+u2*n2.y, df2, tu2, v2,
@@ -406,23 +432,23 @@ void CProfilePlugin::Dump(
 					}
 				}else{
 					if(iv1->m_IgnoreCant){
-						if(iv2->m_IgnoreCant) (ip->m_DumpN->*f_qn)(
+						if(iv2->m_IgnoreCant) (dump_n->*f_qn)(
 							ip1+ir1*c1.x+iu1*c1.y, ir1*n1.x+iu1*n1.y, df1,
 							ip2+ir2*c1.x+iu2*c1.y, ir2*n1.x+iu2*n1.y, df1,
 							ip2+ir2*c2.x+iu2*c2.y, ir2*n2.x+iu2*n2.y, df2,
 							ip1+ir1*c2.x+iu1*c2.y, ir1*n2.x+iu1*n2.y, df2);
-						else (ip->m_DumpN->*f_qn)(
+						else (dump_n->*f_qn)(
 							ip1+ir1*c1.x+iu1*c1.y, ir1*n1.x+iu1*n1.y, df1,
 							ip2+ir2*c1.x+iu2*c1.y, ir2*n1.x+iu2*n1.y, df1,
 							p2+r2*c2.x+u2*c2.y, r2*n2.x+u2*n2.y, df2,
 							p1+r1*c2.x+u1*c2.y, r1*n2.x+u1*n2.y, df2);
 					}else{
-						if(iv2->m_IgnoreCant) (ip->m_DumpN->*f_qn)(
+						if(iv2->m_IgnoreCant) (dump_n->*f_qn)(
 							p1+r1*c1.x+u1*c1.y, r1*n1.x+u1*n1.y, df1,
 							p2+r2*c1.x+u2*c1.y, r2*n1.x+u2*n1.y, df1,
 							ip2+ir2*c2.x+iu2*c2.y, ir2*n2.x+iu2*n2.y, df2,
 							ip1+ir1*c2.x+iu1*c2.y, ir1*n2.x+iu1*n2.y, df2);
-						else (ip->m_DumpN->*f_qn)(
+						else (dump_n->*f_qn)(
 							p1+r1*c1.x+u1*c1.y, r1*n1.x+u1*n1.y, df1,
 							p2+r2*c1.x+u2*c1.y, r2*n1.x+u2*n1.y, df1,
 							p2+r2*c2.x+u2*c2.y, r2*n2.x+u2*n2.y, df2,
@@ -440,6 +466,7 @@ void CProfilePlugin::Dump(
 	IWireframe iw = m_Wireframe.begin();
 	for(; iw!=m_Wireframe.end(); iw++){
 		if(!iw->CheckInterval(len)) continue;
+		MapPtrValue<CLineDumpN> &dump_n = iw->m_DumpN[g_Scene];
 		if(!(prev&2)) iw->PrepareDump();
 		IWireframeLine ir = iw->m_Line.begin();
 		for(; ir!=iw->m_Line.end(); ir++){
@@ -449,17 +476,17 @@ void CProfilePlugin::Dump(
 				VEC3 &c1 = iv1->m_Coord, &c2 = iv2->m_Coord;
 				D3DCOLOR &df1 = iv1->m_Diffuse, &df2 = iv2->m_Diffuse;
 				if(iv1->m_IgnoreCant){
-					if(iv2->m_IgnoreCant) (iw->m_DumpN->*f_ll)(
+					if(iv2->m_IgnoreCant) (dump_n->*f_ll)(
 						CalcMidProfile(ip1, ir1, iu1, ip2, ir2, iu2, c1), df1,
 						CalcMidProfile(ip1, ir1, iu1, ip2, ir2, iu2, c2), df2);
-					else (iw->m_DumpN->*f_ll)(
+					else (dump_n->*f_ll)(
 						CalcMidProfile(ip1, ir1, iu1, ip2, ir2, iu2, c1), df1,
 						CalcMidProfile(p1, r1, u1, p2, r2, u2, c2), df2);
 				}else{
-					if(iv2->m_IgnoreCant) (iw->m_DumpN->*f_ll)(
+					if(iv2->m_IgnoreCant) (dump_n->*f_ll)(
 						CalcMidProfile(p1, r1, u1, p2, r2, u2, c1), df1,
 						CalcMidProfile(ip1, ir1, iu1, ip2, ir2, iu2, c2), df2);
-					else (iw->m_DumpN->*f_ll)(
+					else (dump_n->*f_ll)(
 						CalcMidProfile(p1, r1, u1, p2, r2, u2, c1), df1,
 						CalcMidProfile(p1, r1, u1, p2, r2, u2, c2), df2);
 				}
@@ -647,10 +674,20 @@ void CProfilePlugin::ClearDump(){
 	IProfile ip = m_Profile.begin();
 	IWireframe iw = m_Wireframe.begin();
 	for(; ip!=m_Profile.end(); ip++){
-		DELETE_V(ip->m_DumpN);
-		DELETE_V(ip->m_DumpNX);
+		ip->m_DumpN[g_Scene].SafeDelete();
+		ip->m_DumpNX[g_Scene].SafeDelete();
 	}
-	for(; iw!=m_Wireframe.end(); iw++) DELETE_V(iw->m_DumpN);
+	for(; iw!=m_Wireframe.end(); iw++) iw->m_DumpN[g_Scene].SafeDelete();
+}
+
+/*
+ *	ダンパすべて解放
+ */
+void CProfilePlugin::ClearDumpAll(){
+	IProfile ip = m_Profile.begin();
+	IWireframe iw = m_Wireframe.begin();
+	for(; ip!=m_Profile.end(); ip++) ip->ClearAll();
+	for(; iw!=m_Wireframe.end(); iw++) iw->ClearAll();
 }
 
 /*
@@ -660,10 +697,15 @@ void CProfilePlugin::PrepareVertex(){
 	IProfile ip = m_Profile.begin();
 	IWireframe iw = m_Wireframe.begin();
 	for(; ip!=m_Profile.end(); ip++){
-		if(ip->m_DumpN) ip->m_DumpN->PrepareVertex();
-		if(ip->m_DumpNX) ip->m_DumpNX->PrepareVertex();
+		MapPtrValue<CQuadDumpN> &dump_n = ip->m_DumpN[g_Scene];
+		MapPtrValue<CQuadDumpNX> &dump_nx = ip->m_DumpNX[g_Scene];
+		if(dump_n) dump_n->PrepareVertex();
+		if(dump_nx) dump_nx->PrepareVertex();
 	}
-	for(; iw!=m_Wireframe.end(); iw++) if(iw->m_DumpN) iw->m_DumpN->PrepareVertex();
+	for(; iw!=m_Wireframe.end(); iw++){
+		MapPtrValue<CLineDumpN> &dump_n = iw->m_DumpN[g_Scene];
+		if(dump_n) dump_n->PrepareVertex();
+	}
 }
 
 /*
@@ -675,11 +717,16 @@ void CProfilePlugin::RenderAll(){
 	devSetLighting(TRUE);
 	devResetMaterial();
 	for(; ip!=m_Profile.end(); ip++){
-		if(ip->m_DumpN) ip->m_DumpN->Render(false);
-		if(ip->m_DumpNX) ip->m_DumpNX->Render(false);
+		MapPtrValue<CQuadDumpN> &dump_n = ip->m_DumpN[g_Scene];
+		MapPtrValue<CQuadDumpNX> &dump_nx = ip->m_DumpNX[g_Scene];
+		if(dump_n) dump_n->Render(false);
+		if(dump_nx) dump_nx->Render(false);
 	}
 	devSetLineMaterial();
-	for(; iw!=m_Wireframe.end(); iw++) if(iw->m_DumpN) iw->m_DumpN->Render(false);
+	for(; iw!=m_Wireframe.end(); iw++){
+		MapPtrValue<CLineDumpN> &dump_n = iw->m_DumpN[g_Scene];
+		if(dump_n) dump_n->Render(false);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -697,7 +744,18 @@ void CProfilePluginList::ClearDump(){
 }
 
 /*
- *	ダンパ解放
+ *	ダンパすべて解放
+ */
+void CProfilePluginList::ClearDumpAll(){
+	CProfilePlugin *ptr = Root();
+	while(ptr){
+		ptr->ClearDumpAll();
+		ptr = ptr->Next();
+	}
+}
+
+/*
+ *	ダンパ準備
  */
 void CProfilePluginList::PrepareVertex(){
 	CProfilePlugin *ptr = Root();

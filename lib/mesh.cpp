@@ -2,6 +2,17 @@
 
 #include "..\stdafx.h"
 
+#define UDX_MESH_MEASURE (0)
+
+#if UDX_MESH_MEASURE
+#include <vector>
+#include <string>
+#include "..\CJobTimer.h"
+#define UDX_MESH_TIMER_RAII(name) TIMER_RAII(name)
+#else
+#define UDX_MESH_TIMER_RAII(name)
+#endif
+
 #include <rmxfguid.h>
 #include <rmxftmpl.h>
 
@@ -134,8 +145,8 @@ BOOL CMesh::Load(
 	Debug("load(%s) ... ", strName);
 	m_strName = strName;
 
-	LPD3DXBUFFER pBuf;
-	LPD3DXBUFFER pAdj;
+	LPD3DXBUFFER pBuf = 0;
+	LPD3DXBUFFER pAdj = 0;
 	HRESULT hr;
 
 	if(fRes){
@@ -207,16 +218,16 @@ BOOL CMesh::Load(
 	ComputeBoundary();
 
 	//	メッシュの最適化
-	LPD3DXMESH pMeshOpt;
-
+	LPD3DXMESH pMeshOpt = NULL;
+	DWORD *pAdjBuf = (DWORD *)pAdj->GetBufferPointer();
 	hr = m_pMesh->Optimize(
 		D3DXMESHOPT_ATTRSORT|D3DXMESHOPT_COMPACT|D3DXMESHOPT_VERTEXCACHE,
-		(DWORD *)pAdj->GetBufferPointer(), NULL, NULL, NULL, &pMeshOpt);
+		pAdjBuf, NULL, NULL, NULL, &pMeshOpt);
 	if(SUCCEEDED(hr)){
 		m_pMesh->Release();
 		m_pMesh = pMeshOpt;
 	}else{
-		Debug("optimization failed.\n");
+		Debug("optimization failed (%x).\n", hr);
 	}
 	RELEASE(pAdj);
 	return TRUE;
@@ -391,6 +402,7 @@ void CMesh::MaskMatFlag(
  */
 void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
@@ -414,8 +426,11 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 		if((flag&6)==2 || !alpha) continue;
 		if(g_AltMaterial){
 			sv3.pDev->SetMaterial(g_AltMaterial);
-			sv3.pDev->SetTexture(0, NULL);
-			m_pMesh->DrawSubset(order);
+			devSetTexture(0, NULL);
+			{
+				UDX_MESH_TIMER_RAII("DrawSubset");
+				m_pMesh->DrawSubset(order);
+			}
 		}else{
 			if(flag&8){
 				devSetEnvMap(1, TRUE);
@@ -436,8 +451,11 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 			}
 			if(g_RenderBlink) m_pCustomMat[order].Diffuse.a *= g_BlinkAlpha;
 			sv3.pDev->SetMaterial(&m_pCustomMat[order]);
-			sv3.pDev->SetTexture(0, m_pCustomTex[order]);
-			m_pMesh->DrawSubset(order);
+			devSetTexture(0, m_pCustomTex[order]);
+			{
+				UDX_MESH_TIMER_RAII("DrawSubset");
+				m_pMesh->DrawSubset(order);
+			}
 			if(flag&8){
 				devSetEnvMap(1, FALSE);
 				devSetTexture(1, NULL);
@@ -462,6 +480,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
  */
 void CMesh::Render(MTX4 *pMtx){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
@@ -470,8 +489,11 @@ void CMesh::Render(MTX4 *pMtx){
 		float alpha = m_pMat[order].Diffuse.a;
 		if(g_AltMaterial){
 			sv3.pDev->SetMaterial(g_AltMaterial);
-			sv3.pDev->SetTexture(0, NULL);
-			m_pMesh->DrawSubset(order);
+			devSetTexture(0, NULL);
+			{
+				UDX_MESH_TIMER_RAII("DrawSubset");
+				m_pMesh->DrawSubset(order);
+			}
 		}else{
 			if(g_AncientNightFlag){
 				if(!alpha){
@@ -496,8 +518,11 @@ void CMesh::Render(MTX4 *pMtx){
 				if(g_RenderBlink) m_pMat[order].Diffuse.a *= g_BlinkAlpha;
 				sv3.pDev->SetMaterial(&m_pMat[order]);
 			}
-			sv3.pDev->SetTexture(0, m_pTex[order]);
-			m_pMesh->DrawSubset(order);
+			devSetTexture(0, m_pTex[order]);
+			{
+				UDX_MESH_TIMER_RAII("DrawSubset");
+				m_pMesh->DrawSubset(order);
+			}
 			m_pMat[order].Diffuse.a = alpha;
 		}
 	}
@@ -510,6 +535,7 @@ void CMesh::Render(MTX4 *pMtx){
  */
 void CMesh::RenderAmb(MTX4 *pMtx){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
@@ -518,8 +544,11 @@ void CMesh::RenderAmb(MTX4 *pMtx){
 		D3DCOLORVALUE &dif = m_pMat[order].Diffuse, tdif = dif;
 		dif.r = dif.g = dif.b = 0.0f;
 		sv3.pDev->SetMaterial(&m_pMat[order]);
-		sv3.pDev->SetTexture(0, m_pTex[order]);
-		m_pMesh->DrawSubset(order);
+		devSetTexture(0, m_pTex[order]);
+		{
+			UDX_MESH_TIMER_RAII("DrawSubset");
+			m_pMesh->DrawSubset(order);
+		}
 		dif = tdif;
 	}
 }
@@ -532,14 +561,18 @@ void CMesh::RenderAmb(MTX4 *pMtx){
  */
 void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
 		sv3.pDev->SetMaterial(&m_pMat[order]);
-		sv3.pDev->SetTexture(0, pTex);
-		m_pMesh->DrawSubset(order);
+		devSetTexture(0, pTex);
+		{
+			UDX_MESH_TIMER_RAII("DrawSubset");
+			m_pMesh->DrawSubset(order);
+		}
 	}
 }
 
@@ -551,6 +584,7 @@ void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
  */
 void CMesh::RenderA(MTX4 *pMtx, float altalpha){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
@@ -580,8 +614,11 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
 			m_pMat[order].Diffuse.a *= altalpha*(g_RenderBlink ? g_BlinkAlpha : 1.0f);
 			sv3.pDev->SetMaterial(&m_pMat[order]);
 		}
-		sv3.pDev->SetTexture(0, m_pTex[order]);
-		m_pMesh->DrawSubset(order);
+		devSetTexture(0, m_pTex[order]);
+		{
+			UDX_MESH_TIMER_RAII("DrawSubset");
+			m_pMesh->DrawSubset(order);
+		}
 		m_pMat[order].Diffuse.a = alpha;
 	}
 }
@@ -594,6 +631,7 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
  */
 void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
@@ -607,8 +645,11 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 		m_pMat[order].Diffuse = m_pMat[order].Ambient = c2;
 
 		sv3.pDev->SetMaterial(&m_pMat[order]);
-		sv3.pDev->SetTexture(0, m_pTex[order]);
-		m_pMesh->DrawSubset(order);
+		devSetTexture(0, m_pTex[order]);
+		{
+			UDX_MESH_TIMER_RAII("DrawSubset");
+			m_pMesh->DrawSubset(order);
+		}
 
 		//	α値を復元
 		m_pMat[order].Diffuse = m_pMat[order].Ambient = c1;
@@ -623,14 +664,18 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
  */
 void CMesh::RenderSC(MTX4 *pMtx, MAT8 *pMat){
 	if(!m_pMesh) return;
+	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
 		sv3.pDev->SetMaterial(pMat);
-		sv3.pDev->SetTexture(0, NULL);
-		m_pMesh->DrawSubset(order);
+		devSetTexture(0, NULL);
+		{
+			UDX_MESH_TIMER_RAII("DrawSubset");
+			m_pMesh->DrawSubset(order);
+		}
 	}
 }
 

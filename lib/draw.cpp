@@ -19,7 +19,7 @@
 void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1, D3DCOLOR c2){
 	if(c2==0) c2 = c1;
 	VTX_TL vt[] = {x1, y1, 0, 1, c1, x2, y2, 0, 1, c2};
-	CVertex v;
+	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderLL();
 	sv3.pDev->SetVertexShader(FVF_TL);

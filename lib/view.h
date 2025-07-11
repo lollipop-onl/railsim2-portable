@@ -123,3 +123,16 @@ inline MTX4 GetVMatrix(){
 inline MTX4 GetVInvMatrix(){
 	return sv3.mtxViewInv;
 }
+
+/*
+ *	ñ ñ@ê¸ÇÃåvéZ
+ */
+inline VEC3 CalcPlaneNormal(VEC3 v0, VEC3 v1, VEC3 v2){
+	VEC3 v3, v4, tmp, n;
+
+	v3 = v1-v0;
+	v4 = v2-v1;
+	D3DXVec3Cross(&tmp, &v3, &v4);
+	D3DXVec3Normalize(&n, &tmp);
+	return n;
+}

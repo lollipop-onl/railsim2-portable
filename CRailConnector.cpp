@@ -3,6 +3,7 @@
 #include "CRailWay.h"
 #include "CScene.h"
 #include "CTrainGroup.h"
+#include "CConfigMode.h"
 
 //	ŠÖ”éŒ¾
 void CalcCantAxis(VEC3 *, VEC3 *, VEC3 *, float);
@@ -136,8 +137,17 @@ void CRailConnectorLink::Save(
  */
 void CRailWayLink::WarpToOppositeEnd(){
 	CScene *scene = m_Link->m_Link[!m_Side].m_Link->GetScene();
-	if(scene!=g_Scene) scene->Enter(true);
-	CCamera::GetCurrentCamera()->SetFocus(m_Link->m_Link[!m_Side].GetPos());
+	CCamera *camera = NULL;
+	if(scene!=g_Scene){
+		scene->Enter(true);
+		CWindowInfo *active_wnd = g_ConfigMode->GetActiveWindow();
+		if(g_ConfigMode->IsWindowDiv() && active_wnd){
+			active_wnd->SetScene(g_Scene);
+			camera = active_wnd->GetCamera();
+		}
+	}
+	if(!camera) camera = CCamera::GetCurrentCamera();
+	camera->SetFocus(m_Link->m_Link[!m_Side].GetPos());
 }
 
 /*
@@ -459,6 +469,8 @@ void CRailConnector::RestoreAddress(){
 	int i, j;
 	for(i = 0; i<2; i++) for(j = 0; j<2; j++) m_Link[i][j].RestoreAddress();
 	m_PointInst.RestoreAddress();
+	m_User = (CTrainGroup *)ReplaceAdr(m_User);
+
 }
 
 /*

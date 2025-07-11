@@ -249,8 +249,8 @@ CModelInst *CSceneEditMode::ScanInputModelPlugin(){
 		int move_to = m_SceneListView.GetInsertRow();
 		if(move_from<0) ErrorDialog("invalid value: move_from");
 		vector<CScene *> scene_list = g_SaveFile->GetSceneByVector();
-		scene_list.insert(&scene_list[move_to], scene_list[move_from]);
-		scene_list.erase(&scene_list[move_to<=move_from ? move_from+1 : move_from]);
+		scene_list.insert(scene_list.begin()+move_to, scene_list[move_from]);
+		scene_list.erase(scene_list.begin()+(move_to<=move_from ? move_from+1 : move_from));
 		g_SaveFile->SetSceneByVector(scene_list);
 		g_SaveFile->ListScene(&m_SceneListView);
 	}

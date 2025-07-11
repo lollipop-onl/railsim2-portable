@@ -22,10 +22,10 @@ private:
 	CTrainPlugin *m_TrainPlugin;	//	ŽÔçqƒvƒ‰ƒOƒCƒ“
 public:
 	CTrainTemplate(){
-		Init(NULL, false, vector<int>());
+		Init(NULL, false, R2L(vector<int>()));
 	}
 	CTrainTemplate(const CTrainTemplate &rhs){
-		Init(rhs.m_TrainPlugin, rhs.m_Reverse, vector<int>(rhs.m_SwitchOption));
+		Init(rhs.m_TrainPlugin, rhs.m_Reverse, R2L(vector<int>(rhs.m_SwitchOption)));
 		m_TrainID = rhs.m_TrainID;
 	}
 	CTrainTemplate(CTrainPlugin *tpi, bool turn, vector<int> &sopt){

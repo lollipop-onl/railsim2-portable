@@ -13,6 +13,7 @@ private:
 	POINT m_Delta;	//	íÜêSÇ©ÇÁÇÃç∑ï™
 public:
 	void Init();
+	void Clip();
 	void Center();
 	void Render();
 	void ScanInput(bool forcelock = false);
@@ -21,7 +22,7 @@ public:
 	POINT GetPos(){ return m_Pos; }
 	POINT GetDelta(){ return m_Delta; }
 	bool CheckDrag();
-	VEC3 GetVEC3(){ return VEC3(m_Pos.x, m_Pos.y, 0.0f); }
+	VEC3 GetVEC3(){ return VEC3((float)m_Pos.x, (float)m_Pos.y, 0.0f); }
 	void Lock();
 	void Release();
 	bool IsLock(){ return !!m_State; }

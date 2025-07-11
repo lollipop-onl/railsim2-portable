@@ -38,6 +38,7 @@ class CEditBox{
 	void MoveRight();
 	void MoveHead();
 	void MoveLast();
+	void SelectAll();
 	void CompEnd(bool);
 	void Clip();
 	void GetCompStr(string &str);

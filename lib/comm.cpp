@@ -22,32 +22,32 @@ static HRESULT CALLBACK DirectPlayMessageHandler(PVOID pvUserContext, DWORD dwMe
  */
 BOOL InitDirectPlay()
 {
-    DebugHL();
-    Debug("InitDirectPlay\n");
+	DebugHL();
+	Debug("InitDirectPlay\n");
 
-    // DirectPlay の初期化
-    FAILED_ASSERT(
-        "DirectPlay が初期化できませんでした.",
-        CoCreateInstance(
-            CLSID_DirectPlay8Peer,
-            NULL,
-            CLSCTX_INPROC_SERVER,
-            IID_IDirectPlay8Peer,
-            (LPVOID*)&svc.pDP)
-    );
+	// DirectPlay の初期化
+	FAILED_ASSERT(
+		"DirectPlay が初期化できませんでした.",
+		CoCreateInstance(
+			CLSID_DirectPlay8Peer,
+			NULL,
+			CLSCTX_INPROC_SERVER,
+			IID_IDirectPlay8Peer,
+			(LPVOID*)&svc.pDP)
+	);
 
-    svc.pReceiveFunc = &ReceiveFunc;
+	svc.pReceiveFunc = &ReceiveFunc;
 
-    return TRUE;
+	return TRUE;
 }
 
 BOOL InitPeer()
 {
-    // DirectPlay オブジェクトの初期化
-    FAILED_ASSERT(
-        "DirectPlay オブジェクトの初期化に失敗しました．",
-        svc.pDP->Initialize(NULL, &DirectPlayMessageHandler, 0)
-    );
+	// DirectPlay オブジェクトの初期化
+	FAILED_ASSERT(
+		"DirectPlay オブジェクトの初期化に失敗しました．",
+		svc.pDP->Initialize(NULL, &DirectPlayMessageHandler, 0)
+	);
 	return TRUE;
 }
 
@@ -56,13 +56,15 @@ BOOL InitPeer()
  */
 void FreeDirectPlay()
 {
-    DebugHL();
-    Debug("FreeDirectPlay\n");
-    
-    svc.pDP->Close(0);              // セッション終了
-    RELEASE(svc.pHostAddress);
-    RELEASE(svc.pDeviceAddress);
-    RELEASE(svc.pDP);
+	if(!svc.pDP) return;
+
+	DebugHL();
+	Debug("FreeDirectPlay\n");
+	
+	svc.pDP->Close(0);			  // セッション終了
+	RELEASE(svc.pHostAddress);
+	RELEASE(svc.pDeviceAddress);
+	RELEASE(svc.pDP);
 }
 
 /**
@@ -72,24 +74,24 @@ void FreeDirectPlay()
  */
 static BOOL InitDeviceAddress(DWORD dwPort)
 {
-    // デバイスアドレスの生成
-    FAILED_ASSERT(
-        "デバイスアドレスの生成に失敗しました．",
-        CoCreateInstance(
-            CLSID_DirectPlay8Address,
-            NULL,
-            CLSCTX_INPROC_SERVER,
-            IID_IDirectPlay8Address,
-            (void**)&svc.pDeviceAddress)
-    );
+	// デバイスアドレスの生成
+	FAILED_ASSERT(
+		"デバイスアドレスの生成に失敗しました．",
+		CoCreateInstance(
+			CLSID_DirectPlay8Address,
+			NULL,
+			CLSCTX_INPROC_SERVER,
+			IID_IDirectPlay8Address,
+			(void**)&svc.pDeviceAddress)
+	);
 
-    // サービスプロバイダの設定
-    svc.pDeviceAddress->SetSP(&CLSID_DP8SP_TCPIP);
+	// サービスプロバイダの設定
+	svc.pDeviceAddress->SetSP(&CLSID_DP8SP_TCPIP);
 
-    // ポートの設定
-    if(dwPort) svc.pDeviceAddress->AddComponent(DPNA_KEY_PORT, &dwPort, sizeof(dwPort), DPNA_DATATYPE_DWORD);
+	// ポートの設定
+	if(dwPort) svc.pDeviceAddress->AddComponent(DPNA_KEY_PORT, &dwPort, sizeof(dwPort), DPNA_DATATYPE_DWORD);
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -100,27 +102,27 @@ static BOOL InitDeviceAddress(DWORD dwPort)
  */
 static BOOL InitHostAddress(LPCTSTR lpszIP, DWORD dwPort)
 {
-    // ホストアドレスの生成
-    FAILED_ASSERT(
-        "ホストアドレスの生成に失敗しました",
-        CoCreateInstance(
-            CLSID_DirectPlay8Address,
-            NULL,
-            CLSCTX_INPROC_SERVER,
-            IID_IDirectPlay8Address,
-            (void**)&svc.pHostAddress)
-    );
+	// ホストアドレスの生成
+	FAILED_ASSERT(
+		"ホストアドレスの生成に失敗しました",
+		CoCreateInstance(
+			CLSID_DirectPlay8Address,
+			NULL,
+			CLSCTX_INPROC_SERVER,
+			IID_IDirectPlay8Address,
+			(void**)&svc.pHostAddress)
+	);
 
-    // サービスプロバイダの設定
-    svc.pHostAddress->SetSP(&CLSID_DP8SP_TCPIP);
+	// サービスプロバイダの設定
+	svc.pHostAddress->SetSP(&CLSID_DP8SP_TCPIP);
 
-    // ホストの IP の設定
-    if(lstrlen(lpszIP) > 0) svc.pHostAddress->AddComponent(DPNA_KEY_HOSTNAME, lpszIP, lstrlen(lpszIP)+1, DPNA_DATATYPE_STRING_ANSI);
+	// ホストの IP の設定
+	if(lstrlen(lpszIP) > 0) svc.pHostAddress->AddComponent(DPNA_KEY_HOSTNAME, lpszIP, lstrlen(lpszIP)+1, DPNA_DATATYPE_STRING_ANSI);
 
-    // ホストの ポート の設定
-    if(dwPort) svc.pHostAddress->AddComponent(DPNA_KEY_PORT, &dwPort, sizeof(dwPort), DPNA_DATATYPE_DWORD);
+	// ホストの ポート の設定
+	if(dwPort) svc.pHostAddress->AddComponent(DPNA_KEY_PORT, &dwPort, sizeof(dwPort), DPNA_DATATYPE_DWORD);
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -133,8 +135,8 @@ static BOOL InitHostAddress(LPCTSTR lpszIP, DWORD dwPort)
  */
 void SetReceiveFunc(PFN_RECEIVE pReceiveFunc, LPARAM lParam)
 {
-    svc.pReceiveFunc = pReceiveFunc;
-    svc.lReceiveParam = lParam;
+	svc.pReceiveFunc = pReceiveFunc;
+	svc.lReceiveParam = lParam;
 }
 
 /**
@@ -151,20 +153,20 @@ BOOL CreateSession(const GUID* pguidApp, LPCTSTR lpszSessionName, DWORD dwPort)
 	svc.bHost = TRUE;
 
    // デバイスアドレスの初期化
-    if(FAILED(InitDeviceAddress(dwPort))) return FALSE;
+	if(FAILED(InitDeviceAddress(dwPort))) return FALSE;
 
-    // セッション情報の設定
-    DPN_APPLICATION_DESC dpnAppDesc;
-    ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
-    WCHAR wszSessionName[MAX_SESSIONNAME];
-    mbstowcs(wszSessionName, lpszSessionName, MAX_SESSIONNAME);
-    dpnAppDesc.dwSize           = sizeof(DPN_APPLICATION_DESC);
-    dpnAppDesc.dwFlags          = 0;//DPNSESSION_MIGRATE_HOST;
-    dpnAppDesc.guidApplication  = *pguidApp;
-    dpnAppDesc.pwszSessionName  = wszSessionName;
+	// セッション情報の設定
+	DPN_APPLICATION_DESC dpnAppDesc;
+	ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
+	WCHAR wszSessionName[MAX_SESSIONNAME];
+	mbstowcs(wszSessionName, lpszSessionName, MAX_SESSIONNAME);
+	dpnAppDesc.dwSize		   = sizeof(DPN_APPLICATION_DESC);
+	dpnAppDesc.dwFlags		  = 0;//DPNSESSION_MIGRATE_HOST;
+	dpnAppDesc.guidApplication  = *pguidApp;
+	dpnAppDesc.pwszSessionName  = wszSessionName;
 
-    // セッションの作成
-    if(FAILED(svc.pDP->Host(
+	// セッションの作成
+	if(FAILED(svc.pDP->Host(
 		&dpnAppDesc,
 		&svc.pDeviceAddress,
 		1,
@@ -172,9 +174,9 @@ BOOL CreateSession(const GUID* pguidApp, LPCTSTR lpszSessionName, DWORD dwPort)
 		NULL,
 		NULL,
 		DPNHOST_OKTOQUERYFORADDRESSING))
-    ) return FALSE;
+	) return FALSE;
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -191,37 +193,37 @@ BOOL JoinSession(const GUID* pguidApp, LPCTSTR lpszHostIP, DWORD dwHostPort, DWO
 
 	svc.bHost = FALSE;
 
-    // デバイスアドレスの初期化
-    if(FAILED(InitDeviceAddress(dwLocalPort))) return FALSE;
+	// デバイスアドレスの初期化
+	if(FAILED(InitDeviceAddress(dwLocalPort))) return FALSE;
 
-    // ホストアドレスの初期化
-    if(FAILED(InitHostAddress(lpszHostIP, dwHostPort))) return FALSE;
+	// ホストアドレスの初期化
+	if(FAILED(InitHostAddress(lpszHostIP, dwHostPort))) return FALSE;
 
-    // セッション情報
-    DPN_APPLICATION_DESC dpnAppDesc;
-    ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
-    dpnAppDesc.dwSize           = sizeof(DPN_APPLICATION_DESC);
-    dpnAppDesc.guidApplication  = *pguidApp;
+	// セッション情報
+	DPN_APPLICATION_DESC dpnAppDesc;
+	ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
+	dpnAppDesc.dwSize		   = sizeof(DPN_APPLICATION_DESC);
+	dpnAppDesc.guidApplication  = *pguidApp;
 
-    // 汎用パラメータの設定
-    DPN_CAPS dpnCaps;
-    ZeroMemory(&dpnCaps, sizeof(DPN_CAPS));
-    dpnCaps.dwSize                  = sizeof(DPN_CAPS);
-    dpnCaps.dwConnectTimeout        = 1000;     //接続要求を再送信するまでの時間（ms秒）
-    dpnCaps.dwConnectRetries        = 1;        //接続要求を送る回数
-    dpnCaps.dwTimeoutUntilKeepAlive = 0;
-    svc.pDP->SetCaps(&dpnCaps, 0);
+	// 汎用パラメータの設定
+	DPN_CAPS dpnCaps;
+	ZeroMemory(&dpnCaps, sizeof(DPN_CAPS));
+	dpnCaps.dwSize				  = sizeof(DPN_CAPS);
+	dpnCaps.dwConnectTimeout		= 1000;	 //接続要求を再送信するまでの時間（ms秒）
+	dpnCaps.dwConnectRetries		= 1;		//接続要求を送る回数
+	dpnCaps.dwTimeoutUntilKeepAlive = 0;
+	svc.pDP->SetCaps(&dpnCaps, 0);
 
-    // セッションの参加
-    if(FAILED(svc.pDP->Connect(
+	// セッションの参加
+	if(FAILED(svc.pDP->Connect(
 		&dpnAppDesc,
 		svc.pHostAddress,
 		svc.pDeviceAddress,
 		NULL, NULL, NULL, 0, NULL, NULL, NULL,
 		DPNCONNECT_OKTOQUERYFORADDRESSING | DPNCONNECT_SYNC))
-    ) return FALSE;
+	) return FALSE;
 
-    return TRUE;
+	return TRUE;
 }
 
 BOOL CloseSession()
@@ -238,36 +240,36 @@ BOOL CloseSession()
  */
 BOOL EnumHosts(const GUID* pguidApp, LPCTSTR lpszIP)
 {
-    // デバイスアドレスの初期化
-    if(FAILED(InitDeviceAddress(NULL))) return FALSE;
+	// デバイスアドレスの初期化
+	if(FAILED(InitDeviceAddress(NULL))) return FALSE;
 
-    // ホストアドレスの初期化
-    if(FAILED(InitHostAddress(lpszIP, NULL))) return FALSE;
+	// ホストアドレスの初期化
+	if(FAILED(InitHostAddress(lpszIP, NULL))) return FALSE;
 
-    // セッション情報
-    DPN_APPLICATION_DESC dpnAppDesc;
-    ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
-    dpnAppDesc.dwSize = sizeof(DPN_APPLICATION_DESC);
-    dpnAppDesc.guidApplication = *pguidApp;
+	// セッション情報
+	DPN_APPLICATION_DESC dpnAppDesc;
+	ZeroMemory(&dpnAppDesc, sizeof(DPN_APPLICATION_DESC));
+	dpnAppDesc.dwSize = sizeof(DPN_APPLICATION_DESC);
+	dpnAppDesc.guidApplication = *pguidApp;
 
-    // ホストの列挙
-    FAILED_ASSERT(
-        "ホストの列挙に失敗しました．",
-        svc.pDP->EnumHosts(
-            &dpnAppDesc,                            // application description
-            svc.pHostAddress,                       // host address
-            svc.pDeviceAddress,                     // device address
-            NULL,                                   // pointer to user data
-            0,                                      // user data size
-            0,                                      // retry count (0=default)
-            0,                                      // retry interval (0=default)
-            0,                                      // time out (0=default)
-            NULL,                                   // user context
-            NULL,                                   // async handle
-            DPNENUMHOSTS_OKTOQUERYFORADDRESSING | DPNENUMHOSTS_SYNC)  // flags
-    );
+	// ホストの列挙
+	FAILED_ASSERT(
+		"ホストの列挙に失敗しました．",
+		svc.pDP->EnumHosts(
+			&dpnAppDesc,							// application description
+			svc.pHostAddress,					   // host address
+			svc.pDeviceAddress,					 // device address
+			NULL,								   // pointer to user data
+			0,									  // user data size
+			0,									  // retry count (0=default)
+			0,									  // retry interval (0=default)
+			0,									  // time out (0=default)
+			NULL,								   // user context
+			NULL,								   // async handle
+			DPNENUMHOSTS_OKTOQUERYFORADDRESSING | DPNENUMHOSTS_SYNC)  // flags
+	);
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -290,17 +292,17 @@ BOOL SendToAll(const PVOID pData, DWORD dwSize)
  */
 BOOL SendTo(DPNID dest, const PVOID pData, DWORD dwSize)
 {
-    DPN_BUFFER_DESC dpnBuffer;
+	DPN_BUFFER_DESC dpnBuffer;
 
-    dpnBuffer.pBufferData = (BYTE*)pData;
-    dpnBuffer.dwBufferSize = dwSize;
+	dpnBuffer.pBufferData = (BYTE*)pData;
+	dpnBuffer.dwBufferSize = dwSize;
 
-    FAILED_ASSERT(
-        "データの送信に失敗しました．",
-        svc.pDP->SendTo(dest, &dpnBuffer, 1, 0, NULL, NULL, DPNSEND_SYNC|DPNSEND_GUARANTEED)
-    );
+	FAILED_ASSERT(
+		"データの送信に失敗しました．",
+		svc.pDP->SendTo(dest, &dpnBuffer, 1, 0, NULL, NULL, DPNSEND_SYNC|DPNSEND_GUARANTEED)
+	);
 
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -309,7 +311,7 @@ BOOL SendTo(DPNID dest, const PVOID pData, DWORD dwSize)
  */
 DPNID GetLocalPlayerID()
 {
-    return svc.idLocalPlayer;
+	return svc.idLocalPlayer;
 }
 
 /**
@@ -318,7 +320,7 @@ DPNID GetLocalPlayerID()
  */
 BOOL IsHost()
 {
-    return svc.bHost;
+	return svc.bHost;
 }
 
 /** 
@@ -332,8 +334,8 @@ BOOL IsHost()
  */
 void ReceiveFunc(RECEIVE_DATA* pData, DWORD dwSize, LPARAM lParam)
 {
-    // 何もしない
-    Debug("ReceiveFunc()\n");
+	// 何もしない
+	Debug("ReceiveFunc()\n");
 }
 
 /**
@@ -346,87 +348,87 @@ void ReceiveFunc(RECEIVE_DATA* pData, DWORD dwSize, LPARAM lParam)
 static HRESULT CALLBACK DirectPlayMessageHandler(PVOID pvUserContext, DWORD dwMessageType, PVOID pMessage)
 {
 
-    switch(dwMessageType){
+	switch(dwMessageType){
 
-    case DPN_MSGID_CREATE_PLAYER:
-        {
-            PDPNMSG_CREATE_PLAYER pCreatePlayerMsg;
-            PDPN_PLAYER_INFO pdpnPlayerInfo = NULL;
-            DWORD dwSize = 0;
+	case DPN_MSGID_CREATE_PLAYER:
+		{
+			PDPNMSG_CREATE_PLAYER pCreatePlayerMsg;
+			PDPN_PLAYER_INFO pdpnPlayerInfo = NULL;
+			DWORD dwSize = 0;
 
-            pCreatePlayerMsg = (PDPNMSG_CREATE_PLAYER)pMessage;
+			pCreatePlayerMsg = (PDPNMSG_CREATE_PLAYER)pMessage;
 
-            // DPN_PLAYER_INFO のサイズを取得する
-            HRESULT hr;
-            hr = svc.pDP->GetPeerInfo(pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo, &dwSize, 0);
-            if(hr != DPNERR_BUFFERTOOSMALL) return FALSE;
-            pdpnPlayerInfo = (DPN_PLAYER_INFO*) new BYTE[dwSize];
-            ZeroMemory(pdpnPlayerInfo, dwSize);
-            pdpnPlayerInfo->dwSize = sizeof(DPN_PLAYER_INFO);
+			// DPN_PLAYER_INFO のサイズを取得する
+			HRESULT hr;
+			hr = svc.pDP->GetPeerInfo(pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo, &dwSize, 0);
+			if(hr != DPNERR_BUFFERTOOSMALL) return FALSE;
+			pdpnPlayerInfo = (DPN_PLAYER_INFO*) new BYTE[dwSize];
+			ZeroMemory(pdpnPlayerInfo, dwSize);
+			pdpnPlayerInfo->dwSize = sizeof(DPN_PLAYER_INFO);
 
-            // DPN_PLAYER_INFO を取得する
-            FAILED_ASSERT(
-                "プレイヤ情報の取得に失敗しました．",
-                svc.pDP->GetPeerInfo(pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo, &dwSize, 0)
-            );
+			// DPN_PLAYER_INFO を取得する
+			FAILED_ASSERT(
+				"プレイヤ情報の取得に失敗しました．",
+				svc.pDP->GetPeerInfo(pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo, &dwSize, 0)
+			);
 
-            // 作成されたプレイヤ情報をデバッグ出力
-            Debug("PlayerInfo: dpnidPlayer = %x, dwPlayerFlags = %d\n",
-                pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo->dwPlayerFlags);
+			// 作成されたプレイヤ情報をデバッグ出力
+			Debug("PlayerInfo: dpnidPlayer = %x, dwPlayerFlags = %d\n",
+				pCreatePlayerMsg->dpnidPlayer, pdpnPlayerInfo->dwPlayerFlags);
 
-            // プレイヤーの情報を取得
-            if(pdpnPlayerInfo->dwPlayerFlags & DPNPLAYER_LOCAL){
-                // 自分の DPNID を取得
-                svc.idLocalPlayer = pCreatePlayerMsg->dpnidPlayer;
-                if(pdpnPlayerInfo->dwPlayerFlags & DPNPLAYER_HOST){
+			// プレイヤーの情報を取得
+			if(pdpnPlayerInfo->dwPlayerFlags & DPNPLAYER_LOCAL){
+				// 自分の DPNID を取得
+				svc.idLocalPlayer = pCreatePlayerMsg->dpnidPlayer;
+				if(pdpnPlayerInfo->dwPlayerFlags & DPNPLAYER_HOST){
 					// 自分がホストのとき
-                    svc.bHost = TRUE;
-                }
-            }
-        }
+					svc.bHost = TRUE;
+				}
+			}
+		}
 
-    case DPN_MSGID_DESTROY_PLAYER:
-        break;
+	case DPN_MSGID_DESTROY_PLAYER:
+		break;
 
 		/*
-    case DPN_MSGID_HOST_MIGRATE:
-        {
-            PDPNMSG_HOST_MIGRATE pHostMigrateMsg;
-            pHostMigrateMsg = (PDPNMSG_HOST_MIGRATE)pMessage;
+	case DPN_MSGID_HOST_MIGRATE:
+		{
+			PDPNMSG_HOST_MIGRATE pHostMigrateMsg;
+			pHostMigrateMsg = (PDPNMSG_HOST_MIGRATE)pMessage;
 
-            if(pHostMigrateMsg->dpnidNewHost == svc.idLocalPlayer){
-                // 新しいホストの ID と自分の ID が同じとき
-                svc.bHost = TRUE;
-            }
+			if(pHostMigrateMsg->dpnidNewHost == svc.idLocalPlayer){
+				// 新しいホストの ID と自分の ID が同じとき
+				svc.bHost = TRUE;
+			}
 
-            break;
-        }
+			break;
+		}
 		*/
 
-    case DPN_MSGID_ENUM_HOSTS_RESPONSE:
-        {
-            // 未実装
+	case DPN_MSGID_ENUM_HOSTS_RESPONSE:
+		{
+			// 未実装
 
-            //PDPNMSG_ENUM_HOSTS_RESPONSE pEnumHostsResponseMsg;
-            //pEnumHostsResponseMsg = (PDPNMSG_ENUM_HOSTS_RESPONSE)pMessage;
-            break;
-        }
+			//PDPNMSG_ENUM_HOSTS_RESPONSE pEnumHostsResponseMsg;
+			//pEnumHostsResponseMsg = (PDPNMSG_ENUM_HOSTS_RESPONSE)pMessage;
+			break;
+		}
 
-    case DPN_MSGID_RECEIVE:
-        {
-            PDPNMSG_RECEIVE pReceiveMsg;
-            pReceiveMsg = (PDPNMSG_RECEIVE)pMessage;
+	case DPN_MSGID_RECEIVE:
+		{
+			PDPNMSG_RECEIVE pReceiveMsg;
+			pReceiveMsg = (PDPNMSG_RECEIVE)pMessage;
 
-            // 受信処理関数に受信データを渡す
-            svc.pReceiveFunc(
-                pReceiveMsg->pReceiveData,
-                pReceiveMsg->dwReceiveDataSize,
-                svc.lReceiveParam
-            );
+			// 受信処理関数に受信データを渡す
+			svc.pReceiveFunc(
+				pReceiveMsg->pReceiveData,
+				pReceiveMsg->dwReceiveDataSize,
+				svc.lReceiveParam
+			);
 
-        }
+		}
 
-    }
+	}
 
-    return S_OK;
+	return S_OK;
 }

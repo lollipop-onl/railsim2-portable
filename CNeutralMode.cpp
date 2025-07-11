@@ -49,7 +49,7 @@ void CNeutralMode::DeleteModelInst(
 	CModelInst *minst	//	インスタンス
 ){
 	if(GetCamera() && (!minst || minst==GetCamera()->GetFocusInst()))
-		GetCamera()->SetFocusInfo(CDetectInfo());
+		GetCamera()->SetFocusInfo(R2L(CDetectInfo()));
 	if(!minst || minst==GetFocusInst()){
 		if(GetFocusInst()) GetFocusInst()->GetModelPlugin()->FreeInst();
 		m_FocusInfo = CDetectInfo();
@@ -120,7 +120,7 @@ void CNeutralMode::ScanInputCursorScenery(){
 				CModelInst *tmpinst = GetFocusInst()->Control();
 				if(tmpinst!=GetFocusInst()){
 					m_FocusInfo = CDetectInfo();
-					GetCamera()->SetFocusInfo(CDetectInfo());
+					GetCamera()->SetFocusInfo(R2L(CDetectInfo()));
 					m_SwitchWindow.Show(false);
 				}
 			}
@@ -149,6 +149,17 @@ void CNeutralMode::RenderCursorScenery(){
 		}
 		if(GetFocusInst() && GetFocusInst()->GetScene()==g_Scene){
 			if(ms_PhotoMode<1) m_FocusInfo.GetPartsInst()->DrawBox();
+			//GetFocusInst()->PrintInfo(); // Full
+		}
+	}
+}
+
+/*
+ *	レンダリング (画面分割無視)
+ */
+void CNeutralMode::RenderCursorSceneryFull(){
+	if(ms_PhotoMode<2){
+		if(GetFocusInst() && GetFocusInst()->GetScene()==g_Scene){
 			GetFocusInst()->PrintInfo();
 		}
 	}

@@ -83,16 +83,18 @@ public:
  */
 class CDiaDialog: public CDiaDialogBase{
 private:
-	int m_OffsetSlide;			//	オフセットスライダ状態
-	CRadioButton m_Action[3];	//	動作ラジオ
-	CRadioButton m_TimeType[2];	//	時間ラジオ
-	CEditCtrl m_HourEdit;		//	時ラベル
-	CStaticCtrl m_HourLabel;	//	時エディット
-	CEditCtrl m_MinuteEdit;		//	分エディット
-	CStaticCtrl m_MinuteLabel;	//	分ラベル
-	CEditCtrl m_SecondEdit;		//	秒エディット
-	CStaticCtrl m_SecondLabel;	//	秒ラベル
-//	CCheckBox m_JointCheck;		//	連結チェック
+	int m_OffsetSlide;				//	オフセットスライダ状態
+	CRadioButton m_Action[3];		//	動作ラジオ
+	CRadioButton m_TimeType[2];		//	時間ラジオ
+	CEditCtrl m_HourEdit;			//	時ラベル
+	CStaticCtrl m_HourLabel;		//	時エディット
+	CEditCtrl m_MinuteEdit;			//	分エディット
+	CStaticCtrl m_MinuteLabel;		//	分ラベル
+	CEditCtrl m_SecondEdit;			//	秒エディット
+	CStaticCtrl m_SecondLabel;		//	秒ラベル
+	CEditCtrl m_StopPosEdit;		//	停車位置エディット
+	CPushButton m_StopPosButton;	//	停車位置反映ボタン
+//	CCheckBox m_JointCheck;			//	連結チェック
 public:
 	void Init(CInterface *);
 	void ResizeDiaDialogBase(int, int);

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CJobTimer.h"
 #include "CRailDetectCurve.h"
 #include "CRailConnector.h"
 #include "CPier.h"
@@ -49,6 +50,7 @@ CScene::CScene(){
 	m_Struct = NULL;
 	m_SurfacePlugin = NULL;
 	m_EnvPlugin = NULL;
+	m_IsDumpReady = false;
 	m_Next = NULL;
 }
 
@@ -135,10 +137,10 @@ void CScene::Enter(
 	CPole::SetRoot(&m_Pole);
 	CStruct::SetRoot(&m_Struct);
 	CStation::SetRoot(&m_Station);
-	m_Camera.SetFocusInfo(CDetectInfo());
+	m_Camera.SetFocusInfo(R2L(CDetectInfo()));
 	if(selectcamera) m_Camera.Select();
 	m_ArrowPos = m_Camera.GetFocus();
-	Dump();
+	if(!m_IsDumpReady) Dump();
 	if(g_RailBuildMode) g_RailBuildMode->ResetBuilder();
 }
 
@@ -156,8 +158,15 @@ void CScene::SetGlobalAxis(){
 /*
  *	レールリストルート再設定
  */
-void CScene::ResetRailRoot(){
+void CScene::ResetRailWayRoot(){
 	CRailWay::SetRoot(&m_RailWay);
+}
+
+/*
+ *	レールリストルート再設定
+ */
+void CScene::ResetRailConnectorRoot(){
+	CRailConnector::SetRoot(&m_RailConnector);
 }
 
 /*
@@ -373,6 +382,7 @@ bool CScene::DeleteStation(
 		}
 		adr = ptr->NextAdr();
 	}
+	if(deleted) Dump();
 	return deleted;
 }
 
@@ -638,12 +648,14 @@ void CScene::Dump(){
 	g_GirderPluginList->PrepareVertex();
 	g_PierPluginList->PrepareVertex();
 	g_LinePluginList->PrepareVertex();
+	m_IsDumpReady = true;
 }
 
 /*
  *	レンダリング
  */
 void CScene::RenderScene(){
+	TIMER_RAII("CScene::RenderScene()");
 	SetSeason();
 	SetGlobalAxis();
 	g_SystemSwitch[SYS_SW_SERIAL].SetValue(m_Serial);
@@ -660,43 +672,64 @@ void CScene::RenderScene(){
 	Render();
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
-	g_RailPluginList->RenderAll();
-	g_TiePluginList->RenderAll();
-	g_GirderPluginList->RenderAll();
-	g_PierPluginList->RenderAll();
-	g_LinePluginList->RenderAll();
+	{
+		TIMER_RAII("profile RenderAll()");
+		g_RailPluginList->RenderAll();
+		g_TiePluginList->RenderAll();
+		g_GirderPluginList->RenderAll();
+		g_PierPluginList->RenderAll();
+		g_LinePluginList->RenderAll();
+	}
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
 	devSetLighting(TRUE);
-	CRailWay *way = m_RailWay;
-	while(way){
-		way->Render();
-		way = way->Next();
+	{
+		TIMER_RAII("railway");
+		CRailWay *way = m_RailWay;
+		while(way){
+			way->Render();
+			way = way->Next();
+		}
 	}
-	CPier *pier = m_Pier;
-	while(pier){
-		pier->Render();
-		pier = pier->Next();
+	{
+		TIMER_RAII("pier");
+		CPier *pier = m_Pier;
+		while(pier){
+			pier->Render();
+			pier = pier->Next();
+		}
 	}
-	CLine *line = m_Line;
-	while(line){
-		line->Render();
-		line = line->Next();
+	{
+		TIMER_RAII("line");
+		CLine *line = m_Line;
+		while(line){
+			line->Render();
+			line = line->Next();
+		}
 	}
-	CPole *pole = m_Pole;
-	while(pole){
-		pole->Render();
-		pole = pole->Next();
+	{
+		TIMER_RAII("pole");
+		CPole *pole = m_Pole;
+		while(pole){
+			pole->Render();
+			pole = pole->Next();
+		}
 	}
-	CStation *station = m_Station;
-	while(station){
-		station->Render();
-		station = station->Next();
+	{
+		TIMER_RAII("station");
+		CStation *station = m_Station;
+		while(station){
+			station->Render();
+			station = station->Next();
+		}
 	}
-	CStruct *strct = m_Struct;
-	while(strct){
-		strct->Render();
-		strct = strct->Next();
+	{
+		TIMER_RAII("struct");
+		CStruct *strct = m_Struct;
+		while(strct){
+			strct->Render();
+			strct = strct->Next();
+		}
 	}
 	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
 	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);

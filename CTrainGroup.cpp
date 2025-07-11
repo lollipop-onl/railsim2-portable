@@ -48,7 +48,7 @@ void NetSyncSetTrain(
 	CTrainGroup *group = (CTrainGroup *)g_AddressMap[set_group];
 	if(set_rail){
 		CRailWay *rail = (CRailWay *)g_AddressMap[set_rail];
-		CRailLinkTemp link(set_side, set_sumlen, V3ZERO, V3ZERO, V3ZERO, V3ZERO, rail, IRailSplitter());
+		CRailLinkTemp link(set_side, set_sumlen, R2L(V3ZERO), R2L(V3ZERO), R2L(V3ZERO), R2L(V3ZERO), rail, IRailSplitter());
 		group->Set(&link, set_flag);
 	}else{
 		group->Remove();
@@ -122,8 +122,8 @@ void CTrainGroup::MakeTemplate(
 ){
 	CTrain *ptr = m_TrainList;
 	while(ptr){
-		tgt->PushTrain(CTrainTemplate(
-			ptr->m_TrainPlugin, ptr->m_Reverse, ptr->m_SwitchOption));
+		tgt->PushTrain(R2L(CTrainTemplate(
+			ptr->m_TrainPlugin, ptr->m_Reverse, ptr->m_SwitchOption)));
 		ptr = ptr->m_Next;
 	}
 	tgt->SetLoaded();
@@ -333,7 +333,9 @@ void CTrainGroup::SetSpeedLimit(int sl){
  */
 float CTrainGroup::CalcSignedSpeedLimit(){
 	if(m_SpeedLimit<0) return m_EffectTargetSpeed;
-	return m_EffectTargetSpeed<0.0f ? -m_SpeedLimit : m_SpeedLimit;
+	float abs_limited_speed = fabsf(m_EffectTargetSpeed);
+	if(abs_limited_speed>m_SpeedLimit) abs_limited_speed = (float)m_SpeedLimit;
+	return m_EffectTargetSpeed<0.0f ? -abs_limited_speed : abs_limited_speed;
 }
 
 /*
@@ -650,13 +652,16 @@ bool CTrainGroup::Trail(
 	if(m_Reverse){
 		ibegin = --m_SetBuffer.end();
 		iend = --m_SetBuffer.begin();
+		// 本来 std::list の --begin() は許可されないが、実質動くのでとりあえずこのまま。
+		// VC2010 だと怒られるので /D "_HAS_ITERATOR_DEBUGGING=0" してなんとか回避。
+		// ただし libcpmtd.lib の代わりに libcpmt.lib をリンクする必要がある。
 	}else{
 		ibegin = m_SetBuffer.begin();
 		iend = m_SetBuffer.end();
 	}
 	ITrainSetBuffer ib = m_SetBuffer.begin();
 	float min = ib->m_SumLen;
-	for(; ib!=iend; ib++) ib->m_SumLen -= min;
+	for(; ib!=m_SetBuffer.end(); ib++) ib->m_SumLen -= min;
 	CGroupEndLocator &head = m_Location[m_Reverse], *tail = &m_Location[!m_Reverse];
 	bool ret;
 	if(ret = m_Reverse

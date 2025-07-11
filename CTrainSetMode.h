@@ -20,6 +20,7 @@ public:
 	void EnterCursorScenery();
 	void ScanInputCursorScenery();
 	void RenderCursorScenery();
+	//bool IsWindowDivisible(){ return true; }
 };
 
 //	外部グローバル

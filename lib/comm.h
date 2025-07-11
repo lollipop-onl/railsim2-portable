@@ -210,13 +210,13 @@ typedef void (*PFN_RECEIVE)(RECEIVE_DATA* pData, DWORD dwSize, LPARAM lParam);
  */
 struct SYSVALUE_C
 {
-    IDirectPlay8Peer*       pDP;
-    IDirectPlay8Address*    pDeviceAddress;
-    IDirectPlay8Address*    pHostAddress;
-    DPNID                   idLocalPlayer;      // 自分自身の ID
-    BOOL                    bHost;              // ホストかどうか
-    PFN_RECEIVE             pReceiveFunc;       // 受信が発生したときに呼ばれる関数へのポインタ
-    LPARAM                  lReceiveParam;      // 受信処理関数に渡す32bit値
+	IDirectPlay8Peer*       pDP;
+	IDirectPlay8Address*    pDeviceAddress;
+	IDirectPlay8Address*    pHostAddress;
+	DPNID                   idLocalPlayer;      // 自分自身の ID
+	BOOL                    bHost;              // ホストかどうか
+	PFN_RECEIVE             pReceiveFunc;       // 受信が発生したときに呼ばれる関数へのポインタ
+	LPARAM                  lReceiveParam;      // 受信処理関数に渡す32bit値
 };
 
 extern SYSVALUE_C svc;  // 実体は sysvalue.h

@@ -3,7 +3,7 @@
  */
 
 DatafileHeader{
-	RailSimVersion = 2.12;
+	RailSimVersion = 2.15;
 	DatafileType = Language;
 }
 
@@ -289,6 +289,8 @@ Resource{
 	SceneOperation = "Scene operation";
 	SceneOperationModeExp = "Edit scene, configure simulation.";
 	Sec = "Sec";
+	SelectAddPier = "Add pier";
+	SelectAddPole = "Add pole";
 	SelectEditLine = "Select line";
 	SelectEditPier = "Select pier";
 	SelectEditPole = "Select pole";

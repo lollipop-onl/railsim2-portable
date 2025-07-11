@@ -3,8 +3,10 @@
 #include "CPixelbit.h"
 #include "Capture.h"
 #include "RailMap.h"
+#include "CJobTimer.h"
 #include "CScene.h"
 #include "CSaveFile.h"
+#include "CWindowDivInfo.h"
 #include "CSurfacePlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -31,11 +33,16 @@ extern VEC2 g_RailMapMove;
 
 //	static メンバ
 int CSceneryMode::ms_PhotoMode = 0;
+bool CSceneryMode::ms_NeedResetViewport = false;
 
 /*
  *	シーンカメラ取得
  */
 CCamera *CSceneryMode::GetCamera(){
+	if(IsWindowDivisible() && g_ConfigMode->IsWindowDiv()){
+		CWindowInfo *wnd = g_ConfigMode->GetActiveWindow();
+		if(wnd) return wnd->GetCamera();
+	}
 	return g_Scene ? g_Scene->GetCamera() : NULL;
 }
 
@@ -53,14 +60,14 @@ void CSceneryMode::EnterGame(){
  *	モードループ
  */
 void CSceneryMode::SpinGame(){
-//	static double aaa = 0.0, sss = 0.95;
-//	double bbb = HighTimer();
 	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 	g_ConfigMode->SetTexFilter();
 	if(!g_ModalDialog && !IsPausedScenery()) g_SaveFile->Simulate(-1);
-	ApplyCamera();
-	SpinSound();
+	ms_NeedResetViewport = false;
+	CWindowInfo* active_wnd = NULL;
 	if(g_ConfigMode->GetStereo()){
+		ApplyCamera();
+		SpinSound();
 		float interval = g_ConfigMode->GetStereoInterval()
 			*(g_ConfigMode->GetStereoMethod() ? -1 : 1);
 		// left
@@ -76,40 +83,99 @@ void CSceneryMode::SpinGame(){
 		g_SaveFile->RenderScene(!ms_PhotoMode);
 		sv3.pDev->EndScene();
 		// reset
-		SetViewport(0, 0, sv3.width, sv3.height);
-		g_StereoInterval = 0.0f;
-		ApplyCamera();
+		//SetViewport(0, 0, sv3.width, sv3.height);
+		//g_StereoInterval = 0.0f;
+		//ApplyCamera();
 		BeginScene(0);
+		ms_NeedResetViewport = true;
+	}else if(IsWindowDivisible() && g_ConfigMode->IsWindowDiv()){
+		ApplyCamera();
+		SpinSound();
+		g_ConfigMode->GetRootWindow()->RenderScene(0, 0, g_DispWidth, g_DispHeight, this, !ms_PhotoMode);
+		SetViewport(0, 0, sv3.width, sv3.height);
+		active_wnd = g_ConfigMode->GetActiveWindow();
+		BeginScene(0);
+		g_ConfigMode->RenderWindowDiv();
+		if(active_wnd){
+			sv3.pDev->EndScene();
+			g_Scene = active_wnd->GetScene();
+			*g_Scene->GetCamera() = *active_wnd->GetCamera();
+			active_wnd->ApplyViewportAndCamera();
+			BeginScene(0);
+		}
+		SpinSound();
+		ms_NeedResetViewport = true;
 	}else{
+		ApplyCamera();
+		SpinSound();
 		g_SaveFile->RenderScene(!ms_PhotoMode);
 	}
+	const bool divisible = IsWindowDivisible() && !g_ConfigMode->GetStereo();
+	bool enable_scenery_input = true;
+	#define SCAN_INPUT_WINDOW_DIV() \
+		if(divisible){ \
+			switch(g_ConfigMode->ScanInputWindowDiv()){ \
+			case 2: \
+				active_wnd = NULL; \
+			case 1: \
+				enable_scenery_input = false; \
+				break; \
+			default:; \
+			} \
+		}
 	switch(ms_PhotoMode){
 	case 0:
 		RenderScenery();
-//		aaa = HighTimer()-bbb+sss*aaa;
-//		g_StrTex->RenderCenter(g_DispWidth/2, TILE_UNIT+FontY(TILE_UNIT),
-//			0xffff8000, 0xff000000, FlashIn("Render %.1f[ms]", (1.0-sss)*aaa));
+		SCAN_INPUT_WINDOW_DIV();
 		break;
 	case 1:
 		RenderScenery();
+		g_Cursor.ScanInput(!g_ModalDialog && IsArrowMode());
+		SCAN_INPUT_WINDOW_DIV();
+		if(ms_NeedResetViewport) ResetViewport();
 		GetCamera()->PrintInfo(CameraCtrlExp());
 		RenderFrame(3);
 		RenderNetworkInterface();
 		RenderDialog();
-		g_Cursor.ScanInput(!g_ModalDialog && IsArrowMode());
 		g_Cursor.Render();
 		break;
 	case 2:
 		g_Cursor.ScanInput(!g_ModalDialog && IsArrowMode());
+		if(ms_NeedResetViewport) ResetViewport();
 		if(RenderDialog()) g_Cursor.Render();
 		break;
 	}
 
-	EndScene();
+#if ENABLE_JOB_TIMER
+	g_JobTimer.DrawResult();
+#endif
 
+	if(active_wnd){
+		sv3.pDev->EndScene();
+		g_Scene = active_wnd->GetScene();
+		active_wnd->ApplyViewportAndCamera();
+		BeginScene(0);
+	}
+	if(enable_scenery_input) ScanInputScenery();
+	{
+		TIMER_RAII("EndScene");
+		EndScene();
+	}
 	VideoCapture(1|(ms_PhotoMode==2 ? 4 : 0)
 		|(!g_SimulationMode->GetSimSpeed() || IsPaused() ? 2 : 0), this);
-	ScanInputScenery();
+}
+
+/*
+ *	ビューポート etc. リセット
+ */
+void CSceneryMode::ResetViewport(){
+	SetViewport(0, 0, sv3.width, sv3.height);
+	if(g_ConfigMode->GetStereo()){
+		g_StereoInterval = 0.0f;
+		ApplyCamera();
+		BeginScene(0);
+	}else if(IsWindowDivisible() && g_ConfigMode->IsWindowDiv()){
+	}
 }
 
 /*
@@ -453,6 +519,8 @@ void CCursorSceneryMode::RenderScenery(){
 	devTEX_POINT(0);
 	devTEX_POINT(1);
 	if(ms_PhotoMode) return;
+	if(ms_NeedResetViewport) ResetViewport();
+	RenderCursorSceneryFull();
 	m_Interface.Render();
 	GetCamera()->PrintInfo(CameraCtrlExp());
 	RenderFrame(1);

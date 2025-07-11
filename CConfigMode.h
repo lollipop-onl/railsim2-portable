@@ -6,12 +6,14 @@
 #include "CGroupBox.h"
 #include "CCheckBox.h"
 #include "CRadioButton.h"
+#include "CWindowDivInfo.h"
 #include "CInterfaceMode.h"
 
 const int RES_MODE_NUM = 4;			//	解像度タイプ数
 const int MIPMAP_NUM = 4;			//	ミップマップ区分数
 const int PISND_NUM = 4;			//	プラグインサウンド区分数
 const int STEREO_METHOD_NUM = 2;	//	ステレオ手法数
+
 /*
  *	環境設定モード
  */
@@ -61,12 +63,18 @@ private:
 	CRadioButton m_StereoMethod[STEREO_METHOD_NUM];	//	ステレオ手法
 	CStaticCtrl m_StereoIntervalLabel;	//	ステレオ手法
 	CEditCtrl m_StereoIntervalEdit;		//	視点間隔
+
+	CWindowInfo m_RootWindow;			//	画面分割情報
+	CWindowInfo* m_ActiveWindow;		//	ポイントしている画面
+
 public:
 	CConfigMode();
-	~CConfigMode(){}
+	~CConfigMode();
 	void EnterInterface();
 	void ScanInputInterface();
+	int ScanInputWindowDiv();
 	void RenderInterface();
+	void RenderWindowDiv();
 	bool Load();
 	bool Save();
 	int GetHideTopPanel(){ return m_HideTopPanel.GetCheck(); }
@@ -97,6 +105,11 @@ public:
 	int GetStereoMethod(){ return m_StereoMethod->GetNumber(); }
 	float GetStereoInterval();
 	void CheckHardware();
+	CWindowInfo* GetRootWindow() { return &m_RootWindow; }
+	bool IsWindowDiv() { return m_RootWindow.GetDiv()!=NULL; }
+	CWindowInfo* GetActiveWindow() { return m_ActiveWindow; }
+	void SetActiveWindow(CWindowInfo* wnd) { m_ActiveWindow = wnd; }
+	void FreeWindowDiv();
 };
 
 //	外部グローバル

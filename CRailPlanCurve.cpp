@@ -37,11 +37,11 @@ void CRailPlanCurve::Curve(
 		if(V3Dot(&GetVDir(), &tup)<0.0f){
 			tdir = -tdir;
 			tup = -tup;
-			func1 = CStringTexture::RenderRight3D;
-			func2 = CStringTexture::RenderLeft3D;
+			func1 = &CStringTexture::RenderRight3D;
+			func2 = &CStringTexture::RenderLeft3D;
 		}else{
-			func1 = CStringTexture::RenderRight3D;
-			func2 = CStringTexture::RenderLeft3D;
+			func1 = &CStringTexture::RenderRight3D;
+			func2 = &CStringTexture::RenderLeft3D;
 		}
 		if(cdir.y>0.0f) tup = -tup;
 		if(V3Dot(&tdir, &dir2)<0.0f) g_StrTex->RenderRight3D(
@@ -114,7 +114,7 @@ void CRailBuildCurve::Curve(
 	}
 	m_BeginLink.m_Cant = cant;
 	if(m_CompSplit){
-		CRailBuildCurve curve1(m_BeginLink, CRailConnectorLink(),
+		CRailBuildCurve curve1(m_BeginLink, R2L(CRailConnectorLink()),
 			m_RailPlugin, m_TiePlugin, m_GirderPlugin);
 		curve1.Curve(pos1, dir1, m_SplitPos, m_SplitDir, false, true);
 		CRailBuildCurve curve2(curve1.m_BeginLink, m_EndLink,
@@ -128,8 +128,8 @@ void CRailBuildCurve::Curve(
 		CRailWay *way = new CRailWay(m_BeginLink, m_EndLink,
 			m_RailPlugin, m_TiePlugin, m_GirderPlugin);
 		g_SingleTrackSegment->push_back(way);
-		m_BeginLink.Connect(way->CreateLink(0));
-		m_EndLink.Connect(way->CreateLink(1));
+		m_BeginLink.Connect(R2L(way->CreateLink(0)));
+		m_EndLink.Connect(R2L(way->CreateLink(1)));
 	}else{
 		CRailConnector *con2 = new CRailConnector(pos2, dir2);
 		CRailConnectorLink nextlink = con2->CreateLink(0, 0);
@@ -137,8 +137,8 @@ void CRailBuildCurve::Curve(
 		CRailWay *way = new CRailWay(m_BeginLink, nextlink,
 			m_RailPlugin, m_TiePlugin, m_GirderPlugin);
 		g_SingleTrackSegment->push_back(way);
-		m_BeginLink.Connect(way->CreateLink(0));
-		nextlink.Connect(way->CreateLink(1));
+		m_BeginLink.Connect(R2L(way->CreateLink(0)));
+		nextlink.Connect(R2L(way->CreateLink(1)));
 		m_BeginLink = con2->CreateLink(1, 0);
 	}
 }

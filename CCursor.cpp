@@ -74,7 +74,21 @@ void CSkinPlugin::_CURSORDATA::Render(
 void CCursor::Init(){
 	m_Alpha = 1.0f;
 	m_Resizing = -2;
-	Center();
+	if(!sv3.fWindowed || svw.fActive){
+		Center();
+		ShowCursor(FALSE);
+		Clip();
+	}
+}
+
+/*
+ *	ウィンドウ内にクリップ
+ */
+void CCursor::Clip(){
+	POINT wp = {0, 0};
+	ClientToScreen(svw.hWnd, &wp);
+	RECT crc = {wp.x, wp.y, wp.x+g_DispWidth, wp.y+g_DispHeight};
+	ClipCursor(&crc);
 }
 
 /*

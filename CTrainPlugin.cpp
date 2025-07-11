@@ -172,7 +172,7 @@ void CBodyObject::SetPosture(){
 	VEC3 ldir = sdir.x*wdir-(m_Turn ? -sdir.y : sdir.y)*w90, lup;
 	V3Cross(&lup, &ldir, &right);
 	obj->SetDir(ldir, m_Turn ? -lup : lup);
-	VEC3 dif = 0.5f*(m_Joint1.m_LocalCoord+m_Joint2.m_LocalCoord);
+	VEC3 dif = 0.5f*VEC2toVEC3(m_Joint1.m_LocalCoord+m_Joint2.m_LocalCoord);
 	V3Norm(&ldir, &obj->GetDir());
 	V3Norm(&lup, &obj->GetUp());
 	VEC3 pos = cpos-dif.x*ldir-dif.y*lup;
@@ -206,6 +206,15 @@ CFreeObjectContainer::CFreeObjectContainer(
 	const CFreeObjectContainer &src	//	コピー元
 ){
 	m_FreeObject = src.m_FreeObject->Duplicate();
+}
+
+/*
+ *	コピーコンストラクタ
+ */
+CFreeObjectContainer::CFreeObjectContainer(
+	CFreeObject3D *obj3d	//	obj
+){
+	m_FreeObject = obj3d;
 }
 
 /*
@@ -293,8 +302,8 @@ void CFreeObjectZY::SetPostureFreeObject(){
 	VEC3 ldir = sdir.x*wdir-(m_Turn ? -sdir.y : sdir.y)*w90, lup;
 	V3Cross(&lup, &ldir, &right);
 	obj->SetDir(ldir, m_Turn ? -lup : lup);
-	VEC3 dif = (1.0f-m_FixPosition)*m_Joint1.m_LocalCoord
-		+m_FixPosition*m_Joint2.m_LocalCoord;
+	VEC3 dif = VEC2toVEC3((1.0f-m_FixPosition)*m_Joint1.m_LocalCoord
+		+m_FixPosition*m_Joint2.m_LocalCoord);
 	V3Norm(&ldir, &obj->GetDir());
 	V3Norm(&lup, &obj->GetUp());
 	obj->SetPos(cpos-dif.x*ldir-dif.y*lup);
@@ -697,7 +706,7 @@ void CTrainPlugin::Preview(
 	float offset,	//	オフセット
 	bool reverse	//	反転
 ){
-	CBodyObject::SetTiltDir(V3ZERO);
+	CBodyObject::SetTiltDir(R2L(V3ZERO));
 	SetPartsInst(NULL);
 	SetMoverState(NULL);
 	IAxleObject iao = m_AxleObject.begin();
@@ -737,8 +746,8 @@ void CTrainPlugin::SetAxleList(
 ){
 	int i = 0;
 	IAxleObject ia = m_AxleObject.begin();
-	for(; ia!=m_AxleObject.end(); ia++, i++) train->PushAxle(CAxlePosture(
-		&*ia, train, (!i || i==m_AxleObject.size()-1) && m_AxleObject.size()>1));
+	for(; ia!=m_AxleObject.end(); ia++, i++) train->PushAxle(R2L(CAxlePosture(
+		&*ia, train, (!i || i==m_AxleObject.size()-1) && m_AxleObject.size()>1)));
 }
 
 /*

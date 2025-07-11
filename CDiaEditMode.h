@@ -25,6 +25,7 @@ public:
 	bool IsPausedCursorScenery(){
 		return m_PointDialog.IsVisible() || m_DiaDialog.IsVisible();
 	}
+	//bool IsWindowDivisible(){ return true; }
 };
 
 //	外部グローバル

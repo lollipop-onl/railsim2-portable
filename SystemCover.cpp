@@ -282,7 +282,7 @@ string RestoreDoubleQuote(
 ){
 	string ret = str;
 	int i = 0;
-	while(ret[i] && i<ret.size()-1){
+	while(i<(int)ret.size()-1 && ret[i]){
 		if(ret[i]=='\'' && ret[i+1]=='\''){
 			ret[i] = '\"';
 			ret.erase(i+1, 1);

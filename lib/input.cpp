@@ -45,6 +45,8 @@ BOOL InitDirectInput(){
  *	DirectInputの解放
  */
 void FreeDirectInput(){
+	if(!svi.pDI) return;
+
 	DebugHL();
 	Debug("FreeInput\n");
 
@@ -113,10 +115,12 @@ BOOL InitMouse(){
 	svi.pMouse->Acquire();
 
 	//	フルスクリーン時はカーソルを非表示
-	/*if(!sv3.fWindowed)*/ ShowCursor(FALSE);
+	if(!sv3.fWindowed){
+		ShowCursor(FALSE);
 
-	//	カーソルをセンタリング
-	SetCursor(svw.winW/2, svw.winH/2);
+		//	カーソルをセンタリング
+		SetCursor(svw.winW/2, svw.winH/2);
+	}
 
 	return TRUE;
 }

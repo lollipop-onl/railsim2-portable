@@ -100,10 +100,13 @@ private:
 public:
 	CFreeObjectContainer();
 	CFreeObjectContainer(const CFreeObjectContainer &);
+	CFreeObjectContainer(CFreeObject3D *);
 	~CFreeObjectContainer();
 	char *Read(char *, CModelPlugin *);
 	void SetPosture(){ m_FreeObject->SetPostureFreeObject(); }
 	CNamedObject *Check(const string &name){ return m_FreeObject->CheckFreeObject(name); }
+	int GetNamedObjectNum(){ return m_FreeObject->GetNamedObjectNum(); }
+	CNamedObject *GetNamedObject(int i){ return m_FreeObject->GetNamedObject(i); }
 	void LoadModel(CModelPlugin *mpi){ m_FreeObject->LoadModelFreeObject(mpi); }
 	void AttachPartsObject(){ m_FreeObject->AttachPartsFreeObject(); }
 	void ScanInput(){ m_FreeObject->ScanInputFreeObject(); }
@@ -130,6 +133,8 @@ public:
 	char *Read(char *, CModelPlugin *);
 	void SetPostureFreeObject();
 	CNamedObject *CheckFreeObject(const string &name){ return Check(name); }
+	int GetNamedObjectNum(){ return 1; }
+	CNamedObject *GetNamedObject(int i){ return this; }
 	void LoadModelFreeObject(CModelPlugin *mpi){ LoadModel(mpi); }
 	void AttachPartsFreeObject(){ GetPartsObject(); }
 	void ScanInputFreeObject(){ CheckDetect(); }
@@ -165,6 +170,8 @@ public:
 		return m_Link1.Check(name) ? &m_Link1
 			: (m_Link2.Check(name) ? &m_Link2 : NULL);
 	}
+	int GetNamedObjectNum(){ return 2; }
+	CNamedObject *GetNamedObject(int i){ return i ? &m_Link2 : &m_Link1; }
 	void LoadModelFreeObject(CModelPlugin *mpi){
 		m_Link1.LoadModel(mpi); m_Link2.LoadModel(mpi);
 	}
@@ -174,7 +181,7 @@ public:
 };
 
 /*
- *	ピストンスライダ
+ *	クランクスライダ
  */
 class CCrankSlideZY: public CNamedObject{
 	friend class CFreeCrankZY;
@@ -186,7 +193,7 @@ public:
 };
 
 /*
- *	ピストンオブジェクト
+ *	クランクオブジェクト
  */
 class CFreeCrankZY: public CFreeObjectBase{
 	friend class CTrainPlugin;
@@ -201,6 +208,8 @@ public:
 		return m_Link.Check(name) ? (CNamedObject *)&m_Link
 			: (m_Slide.Check(name) ? (CNamedObject *)&m_Slide : NULL);
 	}
+	int GetNamedObjectNum(){ return 2; }
+	CNamedObject *GetNamedObject(int i){ return i ? (CNamedObject*)&m_Slide : (CNamedObject*)&m_Link; }
 	void LoadModelFreeObject(CModelPlugin *mpi){
 		m_Link.LoadModel(mpi); m_Slide.LoadModel(mpi);
 	}
@@ -224,6 +233,8 @@ public:
 		return m_Link1.Check(name) ? &m_Link1
 			: (m_Link2.Check(name) ? &m_Link2 : NULL);
 	}
+	int GetNamedObjectNum(){ return 2; }
+	CNamedObject *GetNamedObject(int i){ return i ? &m_Link2 : &m_Link1; }
 	void LoadModelFreeObject(CModelPlugin *mpi){
 		m_Link1.LoadModel(mpi); m_Link2.LoadModel(mpi);
 	}

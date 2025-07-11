@@ -51,7 +51,7 @@ CTreeDirElement::~CTreeDirElement(){
 	while(ptr){
 		CTreeElement *tmp = ptr->m_Brother;
 		ptr->m_Brother = NULL;
-		delete [] ptr;
+		delete ptr;
 		ptr = tmp;
 	}
 }

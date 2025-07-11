@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CJobTimer.h"
 #include "CShadowVolume.h"
 #include "CScene.h"
 #include "CEnvPlugin.h"
@@ -137,6 +138,8 @@ void CShadowVolume::BuildFromMesh(
 	CObject *obj,	//	オブジェクト
 	VEC3 vLight		//	ライト方向
 ){
+	TIMER_RAII("CShadowVolume::BuildFromMesh()");
+
 	CMesh *udxMesh = obj->GetMesh();
 	if(!udxMesh) return;
 	udxMesh->MaskMatFlag(1);
@@ -151,14 +154,22 @@ void CShadowVolume::BuildFromMesh(
 	WORD* pIndices = NULL;
 	DWORD* pAttributes = NULL;
 
-	// Lock the geometry buffers
-	pMesh->LockVertexBuffer(0, (BYTE **)&pVertices);
-	pMesh->LockIndexBuffer(0, (BYTE **)&pIndices);
-	pMesh->LockAttributeBuffer(0, &pAttributes);
+	//	バッファをロック
+	if(FAILED(pMesh->LockVertexBuffer(D3DLOCK_READONLY, (BYTE **)&pVertices))){
+		return;
+	}
+	if(FAILED(pMesh->LockIndexBuffer(D3DLOCK_READONLY, (BYTE **)&pIndices))){
+		pMesh->UnlockVertexBuffer();
+		return;
+	}
+	if(FAILED(pMesh->LockAttributeBuffer(D3DLOCK_READONLY, &pAttributes))){
+		pMesh->UnlockVertexBuffer();
+		pMesh->UnlockIndexBuffer();
+		return;
+	}
 	DWORD dwNumVertices = pMesh->GetNumVertices();
 	DWORD dwNumFaces = pMesh->GetNumFaces();
 
-	// For each face
 	DWORD i, j;
 	m_TempIndex.clear();
 	for(i = 0; i<dwNumFaces; i++){
@@ -169,7 +180,7 @@ void CShadowVolume::BuildFromMesh(
 		VEC3 v0 = *(VEC3 *)(pVertices+fvfSize*wFace0);
 		VEC3 v1 = *(VEC3 *)(pVertices+fvfSize*wFace1);
 		VEC3 v2 = *(VEC3 *)(pVertices+fvfSize*wFace2);
-		// Transform vertices or transform light?
+
 		VEC3 vNormal;
 		V3Cross(&vNormal, &(v2-v1), &(v1-v0));
 		if(V3Dot(&vNormal, &vLocal)>=0.0f){
@@ -204,7 +215,7 @@ void CShadowVolume::BuildFromMesh(
 		for(j = 0; j<cnt; j++) m_FaceVolume->Add(v1, v2, vLight*SHADOW_INF_DIST);
 	}
 
-	// Unlock the geometry buffers
+	//	バッファのロックを解除
 	pMesh->UnlockVertexBuffer();
 	pMesh->UnlockIndexBuffer();
 	pMesh->UnlockAttributeBuffer();
@@ -224,53 +235,45 @@ void CShadowVolume::AddFaceEdge(
  *	レンダリング
  */
 void CShadowVolume::Render(){
-	// Disable z-buffer writes (note: z-testing still occurs), and enable the
-	// stencil-buffer
-	devSetState( D3DRS_ZENABLE,       TRUE );
-	devSetState( D3DRS_ZWRITEENABLE,  FALSE );
+	//	いろいろ設定
+	devSetState( D3DRS_ZENABLE, TRUE );
+	devSetState( D3DRS_ZWRITEENABLE, FALSE );
 	devSetState( D3DRS_STENCILENABLE, TRUE );
+	devSetState( D3DRS_SHADEMODE, D3DSHADE_FLAT );
 
-	// Dont bother with interpolating color
-	devSetState( D3DRS_SHADEMODE,	D3DSHADE_FLAT );
-
-	// Set up stencil compare fuction, reference value, and masks.
-	// Stencil test passes if ((ref & mask) cmpfn (stencil & mask)) is true.
-	// Note: since we set up the stencil-test to always pass, the STENCILFAIL
-	// renderstate is really not needed.
-	devSetState( D3DRS_STENCILFUNC,  D3DCMP_ALWAYS );
+	//	ステンシルテストは常にパス
+	devSetState( D3DRS_STENCILFUNC, D3DCMP_ALWAYS );
 	devSetState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
-	devSetState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
+	devSetState( D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP );
 
-	// If ztest passes, inc/decrement stencil buffer value
-	devSetState( D3DRS_STENCILREF,	     0x1 );
-	devSetState( D3DRS_STENCILMASK,	     0xffffffff );
+	//	Z テストがパスするところだけインクリメント
+	devSetState( D3DRS_STENCILREF, 0x1 );
+	devSetState( D3DRS_STENCILMASK, 0xffffffff );
 	devSetState( D3DRS_STENCILWRITEMASK, 0xffffffff );
-	devSetState( D3DRS_STENCILPASS,	     D3DSTENCILOP_INCR );
+	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_INCR );
 
-	// Make sure that no pixels get drawn to the frame buffer
+	//	フレームバッファには描かない（ステンシルのみ描く）
 	devSetState( D3DRS_ALPHABLENDENABLE, TRUE );
-	devSetState( D3DRS_SRCBLEND,  D3DBLEND_ZERO );
+	devSetState( D3DRS_SRCBLEND, D3DBLEND_ZERO );
 	devSetState( D3DRS_DESTBLEND, D3DBLEND_ONE );
 
-	// Draw front-side of shadow volume in stencil/z only
+	//	シャドウボリュームの手前面を描画
 	devTransform( &sv3.mtxFront );
 	m_FaceVolume->Render( true );
 
-	// Now reverse cull order so back sides of shadow volume are written.
-	devSetState( D3DRS_CULLMODE,   D3DCULL_CW );
-
-	// Decrement stencil buffer value
+	//	Z テストがパスするところだけデクリメント
 	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_DECR );
 
-	// Draw back-side of shadow volume in stencil/z only
+	//	カリングを逆にして奥面を描画
+	devSetState( D3DRS_CULLMODE, D3DCULL_CW );
 	devTransform( &sv3.mtxFront );
 	m_FaceVolume->Render( true );
 
-	// Restore render states
+	//	設定を戻す
 	devSetState( D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
-	devSetState( D3DRS_CULLMODE,  D3DCULL_CCW );
-	devSetState( D3DRS_ZWRITEENABLE,	 TRUE );
-	devSetState( D3DRS_STENCILENABLE,	 FALSE );
+	devSetState( D3DRS_CULLMODE, D3DCULL_CCW );
+	devSetState( D3DRS_ZWRITEENABLE, TRUE );
+	devSetState( D3DRS_STENCILENABLE, FALSE );
 	devSetState( D3DRS_ALPHABLENDENABLE, FALSE );
 }
 
@@ -280,35 +283,33 @@ void CShadowVolume::Render(){
 void CShadowVolume::Draw(
 	D3DCOLOR color	//	shadow color
 ){
-	// Set renderstates (disable z-buffering, enable stencil, disable fog, and
-	// turn on alphablending)
-	devSetState( D3DRS_ZENABLE,		  FALSE );
-	devSetState( D3DRS_STENCILENABLE,	TRUE );
-	devSetState( D3DRS_FOGENABLE,		FALSE );
+	//	いろいろ設定
+	devSetState( D3DRS_ZENABLE, FALSE );
+	devSetState( D3DRS_STENCILENABLE, TRUE );
+	devSetState( D3DRS_FOGENABLE, FALSE );
 	devSetState( D3DRS_ALPHABLENDENABLE, TRUE );
-	devSetState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
+	devSetState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
 	devSetState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 	devSetTexState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 	devSetTexState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-	devSetTexState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
+	devSetTexState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
 	devSetTexState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
 	devSetTexState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
-	devSetTexState( 0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE );
+	devSetTexState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
 
-	// Only write where stencil val >= 1 (count indicates # of shadows that
-	// overlap that pixel)
-	devSetState( D3DRS_STENCILREF,  0x1 );
+	//	ステンシルバッファの値が 1 以上のところは影
+	devSetState( D3DRS_STENCILREF, 0x1 );
 	devSetState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );
 	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP );
 
-	// Draw a big, gray square
+	//	影部分を暗くする
 	if(g_HidefCaptureFlag) Fill2DRect(0, 0, g_HidefBufferSize, g_HidefBufferSize, color);
 	else Fill2DRect(0, 0, g_DispWidth, g_DispHeight, color);
 
-	// Restore render states
-	devSetState( D3DRS_ZENABLE,		  TRUE );
-	devSetState( D3DRS_STENCILENABLE,	FALSE );
-	//devSetState( D3DRS_FOGENABLE,		TRUE );
+	//	設定を戻す
+	devSetState( D3DRS_ZENABLE, TRUE );
+	devSetState( D3DRS_STENCILENABLE, FALSE );
+	//devSetState( D3DRS_FOGENABLE, TRUE );
 	devSetState( D3DRS_ALPHABLENDENABLE, FALSE );
 }

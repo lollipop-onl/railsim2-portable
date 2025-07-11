@@ -14,9 +14,9 @@
 class CSceneryMode: public CGameMode{
 protected:
 	static int ms_PhotoMode;	//	éBâeÉÇÅ[Éh
+	static bool ms_NeedResetViewport;
 public:
 	static int GetPhotoMode(){ return ms_PhotoMode; }
-	static CCamera *GetCamera();
 	CSceneryMode(){}
 	virtual ~CSceneryMode(){}
 	virtual bool CameraCtrlExp(){ return false; }
@@ -25,9 +25,11 @@ public:
 	virtual char *LoadScenerySetting(char *str){ return str; }
 	void SaveSetting(FILE *file){ SaveScenerySetting(file); }
 	virtual void SaveScenerySetting(FILE *){}
+	CCamera *GetCamera();
 	void EnterGame();
 	virtual void EnterScenery() = 0;
 	void SpinGame();
+	void ResetViewport();
 	virtual void ApplyCamera();
 	virtual void ScanInputScenery() = 0;
 	virtual void RenderScenery() = 0;
@@ -35,6 +37,7 @@ public:
 	virtual bool IsPausedScenery() = 0;
 	bool ProcessShortcutKey();
 	virtual bool IsArrowMode(){ return false; }
+	virtual bool IsWindowDivisible(){ return false; }
 };
 
 /*
@@ -98,6 +101,7 @@ public:
 	virtual void ScanInputCursorScenery() = 0;
 	void RenderScenery();
 	virtual void RenderCursorScenery(){}
+	virtual void RenderCursorSceneryFull(){}
 	bool IsPausedScenery(){ return IsPausedCursorScenery(); }
 	virtual bool IsPausedCursorScenery(){ return false; }
 };

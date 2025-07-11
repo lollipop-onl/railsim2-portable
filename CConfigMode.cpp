@@ -1,13 +1,16 @@
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CSkinPlugin.h"
+#include "CScene.h"
+#include "CSaveFile.h"
 #include "CFileMode.h"
+#include "CSceneryMode.h"
 #include "CConfigMode.h"
 
 //	内部定数
 const int WW = 512, WH = 384;	//	窓サイズ
-const RES_MODE_WIDTH[RES_MODE_NUM] = {640, 800, 1024, 1280};	//	解像度幅
-const RES_MODE_HEIGHT[RES_MODE_NUM] = {480, 600, 768, 960};		//	解像度高
+const int RES_MODE_WIDTH[RES_MODE_NUM] = {640, 800, 1024, 1280};	//	解像度幅
+const int RES_MODE_HEIGHT[RES_MODE_NUM] = {480, 600, 768, 960};		//	解像度高
 
 //	外部グローバル
 extern char *g_PluginViewArg;
@@ -44,7 +47,7 @@ bool g_NamedObjectMipMap;		//	名前付きオブジェクトミップマップ
 CConfigMode::CConfigMode(){
 	int i, half = WW/2-TILE_HALF*3, win = half-TILE_UNIT*2;
 
-	m_ConfigWindow1.Init((g_DispWidth-WW)/2-TILE_UNIT, (g_DispHeight-WH)/2,
+	m_ConfigWindow1.Init(0, 0,
 		WW, WH, FlashIn("%s [1/2]", lang(Configuration)), &m_Interface, true);
 
 	m_InterfaceGroup.Init(TILE_UNIT, TILE_UNIT*2,
@@ -123,7 +126,7 @@ CConfigMode::CConfigMode(){
 	m_UseUndo.Init(TILE_UNIT, TILE_UNIT+TILE_QUAD, half-TILE_UNIT*2, TILE_UNIT,
 		lang(UseUndo), &m_MiscGroup);
 
-	m_ConfigWindow2.Init((g_DispWidth-WW)/2-TILE_UNIT*2, (g_DispHeight-WH)/2+TILE_UNIT,
+	m_ConfigWindow2.Init(0, 0,
 		WW, WH, FlashIn("%s [2/2]", lang(Configuration)), &m_Interface, true);
 
 	m_StereoGroup.Init(TILE_UNIT, TILE_UNIT*2,
@@ -143,6 +146,14 @@ CConfigMode::CConfigMode(){
 		half-TILE_UNIT*6, TILE_UNIT, FlashIn("%s [m]", lang(StereoscopyInterval)), &m_StereoGroup, 0, 1);
 	m_StereoIntervalEdit.Init(half-TILE_UNIT*5, TILE_UNIT*5+TILE_QUAD,
 		TILE_UNIT*4, TILE_UNIT, "1.00", &m_StereoGroup, 8);
+
+	m_ActiveWindow = NULL;
+}
+
+/*
+ *	デストラクタ
+ */
+CConfigMode::~CConfigMode(){
 }
 
 /*
@@ -168,12 +179,37 @@ void CConfigMode::ScanInputInterface(){
 }
 
 /*
+ *	入力チェック
+ */
+int CConfigMode::ScanInputWindowDiv(){
+	devSetTexture(0, NULL);
+	devBLEND_ALPHA();
+	if(IsWindowDiv() && GetButton(DIM_LEFT)==S_FREE && GetButton(DIM_MIDDLE)==S_FREE && GetButton(DIM_RIGHT)==S_FREE){
+		m_ActiveWindow = m_RootWindow.GetPointWindow(0, 0, g_DispWidth, g_DispHeight, g_Cursor.GetPos());
+	}
+	int ret = CWindowDivInfo::ScanInput(m_RootWindow.GetDivAdr(), 0, 0, g_DispWidth, g_DispHeight, g_Scene->GetCamera(), &g_Scene);
+	CWindowDivInfo::RenderInterface();
+	return ret;
+}
+
+/*
  *	レンダリング
  */
 void CConfigMode::RenderInterface(){
 	int ix = g_DispWidth*60/100, iy = g_DispHeight;
 	g_StrTex->RenderLeft(TILE_QUAD, g_DispHeight-TILE_UNIT, 0xffffffff, 0xff000000,
 		FlashIn("Version %s / LANG = %s", VERSION_STRING, g_LanguageName.c_str()));
+}
+
+/*
+ *	レンダリング
+ */
+void CConfigMode::RenderWindowDiv(){
+	devSetTexture(0, NULL);
+	devBLEND_ALPHA();
+	if(m_RootWindow.GetDiv()){
+		m_RootWindow.GetDiv()->RenderInterfaceRecursive(0, 0, g_DispWidth, g_DispHeight);
+	}
 }
 
 /*
@@ -345,6 +381,7 @@ SET:
 	m_StereoMethod[stereomethod].SetCheck();
 	m_StereoIntervalEdit.SetText(FlashIn("%.2f", stereointerval));
 	m_ConfigWindow1.SetPos((g_DispWidth-WW)/2-TILE_UNIT, (g_DispHeight-WH)/2);
+	m_ConfigWindow2.SetPos((g_DispWidth-WW)/2-TILE_UNIT*2, (g_DispHeight-WH)/2+TILE_UNIT);
 	return true;
 }
 
@@ -473,4 +510,13 @@ void CConfigMode::CheckHardware(){
 		m_InterfaceSound.SetCheck(0);
 		for(i = 0; i<4; i++) m_PluginSound[i].SetCheck(0);
 	}
+}
+
+/*
+ *	画面分割関連初期化
+ */
+void CConfigMode::FreeWindowDiv(){
+	m_RootWindow.Free();
+	CWindowDivInfo::InitState();
+	m_ActiveWindow = NULL;
 }

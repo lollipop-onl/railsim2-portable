@@ -81,7 +81,7 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 
 	if(angle>0.9f){
 		//	フレアの描画
-		DWORD aplus = (DWORD)(max(0, (angle-0.9f)*FRand2(1400.0f, 2200.0f)))<<24;
+		DWORD aplus = (DWORD)(max(0.0f, (angle-0.9f)*FRand2(1400.0f, 2200.0f)))<<24;
 		devSetTexture(0, NULL);
 
 		pos -= vDist;
@@ -112,7 +112,7 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 
 		//	ホワイトアウト
 		if(fWhite && angle>0.9f){
-			aplus = (DWORD)(max(0, (angle-0.9f)*1000.0f))<<24;
+			aplus = (DWORD)(max(0.0f, (angle-0.9f)*1000.0f))<<24;
 			Fill2DRect(0, 0, g_DispWidth, g_DispHeight, aplus|0x00ffffff);
 		}
 	}else{

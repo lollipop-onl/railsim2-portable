@@ -3,6 +3,7 @@
 
 class CLineDumpL;
 
+void NormalizeMatrix(MTX4 *);
 bool LineLineNearest(VEC3 *, VEC3 *, VEC3 *, VEC3 *, VEC3 *, VEC3 *);
 float LineLineDistance(VEC3 *, VEC3 *, VEC3 *, VEC3 *);
 void LinePointPosition(VEC3 *, VEC3 *, VEC3 *, VEC3 *, VEC3 *, float);
@@ -71,6 +72,11 @@ inline void V3MinMax(VEC3 a, VEC3 b, VEC3 *min, VEC3 *max){
 	if(a.x>b.x){ min->x = b.x; max->x = a.x; }else{ min->x = a.x; max->x = b.x; }
 	if(a.y>b.y){ min->y = b.y; max->y = a.y; }else{ min->y = a.y; max->y = b.y; }
 	if(a.z>b.z){ min->z = b.z; max->z = a.z; }else{ min->z = a.z; max->z = b.z; }
+}
+
+inline VEC3 VEC2toVEC3( VEC2 vec )
+{
+	return VEC3( vec.x, vec.y, 0.0f );
 }
 
 /*

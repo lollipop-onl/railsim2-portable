@@ -17,12 +17,13 @@
 #include "CGameMode.h"
 
 //	内部定数
-extern const float RAILSIM_VERSION = 2.12f;	//	本体バージョン
-extern const char* VERSION_STRING = "2.12";	//	表示バージョン文字列 (2.00a 等のバグ修正コードを含む) 
+extern const float RAILSIM_VERSION = 2.15f;	//	本体バージョン
+extern const char* VERSION_STRING = "2.15";	//	表示バージョン文字列 (2.00a 等のバグ修正コードを含む) 
 
 //	外部グローバル
 extern char *g_PluginViewArg;
 extern string g_SelectedSkin;
+extern bool g_CursorLockable;
 
 //	内部グローバル
 int g_RSPV = RSPV_NONE;						//	RSPV モード
@@ -73,10 +74,6 @@ CTexture g_OpeningTexture;	//	オープニング用画像
 void Opening(){
 	static int cnt = 0, loading = 0;
 	while(PeekAllMessage()){
-		POINT wp = {0, 0};
-		ClientToScreen(svw.hWnd, &wp);
-		RECT crc = {wp.x, wp.y, wp.x+g_DispWidth, wp.y+g_DispHeight};
-		ClipCursor(&crc);
 		ScanInputDevice();
 		const int anim = 30;
 		const int letters = 10, letl = 10;
@@ -316,6 +313,7 @@ void Main(){
 	skin->SetPreview();
 	CTreeDirElement::InitMenu();
 	g_Cursor.Init();
+	g_CursorLockable = true;
 	InitGrid();
 	CGameMode::MainLoop();
 	DELETE_V(g_SaveFile);

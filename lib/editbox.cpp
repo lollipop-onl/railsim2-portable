@@ -150,6 +150,8 @@ int CEditBox::ScanInput(){
 			MoveHead();
 		}else if(GetKey(DIK_END)==S_PUSH){
 			MoveLast();
+		}else if(CheckCtrl() && GetKey(DIK_A)==S_PUSH){
+			SelectAll();
 		}else if(CheckCtrl() && GetKey(DIK_X)==S_PUSH){
 			ClipCut();
 		}else if(CheckCtrl() && GetKey(DIK_C)==S_PUSH){
@@ -412,6 +414,15 @@ void CEditBox::MoveLast(){
 }
 
 /*
+ *	‘S‚Ä‘I‘ð
+ */
+void CEditBox::SelectAll(){
+	m_selpos = 0;
+	m_pos = m_str.size();
+	m_frame = BLINK_FRAME/5;
+}
+
+/*
  *	•ÏŠ·Šm’è
  */
 void CEditBox::CompEnd(bool get_result){
@@ -481,7 +492,7 @@ string EliminateTabAndCRLF(string s){
 	char *ptr = (char *)s.c_str();
 	for(; *ptr; ptr = CharNext(ptr)){
 		if(*ptr=='\t') *ptr = ' ';
-		else if(*ptr=='\n' || *ptr=='\r') return string(s.begin(), ptr);
+		else if(*ptr=='\n' || *ptr=='\r') return string(s.begin(), s.begin()+(ptr-s.c_str()));
 	}
 	return s;
 }

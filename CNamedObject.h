@@ -167,6 +167,8 @@ public:
 	virtual CFreeObjectBase *Duplicate() = 0;
 	virtual void SetPostureFreeObject() = 0;
 	virtual CNamedObject *CheckFreeObject(const string &) = 0;
+	virtual int GetNamedObjectNum() = 0;
+	virtual CNamedObject *GetNamedObject(int i) = 0;
 	virtual void LoadModelFreeObject(CModelPlugin *) = 0;
 	virtual void AttachPartsFreeObject() = 0;
 	virtual void ScanInputFreeObject() = 0;
@@ -187,6 +189,8 @@ public:
 	char *Read(char *, CModelPlugin *);
 	void SetPostureFreeObject();
 	CNamedObject *CheckFreeObject(const string &name){ return Check(name); }
+	int GetNamedObjectNum(){ return 1; }
+	CNamedObject *GetNamedObject(int i){ return this; }
 	void LoadModelFreeObject(CModelPlugin *mpi){ LoadModel(mpi); }
 	void AttachPartsFreeObject(){ GetPartsObject(); }
 	void ScanInputFreeObject(){ CheckDetect(); }

@@ -29,7 +29,7 @@ CPlatformInst::CPlatformInst(
  */
 CPlatformInst::CPlatformInst(
 	CStation *station,	//	駅
-	bool stoppable,		//	停車可能
+	bool stoppable,		//	停車可能 /*CP932対応*/
 	bool *opendoor		//	ドア開
 ){
 	m_Length = -1.0f;
@@ -55,7 +55,18 @@ void CPlatformInst::DeleteRailWay(
 void CPlatformInst::DeletePlatform(){
 	g_SaveFile->DeletePlatform(this);
 	IPRailWay ipr = m_RailList.begin();
-	for(; ipr!=m_RailList.end(); ipr++) (*ipr)->SetPlatform(NULL);
+	for(; ipr!=m_RailList.end(); ipr++){
+		(*ipr)->SetPlatform(NULL);
+		(*ipr)->SetParent(NULL);
+	}
+}
+
+/*
+ *	プラットフォーム親設定
+ */
+void CPlatformInst::SetPlatformParent(CDetectInfo *d_info){
+	IPRailWay ipr = m_RailList.begin();
+	for(; ipr!=m_RailList.end(); ipr++) (*ipr)->SetParent(d_info);
 }
 
 /*
@@ -78,6 +89,14 @@ int CPlatformInst::GetPlatformState(){
 	IPRailWay ipr = m_RailList.begin();
 	for(; ipr!=m_RailList.end(); ipr++) state |= (*ipr)->GetPlatformState();
 	return state;
+}
+
+/*
+ *	シミュレーション進行
+ */
+void CPlatformInst::Simulate(){
+	IPRailWay ipr = m_RailList.begin();
+	for(; ipr!=m_RailList.end(); ipr++) (*ipr)->UpdateSplitList();
 }
 
 /*
@@ -176,10 +195,19 @@ CStation::~CStation(){
  *	プラットフォーム追加
  */
 CPlatformInst *CStation::PushPlatformInst(
-	CPlatformInst &pfi	//	停車可能
+	CPlatformInst &pfi	//	停車可能 /*CP932対応*/
 ){
 	m_PlatformList.push_back(pfi);
 	return &*m_PlatformList.rbegin();
+}
+
+/*
+ *	プラットフォーム配列構築
+ */
+void CStation::MakePlatformArray(){
+	m_PlatformArray.clear();
+	IPlatformInst ipi = m_PlatformList.begin();
+	for(; ipi!=m_PlatformList.end(); ipi++) m_PlatformArray.push_back(&*ipi);
 }
 
 /*
@@ -232,6 +260,14 @@ CModelInst *CStation::Control(){
 }
 
 /*
+ *	シミュレーション進行
+ */
+void CStation::SimulateStruct(){
+	IPlatformInst ipi = m_PlatformList.begin();
+	for(; ipi!=m_PlatformList.end(); ipi++) ipi->Simulate();
+}
+
+/*
  *	専用スイッチ設定
  */
 void CStation::SetSwitchStruct(){
@@ -264,6 +300,18 @@ void CStation::RestoreAddress(){
 	IPlatformInst ipi = m_PlatformList.begin();
 	for(; ipi!=m_PlatformList.end(); ipi++) ipi->RestoreAddress();
 	m_DiaInst.RestoreAddress();
+	list<CPlatformInst>::iterator pfi_itr = m_PlatformList.begin();
+	list<CPlatform>::iterator pf_itr = m_StationPlugin->m_Platform.begin();
+	for(; pfi_itr!=m_PlatformList.end(); pfi_itr++){
+		if(pf_itr==m_StationPlugin->m_Platform.end()) break;
+		if(pf_itr->m_ParentObject){
+			CPartsInst *parts = FindParts(pf_itr->m_ParentObject);
+			if(!parts) ErrorDialog("INTERNAL ERROR: PLATFORM PARENT PARTS NOT FOUND: %s", pf_itr->m_ParentObject->GetName());
+			CDetectInfo d_info = CDetectInfo(pf_itr->m_ParentObject, this, parts);
+			pfi_itr->SetPlatformParent(&d_info);
+		}
+		++pf_itr;
+	}
 }
 
 /*
@@ -296,6 +344,7 @@ char *CStation::Read(
 			break;
 		}
 	}
+	MakePlatformArray();
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
 	if(tmp = m_DiaInst.Read(str)) str = tmp;

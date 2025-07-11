@@ -69,8 +69,8 @@ BOOL CTexture::Create(int w, int h){
 
 	//	テクスチャの作成
 	HRESULT hr;
-	int texW = (int)pow(2, ceil(log(w)/log(2)));
-	int texH = (int)pow(2, ceil(log(h)/log(2)));
+	int texW = (int)powf(2, ceilf(logf(w)/logf(2)));
+	int texH = (int)powf(2, ceilf(logf(h)/logf(2)));
 
 	hr = sv3.pDev->CreateTexture(
 		texW, texH, 1, 0, D3DFMT_A4R4G4B4,

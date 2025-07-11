@@ -26,6 +26,10 @@
 	#endif
 #endif
 
+#ifndef __int3264
+typedef unsigned long *DWORD_PTR;
+#endif
+
 #ifndef DIRECTINPUT_VERSION
 	#define DIRECTINPUT_VERSION 0x0800
 #endif
@@ -35,7 +39,7 @@
 #include <dinput.h>
 #include <dmusicc.h>
 #include <dmusici.h>
-#include <dshow.h>
+//#include <dshow.h>
 #include <dxfile.h>
 
 /*

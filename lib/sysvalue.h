@@ -15,8 +15,8 @@ SYSVALUE_F svf;		//	Font
 SYSVALUE_L svl;		//	Light
 SYSVALUE_I svi;		//	Input
 SYSVALUE_S svs;		//	Sound
-SYSVALUE_M svm;		//	Music
-SYSVALUE_V svv;		//	Video
+//SYSVALUE_M svm;		//	Music
+//SYSVALUE_V svv;		//	Video
 SYSVALUE_C svc;     //	Comm
 
 CFrame g_frame;

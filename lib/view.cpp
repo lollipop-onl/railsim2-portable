@@ -98,6 +98,13 @@ void SetViewport(DWORD x, DWORD y, DWORD w, DWORD h, float znear, float zfar){
 	vp.MinZ = znear;
 	vp.MaxZ = zfar;
 	sv3.pDev->SetViewport(&vp);
+
+	//ビューポート行列の作成(ワールド→スクリーン座標変換用)
+	sv3.mtxVPort = MTX4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+	sv3.mtxVPort._11 =  (w*0.5f);
+	sv3.mtxVPort._22 = -(h*0.5f);
+	sv3.mtxVPort._41 =  (w*0.5f)+x;
+	sv3.mtxVPort._42 =  (h*0.5f)+y;
 }
 
 /*

@@ -47,6 +47,7 @@ void CCamera::Init(
 	float maxdist,	//	最大距離
 	bool clip		//	クリップ設定
 ){
+	m_LeftState = m_MiddleState = m_RightState = 0;
 	m_DefDist = defdist;
 	m_MinDist = mindist;
 	m_MaxDist = maxdist;
@@ -72,6 +73,7 @@ void CCamera::ResetCamera(
 //	m_Bank = bank;
 	m_Dist = dist<0.0f ? m_DefDist : dist;
 	m_FieldOfView = 0.25f*D3DX_PI;
+	m_Wheel = 0.0f;
 	SetCenter();
 }
 
@@ -207,15 +209,24 @@ void CCamera::Apply(
 	CObject *tlocal	//	ローカル系直接指定
 ){
 	if(GetFocusInst()){
-		if(GetFocusInst()->GetScene() && GetFocusInst()->GetScene()!=g_Scene){
-			g_Scene = GetFocusInst()->GetScene();
-			*g_Scene->GetCamera() = *this;
-			g_Scene->Enter(true);
-			*g_Scene->GetCamera() = *this;
+		if(GetFocusInst()->GetScene()){
+			if(GetFocusInst()->GetScene()!=g_Scene){
+				g_Scene = GetFocusInst()->GetScene();
+				*g_Scene->GetCamera() = *this;
+				g_Scene->Enter(true);
+				*g_Scene->GetCamera() = *this;
+				g_NeutralMode->SetFocusInfo(m_FocusInfo);
+				return;
+			}
 			g_NeutralMode->SetFocusInfo(m_FocusInfo);
-			return;
+		}else{
+			CDetectInfo tmp_detect_info;
+			g_NeutralMode->SetFocusInfo(tmp_detect_info);
 		}
 		if(GetFocusInst()->IsWarping()) return;
+	}else{
+		CDetectInfo tmp_detect_info;
+		g_NeutralMode->SetFocusInfo(tmp_detect_info);
 	}
 	float sinpitch = sinf(m_Pitch), cospitch = cosf(m_Pitch);
 	VEC3 pos, up = V3UP;
@@ -405,7 +416,7 @@ int CCamera::ScanInput(
 	if(wh) BeginPrint();
 	if(CheckShift()){
 		if(CheckCtrl()){
-			m_FieldOfView = 5*Round(D3DXToDegree(m_FieldOfView/5));
+			m_FieldOfView = 5.f*Round(D3DXToDegree(m_FieldOfView/5));
 			if(wh) m_FieldOfView += wh>0 ? -5.0f : 5.0f;
 			m_FieldOfView = D3DXToRadian(m_FieldOfView);
 		}else{
@@ -599,13 +610,14 @@ char *CCamera::Read(
  *	保存
  */
 void CCamera::Save(
-	FILE *df	//	ファイル
+	FILE *df,		//	ファイル
+	string indent	//	インデント
 ){
-	fprintf(df, "\t\tCamera{\n");
-	fprintf(df, "\t\t\tHead = %f;\n", m_Head);
-	fprintf(df, "\t\t\tPitch = %f;\n", m_Pitch);
-	fprintf(df, "\t\t\tDist = %f;\n", m_Dist);
-	fprintf(df, "\t\t\tFieldOfView = %f;\n", m_FieldOfView);
-	fprintf(df, "\t\t\tFocus = "); V3Save(df, m_Focus, ";\n");
-	fprintf(df, "\t\t}\n");
+	fprintf(df, "%sCamera{\n", indent.c_str());
+	fprintf(df, "%s\tHead = %f;\n", indent.c_str(), m_Head);
+	fprintf(df, "%s\tPitch = %f;\n", indent.c_str(), m_Pitch);
+	fprintf(df, "%s\tDist = %f;\n", indent.c_str(), m_Dist);
+	fprintf(df, "%s\tFieldOfView = %f;\n", indent.c_str(), m_FieldOfView);
+	fprintf(df, "%s\tFocus = ", indent.c_str()); V3Save(df, m_Focus, ";\n");
+	fprintf(df, "%s}\n", indent.c_str());
 }

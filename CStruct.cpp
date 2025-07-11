@@ -79,6 +79,25 @@ bool CStruct::IsSelectVisible(){
 }
 
 /*
+ *	プラグイン選択モード取得
+ */
+CPartsInst *CStruct::FindParts(CNamedObject *nobj){
+	list<CFreeObjectContainer>::iterator n_itr = m_StructPlugin->m_FreeObject.begin();
+	list<CPartsInst>::iterator p_itr = m_PartsInst.begin();
+	while(true){
+		if(n_itr==m_StructPlugin->m_FreeObject.end()) break;
+		if(p_itr==m_PartsInst.end()) break;
+		int i;
+		for(i = 0; i<n_itr->GetNamedObjectNum(); ++i){
+			if(n_itr->GetNamedObject(i)==nobj) return &*p_itr;
+			++p_itr;
+		}
+		++n_itr;
+	}
+	return NULL;
+}
+
+/*
  *	撤去
  */
 void CStruct::Remove(){
@@ -184,6 +203,7 @@ void CStruct::SimulateModelInst(){
 	m_StructPlugin->SetSwitch(this);
 	m_StructPlugin->SetPartsInst(this);
 	m_StructPlugin->Simulate(this);
+	SimulateStruct();
 }
 
 /*

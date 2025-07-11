@@ -527,24 +527,24 @@ D3DCOLOR GetXRGB32(DWORD d, D3DFORMAT fmt){
 		break;
 
 	case D3DFMT_R5G6B5:
-		r = min(0xff, ((d&0xf800)>>11)*8);
-		g = min(0xff, ((d&0x07e0)>> 5)*4);
-		b = min(0xff, (d&0x001f)*8);
+		r = min((DWORD)0xff, ((d&0xf800)>>11)*8);
+		g = min((DWORD)0xff, ((d&0x07e0)>> 5)*4);
+		b = min((DWORD)0xff, (d&0x001f)*8);
 		c = 0xff000000|r|g|b;
 		break;
 
 	case D3DFMT_X1R5G5B5:
 	case D3DFMT_A1R5G5B5:
-		r = min(0xff, ((d&0x7e00)>>11)*8);
-		g = min(0xff, ((d&0x03e0)>>5)*8);
-		b = min(0xff, (d&0x001f)*8);
+		r = min((DWORD)0xff, ((d&0x7e00)>>11)*8);
+		g = min((DWORD)0xff, ((d&0x03e0)>>5)*8);
+		b = min((DWORD)0xff, (d&0x001f)*8);
 		c = 0xff000000|r|g|b;
 		break;
 
 	case D3DFMT_A4R4G4B4:
-		r = min(0xff, ((d&0x0f00)>>8)*16);
-		g = min(0xff, ((d&0x00f0)>>4)*16);
-		b = min(0xff, (d&0x000f)*16);
+		r = min((DWORD)0xff, ((d&0x0f00)>>8)*16);
+		g = min((DWORD)0xff, ((d&0x00f0)>>4)*16);
+		b = min((DWORD)0xff, (d&0x000f)*16);
 		c = 0xff000000|r|g|b;
 		break;
 

@@ -8,7 +8,7 @@
 #include "CConfigMode.h"
 
 //	内部定数
-extern const int RAIL_PREV_LEN = 100.0f;	//	レールプレビュー長
+extern const float RAIL_PREV_LEN = 100.0f;	//	レールプレビュー長
 const int WHEEL_SOUND_MARGIN = 100;			//	車輪音空白時間 [ms]
 
 //	外部グローバル

@@ -246,14 +246,14 @@ void CPier::Render(){
 		Dump(1);
 	}
 	if(m_PierPlugin->m_Direction) m_PierPlugin->Render(
-		m_PierBegin, m_PierRight*tsx, m_PierUp*tsy, m_PierDir,
-		m_PierBegin, m_PierRight*tsx, m_PierUp,
+		m_PierBegin, R2L(m_PierRight*tsx), R2L(m_PierUp*tsy), m_PierDir,
+		m_PierBegin, R2L(m_PierRight*tsx), m_PierUp,
 		m_PierEnd, m_PierRight, m_PierUp, m_PierDir,
 		m_PierEnd, m_PierRight, m_PierUp, 3, m_PierArea, altmat);
 	else m_PierPlugin->Render(
 		m_PierBegin, m_PierRight, m_PierUp, m_PierDir,
 		m_PierBegin, m_PierRight, m_PierUp,
-		m_PierEnd, m_PierRight*tsx, m_PierUp*tsy, m_PierDir,
+		m_PierEnd, R2L(m_PierRight*tsx), R2L(m_PierUp*tsy), m_PierDir,
 		m_PierEnd, m_PierRight, m_PierUp, 3, m_PierArea, altmat);
 }
 
@@ -298,9 +298,9 @@ void CPier::Save(
 	fprintf(df, "\t\t\tPier{\n");
 	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
 	fprintf(df, "\t\t\t\tPierPlugin = \"%s\";\n", CheckPluginID(m_PierPlugin));
-	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, m_JointObject.GetPos(), ";\n");
-	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, m_JointObject.GetDir(), ";\n");
-	fprintf(df, "\t\t\t\tJointUp = "); V3Save(df, m_JointObject.GetUp(), ";\n");
+	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, R2L(m_JointObject.GetPos()), ";\n");
+	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, R2L(m_JointObject.GetDir()), ";\n");
+	fprintf(df, "\t\t\t\tJointUp = "); V3Save(df, R2L(m_JointObject.GetUp()), ";\n");
 	fprintf(df, "\t\t\t\tSurfaceAlt = %f;\n", m_SurfaceAlt);
 	fprintf(df, "\t\t\t}\n");
 }

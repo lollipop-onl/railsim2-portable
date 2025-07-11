@@ -74,12 +74,12 @@ protected:
 	int m_ItemNum;					//	データ数
 	int m_InsertRow;				//	挿入位置
 	int m_DownScrollV;				//	クリック時スクロール位置
-	DRAGTYPE m_DragType;			//	ドラッグ可能
-	bool m_MultiSelect;				//	複数選択可能
-	bool m_Insertable;				//	挿入可能
-	bool m_Renamable;				//	リネーム可能
+	DRAGTYPE m_DragType;			//	ドラッグ可能 /*CP932対応*/
+	bool m_MultiSelect;				//	複数選択可能 /*CP932対応*/
+	bool m_Insertable;				//	挿入可能 /*CP932対応*/
+	bool m_Renamable;				//	リネーム可能 /*CP932対応*/
 	bool m_RenameWait;				//	リネーム待ち
-	bool m_Sortable;				//	列ソート可能
+	bool m_Sortable;				//	列ソート可能 /*CP932対応*/
 	DWORD m_ClickTime;				//	クリック時刻
 	POINT m_DownPos;				//	クリック座標
 	CListElement *m_FocusItem;		//	フォーカスアイテム

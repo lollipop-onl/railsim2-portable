@@ -30,7 +30,7 @@ public:
 	/*
 	 *	再生中のフレームを設定
 	 */
-	void SetFrame(float f){m_playFrame = max(0, min(f, m_nFrames-1));}
+	void SetFrame(float f){m_playFrame = max(0.0f, min(f, m_nFrames-1.0f));}
 	/*
 	 *	再生中のフレームを取得
 	 */

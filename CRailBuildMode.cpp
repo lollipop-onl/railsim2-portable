@@ -88,13 +88,13 @@ void CRailBuildMode::ScanInputArrowScenery(){
 		if(GetKey(DIK_SPACE)>=S_PUSH) CRailDetectCurve3D::ResetDetect();
 		else g_Scene->ScanInputRailWay(0, m_SnapPos, V3ZERO, true);
 		if(CRailDetectCurve3D::IsDetected()){
-			if(!m_LastPos->SetLink(CRailLinkTemp(CRailDetectCurve3D::GetDetect()))){
+			if(!m_LastPos->SetLink(R2L(CRailLinkTemp(CRailDetectCurve3D::GetDetect())))){
 				CRailDetectCurve3D::ResetDetect();
 				//Surface()->ClipAlt(&m_SnapPos, NULL, NULL, GetAltMask());
 				m_SnapPos = m_LastPos->SetPos(m_SnapPos, 0);
 			}
 		}else{
-			m_LastPos->SetLink(CRailLinkTemp());
+			m_LastPos->SetLink(R2L(CRailLinkTemp()));
 			m_SnapPos = m_LastPos->SetPos(m_SnapPos, GetAltMask());
 		}
 		//if(m_Interface.ScanInput()) break;
@@ -124,6 +124,7 @@ BUILD:
 					CRailBuilder::ResetDirSum();
 					g_LastPole.resize(ms_TrackNum);
 					g_FinishPole.resize(ms_TrackNum);
+					g_MultiTrackDummy = false;
 					for(i = 0; i<ms_TrackNum; i++)
 						g_LastPole[i] = g_FinishPole[i] = CPoleLink();
 					for(i = 0; i<=ms_TrackNum; i++){

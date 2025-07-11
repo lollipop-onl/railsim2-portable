@@ -46,16 +46,19 @@ bool CStructPlugin::Load(){
 	g_NamedObjectMipMap = g_StructMipMap;
 	CNamedObject::SetCastShadowDefault(true);
 	try{
-		if(!(str = LoadStruct(eee = str))) throw CSynErr(eee);
+		if(!(str = LoadStructBefore(eee = str))) throw CSynErr(eee);
 
 		if(!(str = ReadModelSwitch(eee = str))) throw CSynErr(eee);
 
 		if(!(str = BeginBlock(eee = str, "PrimaryAssembly"))) throw CSynErr(eee);
-		CFreeObject3D freeobj;
+		CFreeObjectContainer freeobj;
 		while(tmp = freeobj.Read(str, this)){
 			str = tmp;
 			m_FreeObject.push_back(freeobj);
 		}
+
+		if(!(str = LoadStructAfter(eee = str))) throw CSynErr(eee);
+
 		if(!(str = ReadEffect(eee = str))) throw CSynErr(eee);
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
@@ -65,7 +68,7 @@ bool CStructPlugin::Load(){
 		HandleError(&err);
 		return false;
 	}
-	IFreeObject3D ifo = m_FreeObject.begin();
+	IFreeObjectContainer ifo = m_FreeObject.begin();
 	for(; ifo!=m_FreeObject.end(); ifo++) ifo->LoadModel(this);
 	LoadData();
 	DELETE_A(m_Buffer);
@@ -75,7 +78,7 @@ bool CStructPlugin::Load(){
 /*
  *	ロード
  */
-char *CStructPlugin::LoadStruct(
+char *CStructPlugin::LoadStructBefore(
 	char *str	//	対象文字列
 ){
 	char *eee;
@@ -97,7 +100,7 @@ bool CStructPlugin::LoadOldForm(){
 	fscanf(file, "%s %s %f", dummy, dummy, &sc);
 	fclose(file);
 	float oldscale = 2.0f/sc;
-	m_FreeObject.push_back(CFreeObject3D("MainObject", "Model.x", oldscale));
+	m_FreeObject.push_back(CFreeObjectContainer(new CFreeObject3D("MainObject", "Model.x", oldscale)));
 	m_FreeObject.begin()->LoadModel(this);
 	m_PartsNum = 1;
 	return true;
@@ -132,7 +135,7 @@ CNamedObject *CStructPlugin::FindObject(
 	const string &name	//	オブジェクト名
 ){
 	CNamedObject *ret;
-	IFreeObject3D ifo = m_FreeObject.begin();
+	IFreeObjectContainer ifo = m_FreeObject.begin();
 	for(; ifo!=m_FreeObject.end(); ifo++) if(ret = ifo->Check(name)) return ret;
 	return NULL;
 }
@@ -148,8 +151,8 @@ bool CStructPlugin::IsSoundEnabled(){
  *	姿勢設定
  */
 void CStructPlugin::SetPosture(){
-	IFreeObject3D ifo = m_FreeObject.begin();
-	for(; ifo!=m_FreeObject.end(); ifo++) ifo->SetPostureFreeObject();
+	IFreeObjectContainer ifo = m_FreeObject.begin();
+	for(; ifo!=m_FreeObject.end(); ifo++) ifo->SetPosture();
 }
 
 /*
@@ -161,8 +164,8 @@ void CStructPlugin::ScanInput(
 	strct->SetLocalAxis();
 	SetCamDistSwitch(strct->GetPos());
 	g_PreSimulationFlag = false;
-	IFreeObject3D ifo = m_FreeObject.begin();
-	for(; ifo!=m_FreeObject.end(); ifo++) ifo->CheckDetect();
+	IFreeObjectContainer ifo = m_FreeObject.begin();
+	for(; ifo!=m_FreeObject.end(); ifo++) ifo->ScanInput();
 }
 
 /*
@@ -185,7 +188,7 @@ void CStructPlugin::Render(
 		SetPartsInst(strct);
 		g_MoverEnabled = true;
 	}
-	IFreeObject3D ifo = m_FreeObject.begin();
+	IFreeObjectContainer ifo = m_FreeObject.begin();
 	for(; ifo!=m_FreeObject.end(); ifo++) ifo->Render();
 	SimulateEffect(strct);
 }

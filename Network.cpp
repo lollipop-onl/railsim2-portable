@@ -819,7 +819,7 @@ void RSNReceiveHost(RECEIVE_DATA *ptr, DWORD size, LPARAM lp){
 			if(info.id==recv->id){
 				PushChatLog(FlashIn("%s %s", info.name.c_str(), lang(HasLeft)));
 				RSNReleaseColor(info.color_id);
-				g_NetworkMembers.erase(&g_NetworkMembers[i]);
+				g_NetworkMembers.erase(g_NetworkMembers.begin()+i);
 				RSNSendNotifyMemberList(RSN_MSG_MEMBER_LIST, DPNID_ALL_PLAYERS_GROUP);
 				g_NetworkMemberUpdated = true;
 				break;
@@ -1041,7 +1041,7 @@ void RSNDeleteMember(DPNID id){
 		if(info.id==id){
 			PushChatLog(FlashIn("%s %s", info.name.c_str(), lang(HasLeft)));
 			RSNReleaseColor(info.color_id);
-			g_NetworkMembers.erase(&g_NetworkMembers[i]);
+			g_NetworkMembers.erase(g_NetworkMembers.begin()+i);
 			RSNSendNotifyMemberList(RSN_MSG_MEMBER_LIST, DPNID_ALL_PLAYERS_GROUP);
 			g_NetworkMemberUpdated = true;
 			break;

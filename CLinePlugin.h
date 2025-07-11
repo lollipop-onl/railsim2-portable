@@ -22,6 +22,8 @@ public:
 	CLinePlugin(char *id): CProfilePlugin(id){}
 	char *DirName(){ return "Line"; }
 	char *TextName2(){ return "Line2.txt"; }
+	float GetTrolleyAlt(){ return m_TrolleyAlt; }
+	float GetHeight(){ return m_Height; }
 	bool Load();
 	void SetPreview();
 	float GetPolePos(){ return m_PolePos; }

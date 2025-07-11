@@ -11,6 +11,10 @@ CModelSwitch g_SystemSwitch[SYSTEM_SWITCH_NUM];
 
 vector<CStaticSwitchID> g_StaticSwitchTable;
 
+int CurrentEnabledEffectorTypes(){
+	return g_PreSimulationFlag ? EFCT_PARTICLEAPPLIER|EFCT_RAILCONNECTOR : EFCT_MISCELLANEOUS;
+}
+
 /*
  *	コンストラクタ
  */
@@ -482,8 +486,7 @@ void CEffectorSwitchEntry::LoadData(
 void CEffectorSwitchEntry::Apply(
 	CScene *scene	//	シーン
 ){
-	if(!(m_TypeFlag&(g_PreSimulationFlag
-		? EFCT_PARTICLEAPPLIER : EFCT_MISCELLANEOUS))) return;
+	if(!(m_TypeFlag&CurrentEnabledEffectorTypes())) return;
 	IEffectorContainer icc = m_Effector.begin();
 	for(; icc!=m_Effector.end(); icc++) icc->Apply(scene);
 }
@@ -525,8 +528,7 @@ void CEffectorSwitchApplier::LoadDataEffector(
 void CEffectorSwitchApplier::ApplyEffector(
 	CScene *scene	//	シーン
 ){
-	if(!(m_TypeFlag&(g_PreSimulationFlag
-		? EFCT_PARTICLEAPPLIER : EFCT_MISCELLANEOUS))) return;
+	if(!(m_TypeFlag&CurrentEnabledEffectorTypes())) return;
 	IEffectorSwitchEntry ise = m_Entry.begin();
 	int eval = GetSwitchValue();
 	bool def = true;
@@ -558,6 +560,7 @@ void InitSystemSwitch(){
 	g_SystemSwitch[SYS_SW_APPROACH1].Init(-SYS_SW_APPROACH1-1, "_APPROACH1");
 	g_SystemSwitch[SYS_SW_APPROACH2].Init(-SYS_SW_APPROACH2-1, "_APPROACH2");
 	g_SystemSwitch[SYS_SW_STOPPING].Init(-SYS_SW_STOPPING-1, "_STOPPING");
+
 	g_SystemSwitch[SYS_SW_NIGHT].Init(-SYS_SW_NIGHT-1, "_NIGHT");
 	g_SystemSwitch[SYS_SW_WEATHER].Init(-SYS_SW_WEATHER-1, "_WEATHER");
 	g_SystemSwitch[SYS_SW_SEASON].Init(-SYS_SW_WEATHER-1, "_SEASON");
