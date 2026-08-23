@@ -27,7 +27,7 @@ brew bundle --file Brewfile
 
 | Command | What it does |
 |---------|----------------|
-| `./scripts/check.sh` | Full M0 gate: encoding guard ‚Üí configure ‚Üí build ‚Üí ctest ‚Üí progress JSON |
+| `./scripts/check.sh` | Full M0 gate: encoding guard Å® configure Å® build Å® ctest Å® progress JSON |
 | `./scripts/encoding-guard.sh` | CP932 / BOM / SJIS-0x5C literal checks |
 | `./scripts/progress.sh` | Prints `N/254` JSON from `port/native_sources.txt` |
 | `cmake --preset check` | Configure AppleClang object library |
@@ -38,7 +38,7 @@ brew bundle --file Brewfile
 
 Windows/DirectX headers are stubbed under `port/stub/` and injected with `-isystem port/stub` **before** system includes. Game code keeps `#include <d3d8.h>` etc.; only the include path changes.
 
-Native targets are listed in `port/native_sources.txt`. CMake reads this allowlist and builds an `OBJECT` library only ‚Äî no link step in M0.
+Native targets are listed in `port/native_sources.txt`. CMake reads this allowlist and builds an `OBJECT` library only ?? no link step in M0.
 
 Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a line to the allowlist is monotonic progress.
 
@@ -65,7 +65,7 @@ We do **not** vendor DirectX SDK headers or adopt MinGW for CI. The compile-fire
 
 ## CI
 
-GitHub Actions job `macos-check` on `macos-15` runs `./scripts/check.sh` unchanged from local.
+GitHub Actions runs `./scripts/check.sh` on a **macOS + Linux matrix** (`macos-15`, `ubuntu-24.04`). Both jobs use `mise install` for cmake/ninja; Linux also installs `clang` from apt. Local Mac dev can use the same path via `.mise.toml`, or legacy `brew bundle`.
 
 ## Next milestones
 
