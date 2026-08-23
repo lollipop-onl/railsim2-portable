@@ -1,0 +1,6 @@
+# M0 dev tools for compile-firewall checks.
+# Run: mise install   (or: mise bootstrap, if you also use [bootstrap.packages])
+[tools]
+cmake = "latest"
+ninja = "latest"
+ccache = "latest"

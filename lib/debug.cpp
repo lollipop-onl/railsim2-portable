@@ -100,6 +100,6 @@ void DumpSysInfo(){
 
 	GlobalMemoryStatus(&mems);
 
-	Debug("—˜—p‰Â”\^“‹Úƒƒ‚ƒŠ = %d/%d MB\n",
+	Debug("avail/total memory = %d/%d MB\n",
 		mems.dwAvailPhys>>20, mems.dwTotalPhys>>20);
 }

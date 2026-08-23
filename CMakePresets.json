@@ -1,0 +1,64 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "check-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "check",
+      "displayName": "M0 compile firewall (AppleClang)",
+      "inherits": "check-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "check-gcc",
+      "displayName": "M0 compile firewall (Homebrew GCC, CP932 fallback)",
+      "inherits": "check-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc-14",
+        "CMAKE_CXX_COMPILER": "g++-14"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "check",
+      "configurePreset": "check"
+    },
+    {
+      "name": "check-gcc",
+      "configurePreset": "check-gcc"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "check",
+      "configurePreset": "check",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "check-gcc",
+      "configurePreset": "check-gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
