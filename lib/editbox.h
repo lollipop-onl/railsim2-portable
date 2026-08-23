@@ -89,7 +89,7 @@ public:
 	/*
 	 *	変換中のカーソル位置の取得
 	 */
-	int CEditBox::GetFEPCursorPos(){
+	int GetFEPCursorPos(){
 		return ImmGetCompositionString(m_hImc, GCS_CURSORPOS, NULL, 0);
 	}
 };

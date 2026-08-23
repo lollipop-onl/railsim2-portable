@@ -1,13 +1,13 @@
 //	Copyright (c) 2002 Midikyou
 
-#include "..\stdafx.h"
+#include "../stdafx.h"
 
 #define UDX_MESH_MEASURE (0)
 
 #if UDX_MESH_MEASURE
 #include <vector>
 #include <string>
-#include "..\CJobTimer.h"
+#include "../CJobTimer.h"
 #define UDX_MESH_TIMER_RAII(name) TIMER_RAII(name)
 #else
 #define UDX_MESH_TIMER_RAII(name)
@@ -16,9 +16,9 @@
 #include <rmxfguid.h>
 #include <rmxftmpl.h>
 
-#include "..\CModelPlugin.h"
-#include "..\CEnvPlugin.h"
-#include "..\CConfigMode.h"
+#include "../CModelPlugin.h"
+#include "../CEnvPlugin.h"
+#include "../CConfigMode.h"
 
 //	外部グローバル
 extern CTexList g_TexList;

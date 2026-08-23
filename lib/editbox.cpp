@@ -14,10 +14,10 @@
 #include "mesh.h"
 #include "object.h"
 #include "editbox.h"
-#include "..\Const.h"
-#include "..\Macro.h"
-#include "..\SystemCover.h"
-#include "..\CSkinPlugin.h"
+#include "../Const.h"
+#include "../Macro.h"
+#include "../SystemCover.h"
+#include "../CSkinPlugin.h"
 
 //	ŠÖ”éŒ¾
 string EliminateTabAndCRLF(string);

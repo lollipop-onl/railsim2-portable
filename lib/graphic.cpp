@@ -9,7 +9,7 @@
 #include "texture.h"
 #include "font.h"
 #include "frame.h"
-#include "..\Const.h"
+#include "../Const.h"
 
 //	内部定数
 extern const float CLIP_PLANE_NEAR = 0.5f;		//	前方クリップ面
@@ -404,7 +404,7 @@ void GetDeviceCaps(){
 		"\t範囲 = %d\n"
 		"}\n"
 		"テクスチャー{\n"
-		"\t利用可能メモリ = %d KB\n"
+		"\tavail texture memory = %d KB\n"
 		"\t最大サイズ = %d x %d\n"
 		"\t最大ステージ = %d\n"
 		"\tアルファブレンド = %d\n"

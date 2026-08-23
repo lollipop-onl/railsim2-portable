@@ -12,7 +12,7 @@
 #if defined(__BORLANDC__)	//	for BC++
 	#define IDI_ICON1 1001
 #else
-	#include "..\resource.h"
+	#include "../resource.h"
 #endif
 
 void AdjustMovieLayer();	//	movie.cpp

@@ -8,7 +8,7 @@ using namespace std;
 #if UDX_TEXTURE_MEASURE
 #include <vector>
 #include <string>
-#include "..\CJobTimer.h"
+#include "../CJobTimer.h"
 #endif
 
 /*
