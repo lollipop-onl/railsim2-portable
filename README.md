@@ -6,9 +6,9 @@ This repository tracks the portable build. Game logic stays as close to upstream
 
 ## Credit
 
-RailSim II was created by **Intaanetto Teiryuujo** (インターネット停留所).
+RailSim II was created by **Naoki Kinoshita** (木下直樹), published as **Intaanetto Teiryuujo** (インターネット停留所).
 
-- Copyright (C) 2003-2013 Intaanetto Teiryuujo
+- Copyright (C) 2003-2012 Intaanetto Teiryuujo
 - Upstream: [aizentranza/railsim2](https://github.com/aizentranza/railsim2)
 - License: GNU LGPL 2.1 (see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE))
 
@@ -49,6 +49,7 @@ Details: [docs/porting/dev-env.md](docs/porting/dev-env.md).
 
 ```bash
 git remote add upstream https://github.com/aizentranza/railsim2.git
+git remote set-url --push upstream no_push
 git fetch upstream
 ```
 

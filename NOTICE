@@ -5,7 +5,8 @@ Original work
 -------------
 
   RailSim II
-  Copyright (C) 2003-2013 Intaanetto Teiryuujo (インターネット停留所)
+  Copyright (C) 2003-2012 Intaanetto Teiryuujo (インターネット停留所)
+  Author: Naoki Kinoshita (木下直樹)
 
   Upstream source: https://github.com/aizentranza/railsim2
   License: GNU Lesser General Public License version 2.1 (see LICENSE)
@@ -15,10 +16,17 @@ This repository (railsim2-portable) is a modified work based on that upstream.
 Modifications (LGPL 2.1 section 2(b))
 ------------------------------------
 
-Prominent change notices for files modified in this fork. Dates are
-commit dates (YYYY-MM-DD). New files added only by this fork (for example
-under port/, scripts/, docs/, and CMake scaffolding) are part of the
-modified work but are not listed as "changed upstream files".
+Section 2(b) requires modified files to carry prominent notices stating
+that you changed the files and the date of any change. This file is that
+notice for the fork as a whole. We do not add banners inside upstream
+CP932 sources: those files must stay CP932/ASCII (encoding-guard), and
+extra comments would enlarge the game-source diff without changing
+behavior. Git history remains the detailed record of each edit.
+
+Dates below are commit dates (YYYY-MM-DD). New files added only by this
+fork (for example under port/, scripts/, docs/, and CMake scaffolding)
+are part of the modified work but are not listed as "changed upstream
+files".
 
 2026-08-24 -- M0 compile firewall and mechanical verification (#15 / #18)
 
@@ -44,7 +52,8 @@ modified work but are not listed as "changed upstream files".
     NOTICE, docs/porting/upstream.md
   Updated:
     README.md, docs/porting/dev-env.md (attribution, platforms, upstream
-    remote docs; fix mojibake in ASCII punctuation)
+    remote docs; fix mojibake in ASCII punctuation; credit Naoki
+    Kinoshita; copyright years 2003-2012 from upstream index.html)
 
 Further changes must update this file (date + summary) and keep git
 history as the detailed record. Prefer leaving game logic untouched so

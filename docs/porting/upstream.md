@@ -11,10 +11,11 @@ Add `upstream` once per clone (remotes are not committed):
 
 ```bash
 git remote add upstream https://github.com/aizentranza/railsim2.git
+git remote set-url --push upstream no_push
 git fetch upstream
 ```
 
-`upstream` is for attribution and historical comparison. The upstream project is not expected to receive further commits or tags, so there is no routine fetch / merge / tag-watch workflow.
+`upstream` is for attribution and historical comparison. Disable push so a mistaken `git push upstream` cannot target the original repo. The upstream project is not expected to receive further commits or tags, so there is no routine fetch / merge / tag-watch workflow.
 
 ## Lineage
 
