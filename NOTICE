@@ -1,0 +1,51 @@
+RailSim II / railsim2-portable
+==============================
+
+Original work
+-------------
+
+  RailSim II
+  Copyright (C) 2003-2013 Intaanetto Teiryuujo (インターネット停留所)
+
+  Upstream source: https://github.com/aizentranza/railsim2
+  License: GNU Lesser General Public License version 2.1 (see LICENSE)
+
+This repository (railsim2-portable) is a modified work based on that upstream.
+
+Modifications (LGPL 2.1 section 2(b))
+------------------------------------
+
+Prominent change notices for files modified in this fork. Dates are
+commit dates (YYYY-MM-DD). New files added only by this fork (for example
+under port/, scripts/, docs/, and CMake scaffolding) are part of the
+modified work but are not listed as "changed upstream files".
+
+2026-08-24 -- M0 compile firewall and mechanical verification (#15 / #18)
+
+  Build / docs (new):
+    .github/workflows/check.yml, .mise.toml, Brewfile, CMakeLists.txt,
+    CMakePresets.json, README.md, docs/porting/dev-env.md,
+    port/native_sources.txt, port/stub/*, scripts/check.sh,
+    scripts/encoding-guard.sh, scripts/progress.sh
+
+  Modified upstream sources (minimal, portability only):
+    lib/debug.cpp       -- ASCII-safe debug string (SJIS 0x5C trail)
+    lib/editbox.cpp     -- backslash include paths -> /
+    lib/editbox.h       -- GetFEPCursorPos return type for Clang
+    lib/graphic.cpp     -- ASCII-safe debug string (SJIS 0x5C trail)
+    lib/mesh.cpp        -- backslash include paths -> /
+    lib/texture.h       -- backslash include paths -> /
+    lib/window.cpp      -- backslash include paths -> /
+    stdafx.h            -- backslash include path -> /
+
+2026-08-24 -- License compliance and README (#13)
+
+  New:
+    NOTICE, docs/porting/upstream.md
+  Updated:
+    README.md, docs/porting/dev-env.md (attribution, platforms, upstream
+    remote docs; fix mojibake in ASCII punctuation)
+
+Further changes must update this file (date + summary) and keep git
+history as the detailed record. Prefer leaving game logic untouched so
+diffs against upstream stay reviewable.
