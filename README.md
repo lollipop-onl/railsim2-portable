@@ -19,15 +19,15 @@ This fork exists to run that work on additional platforms. It is not an official
 | Platform | Status |
 |----------|--------|
 | Windows (original DirectX 8) | Upstream / reference |
-| macOS | M0: compile-firewall only (object build via stubs) |
-| Linux | M0: same CI gate as macOS |
+| macOS | M1: compile allowlist + linked stub binary (`check` preset) |
+| Linux | M1: same CI gate as macOS |
 | Web (WebAssembly) | Later (optional milestone) |
 
-Native linking, runtime bring-up, and a playable binary are **not** M0 goals.
+Native linking, runtime bring-up, and a playable binary are **not** M0 goals. M1 links a stub `railsim2` executable; it does not start the game.
 
 ## Status
 
-M0 (Foundation): `./scripts/check.sh` green on macOS and Linux CI. Sources compile through `port/stub/` for an allowlisted subset (`port/native_sources.txt`). Full link and gameplay come in later milestones.
+M1 (Surface): `./scripts/check.sh` still green. `cmake --build --preset check` links `railsim2` (POSIX `main` in `port/native_entry.cpp`). Allowlist progress is `port/native_sources.txt` (see `scripts/progress.sh`). Gameplay is later milestones.
 
 ## Quick start
 

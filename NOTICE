@@ -46,6 +46,15 @@ modified work but are not listed as "changed upstream files".
     README.md, docs/porting/dev-env.md (attribution, platforms, upstream
     remote docs; fix mojibake in ASCII punctuation)
 
+2026-08-25 -- M1 CMake link skeleton (#3)
+
+  Build (new):
+    port/native_entry.cpp
+  Updated:
+    CMakeLists.txt, CMakePresets.json, port/native_sources.txt,
+    port/stub/* (D3D8 device methods, D3DX math, DIK_*, Win32 no-ops),
+    docs/porting/dev-env.md, README.md
+
 Further changes must update this file (date + summary) and keep git
 history as the detailed record. Prefer leaving game logic untouched so
 diffs against upstream stay reviewable.

@@ -18,7 +18,7 @@
     },
     {
       "name": "check",
-      "displayName": "M0 compile firewall (AppleClang)",
+      "displayName": "Native compile + link skeleton (AppleClang)",
       "inherits": "check-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
