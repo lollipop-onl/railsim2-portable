@@ -46,3 +46,5 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - Change log for LGPL notices: [`NOTICE`](../../NOTICE)
 - Credit and overview: [`README.md`](../../README.md)
 - Dev environment: [`dev-env.md`](dev-env.md)
+- Frozen udx / D3D8 game ABI: issue #1 (`docs/porting/api-surface.md` on that PR)
+- Backend ADR: [`adr-backend.md`](adr-backend.md)
