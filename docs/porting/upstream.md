@@ -50,3 +50,4 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - Backend ADR: [`adr-backend.md`](adr-backend.md)
 - X-File templates in `Distribution`: [`x-file-templates.md`](x-file-templates.md)
 - `.rs2` roundtrip ctest: [`rs2-roundtrip.md`](rs2-roundtrip.md)
+- Path I/O seams (`chdir` / `fopen` / `_findfirst`): [`path-seams.md`](path-seams.md)
