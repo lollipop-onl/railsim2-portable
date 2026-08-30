@@ -50,6 +50,7 @@ target_compile_options(railsim2_native PRIVATE
 
 target_compile_definitions(railsim2_native PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
 )
 
 # Link skeleton: POSIX main only. Allowlisted game objects compile into
@@ -60,6 +61,7 @@ add_executable(railsim2 port/native_entry.cpp)
 add_dependencies(railsim2 railsim2_native)
 target_compile_definitions(railsim2 PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
 )
 
 enable_testing()

@@ -20,11 +20,10 @@
 #include <cctype>
 #include <algorithm>
 
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
+// Win32 min/max macros break libstdc++ <limits> (`numeric_limits::min()`).
+// Portable builds always compile with NOMINMAX; use std::min / std::max.
+#ifndef NOMINMAX
+#define NOMINMAX
 #endif
 
 typedef int BOOL;
