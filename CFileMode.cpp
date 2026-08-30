@@ -78,9 +78,13 @@ bool CFileListView::ConfirmRename(
 	char *oldname = item->GetString(0);
 	newname = FixFileExt((char *)newname.c_str(), "rs2");
 	if(!_mbsicmp((PUCHAR)oldname, (PUCHAR)newname.c_str())) return false;
-	if(CheckSlash(newname.c_str()) || chdir(g_BaseDir) || chdir(LAYOUT_DIRNAME) ||
-		rename(oldname, newname.c_str())){
-		FILE *file = fopen(newname.c_str(), "rb");
+	char dir[RS2_PATH_MAX] = {}, from[RS2_PATH_MAX] = {}, to[RS2_PATH_MAX] = {};
+	if(CheckSlash(newname.c_str())
+		|| !rs2_path_join(dir, sizeof(dir), g_BaseDir, LAYOUT_DIRNAME)
+		|| !rs2_path_join(from, sizeof(from), dir, oldname)
+		|| !rs2_path_join(to, sizeof(to), dir, newname.c_str())
+		|| rs2_rename(from, to)){
+		FILE *file = fopen(to, "rb");
 		if(file){
 			EnqueueCommonDialog(new CSimpleDialog(
 				lang(FileAlreadyExists), (char *)newname.c_str()));
@@ -176,11 +180,9 @@ CFileMode::CFileMode(){
 	new CPopMenu("-", m_FileMenu);
 	new CPopMenu(lang(CreateSession), m_FileMenu);
 	new CPopMenu(lang(JoinSession), m_FileMenu);
-	chdir(g_BaseDir);
-	if(chdir(LAYOUT_DIRNAME)) mkdir(LAYOUT_DIRNAME);
-	chdir(g_BaseDir);
-	if(chdir(UNDO_DIRNAME)) mkdir(UNDO_DIRNAME);
-	chdir(g_BaseDir);
+	char dir[RS2_PATH_MAX];
+	if(rs2_path_join(dir, sizeof(dir), g_BaseDir, LAYOUT_DIRNAME)) rs2_mkdir(dir);
+	if(rs2_path_join(dir, sizeof(dir), g_BaseDir, UNDO_DIRNAME)) rs2_mkdir(dir);
 	ResetUndo();
 	m_NetworkMode = false;
 }
@@ -245,8 +247,9 @@ CPopMenu *CFileMode::Dispatch(
 			CFileDeleter(bool c, char *fname){ m_Confirm = c; m_FileName = fname; }
 			void Exec(){
 				if(m_Confirm){
-					if(chdir(g_BaseDir) || chdir(LAYOUT_DIRNAME)
-						|| remove(m_FileName.c_str())){
+					char delpath[RS2_PATH_MAX];
+					if(!rs2_path_join(delpath, sizeof(delpath), g_BaseDir, LAYOUT_DIRNAME, m_FileName.c_str())
+						|| rs2_remove(delpath)){
 						EnqueueCommonDialog(new CSimpleDialog(
 							lang(ErrorDuringDelete), (char *)m_FileName.c_str()));
 						g_Skin->Error();
@@ -657,28 +660,28 @@ SAVEAS:
  *	ファイルリスト作成
  */
 void CFileMode::ListFile(){
-	long filelist;
-	_finddata_t data;
 	m_FileListView.DeleteAllItems();
 	m_LayoutInfoList.clear();
-	if(chdir(g_BaseDir) || chdir(LAYOUT_DIRNAME)) return;
-	if((filelist = _findfirst("*.rs2", &data))>=0){
-		do{
-			FILE *file;
-			if(data.attrib&_A_SUBDIR) continue;
-			m_LayoutInfoList.push_back(CLayoutInfo(data.name));
-			CLayoutInfo *nfo = &*m_LayoutInfoList.rbegin();
-			if(file = fopen(data.name, "rb")){
-				if(!nfo->PreLoadSF(file)){
-					m_LayoutInfoList.pop_back();
-					continue;
-				}
-			}else{
+	char layoutdir[RS2_PATH_MAX];
+	if(!rs2_path_join(layoutdir, sizeof(layoutdir), g_BaseDir, LAYOUT_DIRNAME)
+		|| !rs2_is_dir(layoutdir)) return;
+	std::vector<std::string> names;
+	if(!rs2_list_dir(layoutdir, "*.rs2", false, &names)) return;
+	for(size_t i = 0; i<names.size(); i++){
+		char fpath[RS2_PATH_MAX];
+		FILE *file;
+		m_LayoutInfoList.push_back(CLayoutInfo((char *)names[i].c_str()));
+		CLayoutInfo *nfo = &*m_LayoutInfoList.rbegin();
+		if(rs2_path_join(fpath, sizeof(fpath), layoutdir, names[i].c_str()) &&
+			(file = fopen(fpath, "rb"))){
+			if(!nfo->PreLoadSF(file)){
 				m_LayoutInfoList.pop_back();
 				continue;
 			}
-		} while(!_findnext(filelist, &data));
-		_findclose(filelist);
+		}else{
+			m_LayoutInfoList.pop_back();
+			continue;
+		}
 	}
 	m_LayoutInfoList.sort();
 	ILayoutInfo ili = m_LayoutInfoList.begin();

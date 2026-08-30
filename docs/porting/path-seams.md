@@ -169,15 +169,9 @@ Closed options for the later `#10` slice:
 
 `#10` must not rewrite the script parser, `%p` width, MD5, or float format inside this inventory.
 
-## What later slices may touch
+## Implemented by #32
 
-**`#4` (one implementation slice, not this PR)** may:
-
-- Replace the closed `chdir` / `CPlugin::ChDir` / `MoveToFile` set with joining `g_BaseDir` + subdir + basename (or a small helper used from those sites).
-- Implement `_findfirst` / `_findnext` / `_findclose` for the **four** patterns above, or swap those four loops to `std::filesystem::directory_iterator`.
-- Make `_fullpath` actually resolve against cwd (or against an explicit base), because mesh texture loads depend on it.
-- Teach `CutPath` / `GetAppPath` about `/` (and stub `GetModuleFileName`) when `SystemCover.cpp` is compiled.
-- Keep game logic (plugin scripts, layout grammar, capture encoding) unchanged.
+`port/path.cpp` joins `g_BaseDir` + subdir + basename. Closed-set `chdir` sites use that join. `CPlugin::ChDir` / `MoveToFile` set a **virtual cwd** (`rs2_chdir`); `fopen` is wrapped to `rs2_fopen` so plugin `Load()` riders stay relative. The four `_findfirst` loops call `rs2_list_dir`. `_fullpath` resolves against the virtual cwd. `CutPath` / `CutFileName` treat `/` like `\`. `GetModuleFileNameA` lives in `port/path.cpp`.
 
 **`#4` must not**: rewrite every plugin `Load()`, implement `timeGetTime`, touch `lib/mutex.h`, or mass-convert sources to UTF-8.
 
@@ -185,22 +179,23 @@ Closed options for the later `#10` slice:
 
 WASM: treating `g_BaseDir` as the virtual-FS mount and joining instead of `chdir` is the point of `#4`. This document is the call set that join must cover.
 
-## Stub status (current `check` build)
+## Stub status (after #32)
 
 | Stub | Behavior | Effect |
 |------|----------|--------|
-| `_findfirst` / `_findnext` | always `-1` | no plugins, no layout list, no templates, no railway sets |
-| `_fullpath` | copy `rel` | cache keys stay relative; `MoveToFile` cannot `chdir` to a POSIX dirname |
+| `_findfirst` / `_findnext` | still `-1` (unused) | four loops use `rs2_list_dir` |
+| `_fullpath` | `rs2_fullpath` against virtual cwd | mesh / texture / wave cache keys are absolute |
 | `SetCurrentDirectory` | always `TRUE` | unused |
-| `GetModuleFileName` | missing | `GetAppPath` / `g_BaseDir` not native-ready yet |
+| `GetModuleFileNameA` | exe path (or `rs2_set_module_filename`) | `GetAppPath` / `g_BaseDir` can be filled |
 
 ## Verification
 
-Re-run from the repo root if sources move. Expected at this commit: 45 `chdir(` matching lines (62 live calls); `_findfirst(` 4; `_fullpath(` 3 in `lib/`; `_getcwd` / `_chdir` none in game code; `SetCurrentDirectory` only the unused `CHANGE_DIR` macro.
+Closed-set `chdir` / `_findfirst` should be gone from game `.cpp` except the commented dump in `CRailBuildMode.cpp`. `_fullpath` remains in `lib/` and goes through the stub.
 
 ```bash
 rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!port/stub/**' \
-  --glob '!docs/**' '\bchdir\s*\(|\b_chdir\s*\(|SetCurrentDirectory|_findfirst|_findnext|_fullpath|_getcwd'
+  --glob '!docs/**' --glob '!port/path*' \
+  '\bchdir\s*\(|\b_chdir\s*\(|SetCurrentDirectory|_findfirst|_findnext|_fullpath|_getcwd'
 ```
 
-`./scripts/check.sh` is unchanged (docs only).
+`./scripts/check.sh` must stay green (`rs2_path_self_test` + `rs2_path_distribution`).

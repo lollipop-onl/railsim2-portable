@@ -410,6 +410,17 @@ inline void LeaveCriticalSection(LPCRITICAL_SECTION) {}
 inline FARPROC GetProcAddress(HMODULE, LPCSTR) { return nullptr; }
 inline DWORD GetLastError() { return 0; }
 
+#ifndef _MAX_PATH
+#define _MAX_PATH 260
+#endif
+
+inline HMODULE GetModuleHandleA(LPCSTR) { return (HMODULE)1; }
+inline HMODULE GetModuleHandle(LPCSTR p) { return GetModuleHandleA(p); }
+DWORD GetModuleFileNameA(HMODULE, LPSTR, DWORD);
+inline DWORD GetModuleFileName(HMODULE m, LPSTR b, DWORD s) {
+  return GetModuleFileNameA(m, b, s);
+}
+
 #ifndef __argc
 inline int rs2_argc() { return 0; }
 inline char** rs2_argv() { return nullptr; }

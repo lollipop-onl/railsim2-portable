@@ -47,7 +47,10 @@ int CPlugin::Compare(
  *	ディレクトリ移動
  */
 bool CPlugin::ChDir(){
-	return !chdir(g_BaseDir) && !chdir(DirName()) && !chdir(m_ID.c_str());
+	char path[RS2_PATH_MAX];
+	if(!rs2_path_join(path, sizeof(path), g_BaseDir, DirName(), m_ID.c_str()))
+		return false;
+	return rs2_chdir(path)==0;
 }
 
 /*
@@ -216,36 +219,37 @@ CPluginList::~CPluginList(){
  *	定義ファイルのロード
  */
 bool CPluginList::List(){
-	long filelist;
-	_finddata_t data;
 	CPlugin **adr = &m_List;
-	if(chdir(g_BaseDir) || chdir(DirName())) return false;
-	if((filelist = _findfirst("*", &data))>=0){
-		do{
-			FILE *file;
-			if(!(data.attrib&_A_SUBDIR)) continue;
-			if(chdir(g_BaseDir) || chdir(DirName()) || chdir(data.name)) continue;
-			CPlugin *newpi = NewEntry(data.name);
-			if(file = fopen(TextName2(), "rb")){
-				if(!newpi->PreLoad(file)){
-					delete newpi;
-					continue;
-				}
-			}else if(TextName() && (file = fopen(TextName(), "rt"))){
-				if(!newpi->PreLoadOldForm(file)){
-					delete newpi;
-					continue;
-				}
-			}else{
+	char typedir[RS2_PATH_MAX];
+	if(!rs2_path_join(typedir, sizeof(typedir), g_BaseDir, DirName()) || !rs2_is_dir(typedir))
+		return false;
+	std::vector<std::string> names;
+	if(!rs2_list_dir(typedir, "*", true, &names)) return false;
+	for(size_t i = 0; i<names.size(); i++){
+		char plugindir[RS2_PATH_MAX], defpath[RS2_PATH_MAX];
+		FILE *file;
+		if(!rs2_path_join(plugindir, sizeof(plugindir), typedir, names[i].c_str())) continue;
+		CPlugin *newpi = NewEntry((char *)names[i].c_str());
+		if(rs2_path_join(defpath, sizeof(defpath), plugindir, TextName2()) &&
+			(file = fopen(defpath, "rb"))){
+			if(!newpi->PreLoad(file)){
 				delete newpi;
 				continue;
 			}
-			newpi->m_State = 1;
-			*adr = newpi;
-			adr = &newpi->m_Next;
-			m_PluginNum++;
-		} while(!_findnext(filelist, &data));
-		_findclose(filelist);
+		}else if(TextName() && rs2_path_join(defpath, sizeof(defpath), plugindir, TextName()) &&
+			(file = fopen(defpath, "rt"))){
+			if(!newpi->PreLoadOldForm(file)){
+				delete newpi;
+				continue;
+			}
+		}else{
+			delete newpi;
+			continue;
+		}
+		newpi->m_State = 1;
+		*adr = newpi;
+		adr = &newpi->m_Next;
+		m_PluginNum++;
 	}
 	return true;
 }
@@ -260,17 +264,22 @@ bool CPluginList::LoadOne(
 ){
 	CPlugin **adr = &m_List;
 	while(*adr) adr = &(*adr)->m_Next;
-	if(chdir(g_BaseDir)) return false;
+	char path[RS2_PATH_MAX];
+	const char *openpath = defpath;
+	if(!rs2_path_is_absolute(defpath)){
+		if(!rs2_path_join(path, sizeof(path), g_BaseDir, defpath)) return false;
+		openpath = path;
+	}
 	FILE *file;
 	CPlugin *newpi = NewEntry(piid);
 	bool success = false;
 	if(oldform){
-		if(file = fopen(defpath, "rt")){
+		if(file = fopen(openpath, "rt")){
 			if(newpi->PreLoadOldForm(file)) success = true;
 			else fclose(file);
 		}
 	}else{
-		if(file = fopen(defpath, "rb")){
+		if(file = fopen(openpath, "rb")){
 			if(newpi->PreLoad(file)) success = true;
 			else fclose(file);
 		}

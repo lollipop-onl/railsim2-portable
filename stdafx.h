@@ -7,6 +7,7 @@
 #include <map>
 #include <algorithm>
 #include "lib/udx.h"
+#include "port/path.h"
 
 typedef list<string>::iterator Istring;
 

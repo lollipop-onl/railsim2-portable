@@ -31,7 +31,8 @@ if(RS2_NATIVE_SOURCES STREQUAL "")
   message(FATAL_ERROR "port/native_sources.txt has no compile targets")
 endif()
 
-add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES})
+add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
+  "${CMAKE_SOURCE_DIR}/port/path.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
@@ -91,3 +92,13 @@ target_compile_options(rs2_xfile_load PRIVATE -Wall -Wextra)
 add_test(NAME rs2_xfile_self_test COMMAND rs2_xfile_load --self-test)
 add_test(NAME rs2_xfile_load COMMAND rs2_xfile_load "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_xfile_load PROPERTIES SKIP_RETURN_CODE 77)
+
+# Closed-set path join / list / fullpath (#32). Does not rewrite plugin Load().
+add_executable(rs2_path_test port/path_test.cpp port/path.cpp)
+target_include_directories(rs2_path_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_path_test PRIVATE cxx_std_17)
+target_compile_options(rs2_path_test PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_path_self_test COMMAND rs2_path_test --self-test)
+add_test(NAME rs2_path_distribution COMMAND rs2_path_test "${CMAKE_SOURCE_DIR}/Distribution")
+set_tests_properties(rs2_path_distribution PROPERTIES SKIP_RETURN_CODE 77)

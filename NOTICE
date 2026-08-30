@@ -62,6 +62,18 @@ modified work but are not listed as "changed upstream files".
   Updated:
     CMakeLists.txt, docs/porting/dev-env.md, docs/porting/upstream.md
 
+2026-08-31 -- Join g_BaseDir instead of chdir for the closed path set (#32)
+
+  Build / docs (new):
+    port/path.h, port/path.cpp, port/path_test.cpp
+  Updated:
+    CMakeLists.txt, port/stub/direct.h, port/stub/windows.h,
+    stdafx.h, docs/porting/path-seams.md, docs/porting/dev-env.md
+  Modified upstream sources (cwd join, keep game logic):
+    CPlugin.cpp, CSaveFile.cpp, CFileMode.cpp, CTrainGroupTemplate.cpp,
+    CRailwayPluginSet.cpp, CConfigMode.cpp, Language.cpp, Capture.cpp,
+    SystemCover.cpp
+
 Further changes must update this file (date + summary) and keep git
 history as the detailed record. Prefer leaving game logic untouched so
 diffs against upstream stay reviewable.

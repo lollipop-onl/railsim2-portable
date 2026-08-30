@@ -32,7 +32,7 @@ brew bundle --file Brewfile
 | `./scripts/progress.sh` | Prints `N/254` JSON from `port/native_sources.txt` |
 | `cmake --preset check` | Configure AppleClang native target |
 | `cmake --build --preset check` | Compile allowlisted sources and link `railsim2` |
-| `ctest --preset check` | Smoke + `Sample.rs2` roundtrip + text `.x` load (see [rs2-roundtrip.md](rs2-roundtrip.md), [x-file-parser.md](x-file-parser.md)) |
+| `ctest --preset check` | Smoke + `Sample.rs2` roundtrip + text `.x` load + path join (see [rs2-roundtrip.md](rs2-roundtrip.md), [x-file-parser.md](x-file-parser.md), [path-seams.md](path-seams.md)) |
 
 ## Compile firewall
 

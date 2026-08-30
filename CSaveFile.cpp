@@ -660,7 +660,9 @@ bool CSaveFile::Load(
 ){
 	FILE *df;
 	if(!auxdata){
-		if(chdir(g_BaseDir) || chdir(dirname) || !(df = fopen(fname, "rb"))){
+		char loadpath[RS2_PATH_MAX];
+		if(!rs2_path_join(loadpath, sizeof(loadpath), g_BaseDir, dirname, fname)
+			|| !(df = fopen(loadpath, "rb"))){
 			if(warn){
 				EnqueueCommonDialog(new CSimpleDialog(lang(CannotOpenFile), (char *)fname));
 				g_Skin->Error();
@@ -840,8 +842,9 @@ bool CSaveFile::Load(
 		scene = scene->Next();
 	}
 	if(g_LackPlugin.size()){
-		chdir(g_BaseDir);
-		FILE *lacklog = fopen("LackPlugin.txt", "wt");
+		char lackpath[RS2_PATH_MAX];
+		rs2_path_join(lackpath, sizeof(lackpath), g_BaseDir, "LackPlugin.txt");
+		FILE *lacklog = fopen(lackpath, "wt");
 		if(lacklog){
 			set<string>::iterator is = g_LackPlugin.begin();
 			for(; is!=g_LackPlugin.end(); is++) fprintf(lacklog, "%s\n", is->c_str());
@@ -887,16 +890,17 @@ int CSaveFile::Save(
 	bool upname				//	ファイル名更新
 ){
 	FILE *df;
-	if(CheckSlash(fname) || chdir(g_BaseDir) || chdir(dirname)){
+	char savepath[RS2_PATH_MAX];
+	if(CheckSlash(fname) || !rs2_path_join(savepath, sizeof(savepath), g_BaseDir, dirname, fname)){
 		EnqueueCommonDialog(new CSimpleDialog(lang(CannotOpenFile), (char *)fname));
 		g_Skin->Error();
 		return 1;
 	}
-	if(!overwrite && (df = fopen(fname, "rb"))){
+	if(!overwrite && (df = fopen(savepath, "rb"))){
 		fclose(df);
 		return 2;
 	}
-	if(!(df = fopen(fname, "wt"))){
+	if(!(df = fopen(savepath, "wt"))){
 		EnqueueCommonDialog(new CSimpleDialog(lang(CannotOpenFile), (char *)fname));
 		g_Skin->Error();
 		return 1;
