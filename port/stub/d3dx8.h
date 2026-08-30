@@ -23,12 +23,47 @@ struct D3DXVECTOR2 {
   float x, y;
   D3DXVECTOR2() : x(0), y(0) {}
   D3DXVECTOR2(float X, float Y) : x(X), y(Y) {}
+  D3DXVECTOR2& operator+=(const D3DXVECTOR2& o) {
+    x += o.x;
+    y += o.y;
+    return *this;
+  }
+  D3DXVECTOR2& operator-=(const D3DXVECTOR2& o) {
+    x -= o.x;
+    y -= o.y;
+    return *this;
+  }
+  D3DXVECTOR2& operator*=(float s) {
+    x *= s;
+    y *= s;
+    return *this;
+  }
+  D3DXVECTOR2& operator/=(float s) { return *this *= (1.0f / s); }
 };
 
 struct D3DXVECTOR3 {
   float x, y, z;
   D3DXVECTOR3() : x(0), y(0), z(0) {}
   D3DXVECTOR3(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
+  D3DXVECTOR3& operator+=(const D3DXVECTOR3& o) {
+    x += o.x;
+    y += o.y;
+    z += o.z;
+    return *this;
+  }
+  D3DXVECTOR3& operator-=(const D3DXVECTOR3& o) {
+    x -= o.x;
+    y -= o.y;
+    z -= o.z;
+    return *this;
+  }
+  D3DXVECTOR3& operator*=(float s) {
+    x *= s;
+    y *= s;
+    z *= s;
+    return *this;
+  }
+  D3DXVECTOR3& operator/=(float s) { return *this *= (1.0f / s); }
 };
 
 struct D3DXVECTOR4 {
@@ -81,6 +116,17 @@ struct D3DLIGHT8 {
   float Phi;
 };
 
+inline D3DXVECTOR2 operator+(const D3DXVECTOR2& a, const D3DXVECTOR2& b) {
+  return D3DXVECTOR2(a.x + b.x, a.y + b.y);
+}
+inline D3DXVECTOR2 operator-(const D3DXVECTOR2& a) { return D3DXVECTOR2(-a.x, -a.y); }
+inline D3DXVECTOR2 operator-(const D3DXVECTOR2& a, const D3DXVECTOR2& b) {
+  return D3DXVECTOR2(a.x - b.x, a.y - b.y);
+}
+inline D3DXVECTOR2 operator*(const D3DXVECTOR2& a, float s) { return D3DXVECTOR2(a.x * s, a.y * s); }
+inline D3DXVECTOR2 operator*(float s, const D3DXVECTOR2& a) { return a * s; }
+inline D3DXVECTOR2 operator/(const D3DXVECTOR2& a, float s) { return a * (1.0f / s); }
+
 inline D3DXVECTOR3 operator+(const D3DXVECTOR3& a, const D3DXVECTOR3& b) {
   return D3DXVECTOR3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
@@ -90,6 +136,7 @@ inline D3DXVECTOR3 operator-(const D3DXVECTOR3& a, const D3DXVECTOR3& b) {
 }
 inline D3DXVECTOR3 operator*(const D3DXVECTOR3& a, float s) { return D3DXVECTOR3(a.x * s, a.y * s, a.z * s); }
 inline D3DXVECTOR3 operator*(float s, const D3DXVECTOR3& a) { return a * s; }
+inline D3DXVECTOR3 operator/(const D3DXVECTOR3& a, float s) { return a * (1.0f / s); }
 
 inline D3DXMATRIX operator*(const D3DXMATRIX& a, const D3DXMATRIX& b) {
   D3DXMATRIX r;
@@ -146,6 +193,29 @@ inline D3DXVECTOR3* D3DXVec3Cross(D3DXVECTOR3* out, const D3DXVECTOR3* a, const 
   return out;
 }
 
+inline D3DXVECTOR3* D3DXVec3TransformCoord(D3DXVECTOR3* out, const D3DXVECTOR3* v, const D3DXMATRIX* m) {
+  if (!out || !v || !m) return nullptr;
+  float x = v->x, y = v->y, z = v->z;
+  float w = m->_14 * x + m->_24 * y + m->_34 * z + m->_44;
+  if (w == 0.0f) w = 1.0f;
+  out->x = (m->_11 * x + m->_21 * y + m->_31 * z + m->_41) / w;
+  out->y = (m->_12 * x + m->_22 * y + m->_32 * z + m->_42) / w;
+  out->z = (m->_13 * x + m->_23 * y + m->_33 * z + m->_43) / w;
+  return out;
+}
+
+inline D3DXVECTOR3* D3DXVec3TransformNormal(D3DXVECTOR3* out, const D3DXVECTOR3* v, const D3DXMATRIX* m) {
+  if (!out || !v || !m) return nullptr;
+  float x = v->x, y = v->y, z = v->z;
+  out->x = m->_11 * x + m->_21 * y + m->_31 * z;
+  out->y = m->_12 * x + m->_22 * y + m->_32 * z;
+  out->z = m->_13 * x + m->_23 * y + m->_33 * z;
+  return out;
+}
+
+#define D3DXToRadian(deg) ((deg) * (D3DX_PI / 180.0f))
+#define D3DXToDegree(rad) ((rad) * (180.0f / D3DX_PI))
+
 inline D3DXMATRIX* D3DXMatrixRotationAxis(D3DXMATRIX* out, const D3DXVECTOR3* axis, float angle) {
   if (out) *out = D3DXMATRIX();
   (void)axis;
@@ -185,8 +255,11 @@ struct ID3DXMesh : IUnknown {
   HRESULT UnlockVertexBuffer() { return S_OK; }
   HRESULT LockIndexBuffer(DWORD, BYTE**) { return S_OK; }
   HRESULT UnlockIndexBuffer() { return S_OK; }
+  HRESULT LockAttributeBuffer(DWORD, DWORD**) { return S_OK; }
+  HRESULT UnlockAttributeBuffer() { return S_OK; }
   DWORD GetNumFaces() { return 0; }
   DWORD GetNumVertices() { return 0; }
+  DWORD GetFVF() { return 0; }
 };
 
 struct ID3DXSprite : IUnknown {
@@ -216,3 +289,79 @@ inline HRESULT D3DXCreateFontA(IDirect3DDevice8*, int, UINT, UINT, UINT, DWORD, 
                                LPD3DXFONT*) {
   return E_NOTIMPL;
 }
+
+inline HRESULT D3DXCreateFontIndirect(IDirect3DDevice8*, const void*, LPD3DXFONT*) { return E_NOTIMPL; }
+inline HRESULT D3DXCreateSprite(IDirect3DDevice8*, LPD3DXSPRITE*) { return E_NOTIMPL; }
+inline UINT D3DXGetFVFVertexSize(DWORD) { return 0; }
+
+inline D3DXMATRIX* D3DXMatrixIdentity(D3DXMATRIX* out) {
+  if (out) *out = D3DXMATRIX();
+  return out;
+}
+inline D3DXMATRIX* D3DXMatrixInverse(D3DXMATRIX* out, FLOAT*, const D3DXMATRIX* m) {
+  if (out && m) *out = *m;
+  return out;
+}
+inline D3DXMATRIX* D3DXMatrixLookAtLH(D3DXMATRIX* out, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
+  return D3DXMatrixIdentity(out);
+}
+inline D3DXMATRIX* D3DXMatrixPerspectiveFovLH(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT, FLOAT) {
+  return D3DXMatrixIdentity(out);
+}
+inline D3DXMATRIX* D3DXMatrixPerspectiveOffCenterLH(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT) {
+  return D3DXMatrixIdentity(out);
+}
+inline D3DXMATRIX* D3DXMatrixScaling(D3DXMATRIX* out, FLOAT x, FLOAT y, FLOAT z) {
+  if (out) *out = D3DXMATRIX(x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1);
+  return out;
+}
+inline D3DXMATRIX* D3DXMatrixRotationYawPitchRoll(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT) {
+  return D3DXMatrixIdentity(out);
+}
+inline D3DXMATRIX* D3DXMatrixRotationQuaternion(D3DXMATRIX* out, const D3DXQUATERNION*) {
+  return D3DXMatrixIdentity(out);
+}
+inline D3DXMATRIX* D3DXMatrixShadow(D3DXMATRIX* out, const D3DXVECTOR4*, const void*) {
+  return D3DXMatrixIdentity(out);
+}
+
+struct D3DXPLANE {
+  float a, b, c, d;
+};
+inline FLOAT D3DXPlaneDotCoord(const D3DXPLANE*, const D3DXVECTOR3*) { return 0; }
+inline D3DXPLANE* D3DXPlaneFromPointNormal(D3DXPLANE* out, const D3DXVECTOR3*, const D3DXVECTOR3*) { return out; }
+inline D3DXPLANE* D3DXPlaneFromPoints(D3DXPLANE* out, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
+  return out;
+}
+inline D3DXQUATERNION* D3DXQuaternionSlerp(D3DXQUATERNION* out, const D3DXQUATERNION* a, const D3DXQUATERNION*, FLOAT) {
+  if (out && a) *out = *a;
+  return out;
+}
+
+struct D3DXMATERIAL {
+  D3DMATERIAL8 MatD3D;
+  char* pTextureFilename;
+};
+struct ID3DXBuffer : IUnknown {
+  LPVOID GetBufferPointer() { return nullptr; }
+  DWORD GetBufferSize() { return 0; }
+};
+typedef ID3DXBuffer* LPD3DXBUFFER;
+
+inline HRESULT D3DXLoadMeshFromX(LPCSTR, DWORD, IDirect3DDevice8*, LPD3DXBUFFER*, LPD3DXBUFFER*, DWORD*, LPD3DXBUFFER*,
+                                 LPD3DXMESH*) {
+  return E_NOTIMPL;
+}
+inline HRESULT D3DXLoadMeshFromXof(void*, DWORD, IDirect3DDevice8*, LPD3DXBUFFER*, LPD3DXBUFFER*, DWORD*, LPD3DXBUFFER*,
+                                   LPD3DXMESH*) {
+  return E_NOTIMPL;
+}
+inline HRESULT D3DXCreateBox(IDirect3DDevice8*, FLOAT, FLOAT, FLOAT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
+inline HRESULT D3DXCreateSphere(IDirect3DDevice8*, FLOAT, UINT, UINT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
+inline HRESULT D3DXCreateTeapot(IDirect3DDevice8*, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
+inline HRESULT D3DXComputeBoundingBox(D3DXVECTOR3*, DWORD, DWORD, D3DXVECTOR3*, D3DXVECTOR3*) { return S_OK; }
+inline HRESULT D3DXComputeBoundingSphere(D3DXVECTOR3*, DWORD, DWORD, D3DXVECTOR3*, FLOAT*) { return S_OK; }
+inline BOOL D3DXBoxBoundProbe(const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
+  return FALSE;
+}
+inline BOOL D3DXSphereBoundProbe(const D3DXVECTOR3*, FLOAT, const D3DXVECTOR3*, const D3DXVECTOR3*) { return FALSE; }

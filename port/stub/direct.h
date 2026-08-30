@@ -6,7 +6,10 @@
 #include "io.h"
 
 #ifndef _mkdir
-inline int _mkdir(const char* path) { return mkdir(path, 0755); }
+inline int _mkdir(const char* path) { return ::mkdir(path, 0755); }
+#endif
+#ifndef mkdir
+inline int mkdir(const char* path) { return ::mkdir(path, 0755); }
 #endif
 
 #ifndef _getcwd

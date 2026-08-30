@@ -34,6 +34,8 @@ struct IDirectSoundBuffer : IUnknown {
 
 struct IDirectSoundBuffer8 : IDirectSoundBuffer {};
 #define DSBVOLUME_MAX 0
+#define DSBVOLUME_MIN -10000
+#define DS3D_IMMEDIATE 1
 #define DS3D_IMMEDIATE 1
 #define DS3D_DEFERRED 2
 

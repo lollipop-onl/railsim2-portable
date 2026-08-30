@@ -1,3 +1,32 @@
-# Native compile allowlist (M0). One entry per line; # comments allowed.
+# Native compile allowlist. One entry per line; # comments allowed.
 # Progress denominator is 254 root-level *.cpp + *.h files.
+# Remaining TUs fail on game include-order (CTrain / CDragInterface) or
+# extra qualification — not on missing D3D8 stubs. See docs/porting/dev-env.md.
+CCheckBox.cpp
+CCursor.cpp
+CCustomizer.cpp
+CEditCtrl.cpp
+CExpression.cpp
+CGroupBox.cpp
+CInterface.cpp
+CJobTimer.cpp
+CMiniButton.cpp
+CMultiStatic.cpp
+CPartsInst.cpp
+CPopMenu.cpp
+CPushButton.cpp
+CRadioButton.cpp
+CScrollBarV.cpp
+CSimpleDialog.cpp
+CStaticCtrl.cpp
+CStationEditMode.cpp
+CStringTexture.cpp
+CStructEditMode.cpp
+CTextureAnimation.cpp
+CVertexDump.cpp
 HighTimer.cpp
+Language.cpp
+Script.cpp
+WakeUp.cpp
+md5.cpp
+stdafx.cpp
