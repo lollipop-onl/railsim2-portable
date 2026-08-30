@@ -70,4 +70,6 @@ See [docs/porting/dev-env.md](docs/porting/dev-env.md) for presets, the compile 
 
 ## Tracking
 
-Work is organized with GitHub Milestones and Issues only: https://github.com/lollipop-onl/railsim2-portable/milestones
+Work is organized with GitHub Milestones and Issues: https://github.com/lollipop-onl/railsim2-portable/milestones
+
+Agents may start **only** issues labeled `agent-ready`, one PR each. Protocol: [`AGENTS.md`](AGENTS.md).
