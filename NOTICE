@@ -74,6 +74,12 @@ modified work but are not listed as "changed upstream files".
     CRailwayPluginSet.cpp, CConfigMode.cpp, Language.cpp, Capture.cpp,
     SystemCover.cpp
 
+2026-08-31 -- Replace timeGetTime with std::chrono::steady_clock (#33)
+
+  Modified upstream sources:
+    lib/main.cpp    -- CFrame::Init / Sync use a monotonic millisecond clock
+    lib/headers.h   -- mmsystem.h stays for WAVEFORMATEX / mmio
+
 Further changes must update this file (date + summary) and keep git
 history as the detailed record. Prefer leaving game logic untouched so
 diffs against upstream stay reviewable.

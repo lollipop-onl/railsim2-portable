@@ -3,7 +3,7 @@
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
-#include <mmsystem.h>	//	timeGetTime()
+#include <mmsystem.h>	//	WAVEFORMATEX / mmio*
 #include <imm.h>			//	IMEŠÖ˜A
 #include <stdio.h>
 #include <math.h>
