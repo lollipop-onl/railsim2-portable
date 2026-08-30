@@ -49,4 +49,5 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - Frozen udx / D3D8 game ABI: [`api-surface.md`](api-surface.md)
 - Backend ADR: [`adr-backend.md`](adr-backend.md)
 - X-File templates in `Distribution`: [`x-file-templates.md`](x-file-templates.md)
+- Closed text `.x` parser: [`x-file-parser.md`](x-file-parser.md)
 - `.rs2` roundtrip ctest: [`rs2-roundtrip.md`](rs2-roundtrip.md)
