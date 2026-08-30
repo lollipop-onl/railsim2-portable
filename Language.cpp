@@ -19,8 +19,8 @@ namespace LanguageResource
  *	Œ¾Œê‰Šú‰»
  */
 bool InitLanguage(){
-	chdir(g_BaseDir);
-	char *buf = LoadBinaryText(LANG_FILE_NAME), *str = buf, *eee;
+	char langpath[RS2_PATH_MAX];
+	char *buf = LoadBinaryText(rs2_path_join(langpath, sizeof(langpath), g_BaseDir, LANG_FILE_NAME)), *str = buf, *eee;
 
 	//	â‘Î•K—v‚È‚à‚Ì
 	SyntaxError = "Syntax error";

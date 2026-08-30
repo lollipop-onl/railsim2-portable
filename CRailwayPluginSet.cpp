@@ -179,7 +179,9 @@ void CRailwayPluginSet::Save(
  *	データファイル削除
  */
 bool CRailwayPluginSet::DeleteFromDisk(){
-	if(chdir(g_BaseDir) || chdir(DirName()) || remove(TextName2())){
+	char path[RS2_PATH_MAX];
+	if(!rs2_path_join(path, sizeof(path), g_BaseDir, DirName(), TextName2())
+		|| rs2_remove(path)){
 		EnqueueCommonDialog(new CSimpleDialog(
 			lang(ErrorDuringDelete), TextName2()));
 		g_Skin->Error();
@@ -195,8 +197,13 @@ bool CRailwayPluginSet::Rename(
 	string &newname	//	新規名
 ){
 	string fname2 = FlashIn("%s.txt", newname.c_str());
-	if(CheckSlash(fname2.c_str()) || chdir(g_BaseDir) || chdir(DirName()) ||
-		(remove(fname2.c_str()), rename(TextName2(), fname2.c_str()))){
+	char dir[RS2_PATH_MAX], from[RS2_PATH_MAX], to[RS2_PATH_MAX];
+	char *oldname = TextName2();
+	if(CheckSlash(fname2.c_str())
+		|| !rs2_path_join(dir, sizeof(dir), g_BaseDir, DirName())
+		|| !rs2_path_join(from, sizeof(from), dir, oldname)
+		|| !rs2_path_join(to, sizeof(to), dir, fname2.c_str())
+		|| (rs2_remove(to), rs2_rename(from, to))){
 		EnqueueCommonDialog(new CSimpleDialog(
 			lang(ErrorDuringRename), TextName2()));
 		g_Skin->Error();
@@ -229,28 +236,27 @@ void CRailwayPluginSet::Apply(){
  *	設定リスト読込
  */
 void LoadRailwayPluginSetList(){
-	long filelist;
-	_finddata_t data;
-	if(chdir(g_BaseDir) || chdir(RPS_DIRNAME)) return;
-	if((filelist = _findfirst("*.txt", &data))>=0){
-		do{
-			FILE *file;
-			if(data.attrib&_A_SUBDIR) continue;
-			string name = data.name;
-			name[name.size()-4] = 0;
-			g_RailwayPluginSetList.push_back(CRailwayPluginSet((char *)name.c_str(), false));
-			CRailwayPluginSet *rps = &*g_RailwayPluginSetList.rbegin();
-			if(file = fopen(data.name, "rb")){
-				if(!rps->PreLoadRPS(file)){
-					g_RailwayPluginSetList.pop_back();
-					continue;
-				}
-			}else{
+	char dir[RS2_PATH_MAX];
+	if(!rs2_path_join(dir, sizeof(dir), g_BaseDir, RPS_DIRNAME) || !rs2_is_dir(dir)) return;
+	std::vector<std::string> names;
+	if(!rs2_list_dir(dir, "*.txt", false, &names)) return;
+	for(size_t i = 0; i<names.size(); i++){
+		char fpath[RS2_PATH_MAX];
+		FILE *file;
+		string name = names[i];
+		name[name.size()-4] = 0;
+		g_RailwayPluginSetList.push_back(CRailwayPluginSet((char *)name.c_str(), false));
+		CRailwayPluginSet *rps = &*g_RailwayPluginSetList.rbegin();
+		if(rs2_path_join(fpath, sizeof(fpath), dir, names[i].c_str()) &&
+			(file = fopen(fpath, "rb"))){
+			if(!rps->PreLoadRPS(file)){
 				g_RailwayPluginSetList.pop_back();
 				continue;
 			}
-		} while(!_findnext(filelist, &data));
-		_findclose(filelist);
+		}else{
+			g_RailwayPluginSetList.pop_back();
+			continue;
+		}
 	}
 	g_RailwayPluginSetList.sort();
 }
@@ -290,8 +296,10 @@ void AddRailwayPluginSet(
 	}
 	char *fname = FlashIn("%s.txt", name.c_str());
 	FILE *file;
-	if(CheckSlash(fname) || chdir(g_BaseDir) || chdir(RPS_DIRNAME)
-		|| !(file = fopen(fname, "wt"))){
+	char rpspath[RS2_PATH_MAX];
+	if(CheckSlash(fname)
+		|| !rs2_path_join(rpspath, sizeof(rpspath), g_BaseDir, RPS_DIRNAME, fname)
+		|| !(file = fopen(rpspath, "wt"))){
 		EnqueueCommonDialog(new CSimpleDialog(
 			lang(CannotOpen_CheckFileName), fname));
 		return;

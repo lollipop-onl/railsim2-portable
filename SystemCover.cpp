@@ -209,7 +209,7 @@ void CutPath(
 	char *path	//	パス格納先
 ){
 	char *ptr = path+strlen(path);
-	for(; ptr>path && *ptr!='\\'; ptr = CharPrev(path, ptr)) *ptr = 0;
+	for(; ptr>path && *ptr!='\\' && *ptr!='/'; ptr = CharPrev(path, ptr)) *ptr = 0;
 }
 
 /*
@@ -220,8 +220,8 @@ void CutFileName(
 	char *path	//	フルパス
 ){
 	char *ptr = path+strlen(path);
-	while(ptr>path && *ptr!='\\') ptr = CharPrev(path, ptr);
-	strcpy(name, *ptr=='\\' ? ptr+1 : ptr);
+	while(ptr>path && *ptr!='\\' && *ptr!='/') ptr = CharPrev(path, ptr);
+	strcpy(name, (*ptr=='\\' || *ptr=='/') ? ptr+1 : ptr);
 }
 
 /*
@@ -242,7 +242,7 @@ void MoveToFile(
 ){
 	char *tmp = FlashIn("%s", path);
 	CutPath(tmp);
-	chdir(tmp);
+	rs2_chdir(tmp);
 }
 
 /*

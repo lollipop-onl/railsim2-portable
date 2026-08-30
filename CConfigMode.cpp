@@ -243,8 +243,9 @@ bool CConfigMode::Load(){
 	g_SelectedStructID = "Ship";
 	g_SelectedSurfaceID = "Default";
 	g_SelectedEnvID = "Default";
-	if(chdir(g_BaseDir)) goto SET;
-	str = g_ConfigBuffer = LoadBinaryText("Config.txt");
+	char cfgpath[RS2_PATH_MAX];
+	if(!rs2_path_join(cfgpath, sizeof(cfgpath), g_BaseDir, "Config.txt")) goto SET;
+	str = g_ConfigBuffer = LoadBinaryText(cfgpath);
 	if(!g_ConfigBuffer) goto SET;
 	try{
 		if(!(str = Space(eee = str))) throw CSynErr(eee);
@@ -396,8 +397,9 @@ bool CConfigMode::Save(){
 	}
 	void SetCurrentPluginID();
 	SetCurrentPluginID();
-	if(chdir(g_BaseDir)) return false;
-	FILE *file = fopen("Config.txt", "wt");
+	char cfgpath[RS2_PATH_MAX];
+	if(!rs2_path_join(cfgpath, sizeof(cfgpath), g_BaseDir, "Config.txt")) return false;
+	FILE *file = fopen(cfgpath, "wt");
 	if(!file) return false;
 	fprintf(file, "/*\n *\tRailSim II Configuration Datafile\n */\n\n");
 	fprintf(file, "DatafileHeader{\n");

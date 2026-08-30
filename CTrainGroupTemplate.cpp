@@ -240,7 +240,9 @@ void CTrainGroupTemplate::DeleteFromTree(){
  *	データファイル削除
  */
 bool CTrainGroupTemplate::DeleteFromDisk(){
-	if(chdir(g_BaseDir) || chdir(DirName()) || remove(TextName2())){
+	char path[RS2_PATH_MAX];
+	if(!rs2_path_join(path, sizeof(path), g_BaseDir, DirName(), TextName2())
+		|| rs2_remove(path)){
 		EnqueueCommonDialog(new CSimpleDialog(
 			lang(ErrorDuringDelete), TextName2()));
 		g_Skin->Error();
@@ -256,8 +258,13 @@ bool CTrainGroupTemplate::Rename(
 	string &newname	//	新規名
 ){
 	string fname2 = FlashIn("%s.txt", newname.c_str());
-	if(CheckSlash(fname2.c_str()) || chdir(g_BaseDir) || chdir(DirName()) ||
-		(remove(fname2.c_str()), rename(TextName2(), fname2.c_str()))){
+	char dir[RS2_PATH_MAX], from[RS2_PATH_MAX], to[RS2_PATH_MAX];
+	char *oldname = TextName2();
+	if(CheckSlash(fname2.c_str())
+		|| !rs2_path_join(dir, sizeof(dir), g_BaseDir, DirName())
+		|| !rs2_path_join(from, sizeof(from), dir, oldname)
+		|| !rs2_path_join(to, sizeof(to), dir, fname2.c_str())
+		|| (rs2_remove(to), rs2_rename(from, to))){
 		EnqueueCommonDialog(new CSimpleDialog(
 			lang(ErrorDuringRename), TextName2()));
 		g_Skin->Error();
@@ -304,28 +311,27 @@ void CTrainGroupTemplate::SetPreview(){
  *	テンプレートリスト読込
  */
 void LoadTrainGroupTemplateList(){
-	long filelist;
-	_finddata_t data;
-	if(chdir(g_BaseDir) || chdir(TGT_DIRNAME)) return;
-	if((filelist = _findfirst("*.txt", &data))>=0){
-		do{
-			FILE *file;
-			if(data.attrib&_A_SUBDIR) continue;
-			string name = data.name;
-			name[name.size()-4] = 0;
-			g_TrainGroupTemplateList.push_back(CTrainGroupTemplate((char *)name.c_str()));
-			CTrainGroupTemplate *tgt = &*g_TrainGroupTemplateList.rbegin();
-			if(file = fopen(data.name, "rb")){
-				if(!tgt->PreLoadTGT(file)){
-					g_TrainGroupTemplateList.pop_back();
-					continue;
-				}
-			}else{
+	char dir[RS2_PATH_MAX];
+	if(!rs2_path_join(dir, sizeof(dir), g_BaseDir, TGT_DIRNAME) || !rs2_is_dir(dir)) return;
+	std::vector<std::string> names;
+	if(!rs2_list_dir(dir, "*.txt", false, &names)) return;
+	for(size_t i = 0; i<names.size(); i++){
+		char fpath[RS2_PATH_MAX];
+		FILE *file;
+		string name = names[i];
+		name[name.size()-4] = 0;
+		g_TrainGroupTemplateList.push_back(CTrainGroupTemplate((char *)name.c_str()));
+		CTrainGroupTemplate *tgt = &*g_TrainGroupTemplateList.rbegin();
+		if(rs2_path_join(fpath, sizeof(fpath), dir, names[i].c_str()) &&
+			(file = fopen(fpath, "rb"))){
+			if(!tgt->PreLoadTGT(file)){
 				g_TrainGroupTemplateList.pop_back();
 				continue;
 			}
-		} while(!_findnext(filelist, &data));
-		_findclose(filelist);
+		}else{
+			g_TrainGroupTemplateList.pop_back();
+			continue;
+		}
 	}
 }
 
@@ -436,17 +442,19 @@ CMenuCommand *MakeGroupSaver(
  */
 void AddTrainGroupTemplate(){
 	FILE *file;
-	if(chdir(g_BaseDir) || chdir(TGT_DIRNAME)) return;
+	char dir[RS2_PATH_MAX], fpath[RS2_PATH_MAX];
+	if(!rs2_path_join(dir, sizeof(dir), g_BaseDir, TGT_DIRNAME) || !rs2_is_dir(dir)) return;
 	int i;
 	for(i = 1; i<1000; i++){
 		char *tname = i>1 ? FlashIn("%s (%d)", lang(NewTemplate), i) : lang(NewTemplate);
 		if(FindTrainGroupTemplate(tname)!=g_TrainGroupTemplateList.end()) continue;
 		char *fname = FlashIn("%s.txt", tname);
-		if(file = fopen(fname, "rb")){
+		if(!rs2_path_join(fpath, sizeof(fpath), dir, fname)) continue;
+		if(file = fopen(fpath, "rb")){
 			fclose(file);
 			continue;
 		}
-		if(!(file = fopen(fname, "wt"))) continue;
+		if(!(file = fopen(fpath, "wt"))) continue;
 		CPluginTree *tree = g_TrainEditMode->GetTree();
 		CTreeDirElement *insertpoint = tree->GetRoot();
 		g_TrainGroupTemplateList.push_back(CTrainGroupTemplate(tname));

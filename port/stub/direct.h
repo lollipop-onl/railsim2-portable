@@ -20,13 +20,10 @@ inline int mkdir(const char* path) { return ::mkdir(path, 0755); }
 #define _chdir chdir
 #endif
 
+#include "../path.h"
+
 #ifndef _fullpath
 inline char* _fullpath(char* abs, const char* rel, size_t size) {
-  if (!rel) return nullptr;
-  if (abs) {
-    std::snprintf(abs, size, "%s", rel);
-    return abs;
-  }
-  return nullptr;
+  return rs2_fullpath(abs, rel, size);
 }
 #endif

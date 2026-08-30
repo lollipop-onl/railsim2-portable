@@ -48,13 +48,11 @@ void InitCapture(){
 //	g_HidefCapture.Create(g_HidefBufferSize, g_HidefBufferSize);
 	g_ScreenShot.Clear(g_DispWidth, g_DispHeight);
 	g_HidefBufferSize = CheckArguments("-voodoo") ? 256 : 512;
-	chdir(g_BaseDir);
-	if(chdir("Picture")) mkdir("Picture");
-	chdir(g_BaseDir);
-	if(chdir("Video")) mkdir("Video");
+	char capdir[RS2_PATH_MAX];
+	if(rs2_path_join(capdir, sizeof(capdir), g_BaseDir, "Picture")) rs2_mkdir(capdir);
+	if(rs2_path_join(capdir, sizeof(capdir), g_BaseDir, "Video")) rs2_mkdir(capdir);
 	CountPicture();
 	CountVideoAVI();
-	chdir(g_BaseDir);
 }
 /*
  *	ŽB‰e‰ð•ú
@@ -153,7 +151,9 @@ void HidefCapture(CSceneryMode *scenerymode){
 	hidef_vert.BilinearStamp(&g_ScreenShot,
 		0, 0, sv3.width, sv3.height,
 		0, 0, hidef_vert.GetWidth(), hidef_vert.GetHeight());
-	g_ScreenShot.Save(FlashIn("%08d.bmp", g_PictureCount), 24);
+	char picpath[RS2_PATH_MAX];
+	if(rs2_path_join(picpath, sizeof(picpath), g_BaseDir, "Picture", FlashIn("%08d.bmp", g_PictureCount)))
+		g_ScreenShot.Save(picpath, 24);
 	CountPicture();
 	g_Skin->ScreenShot();
 	g_HidefCaptureFlag = false;
@@ -226,8 +226,6 @@ void VideoCapture(
 ){
 	if(GetKey(DIK_F12)==S_PUSH){
 		if(g_RSPV || !CheckCtrl()){
-			chdir(g_BaseDir);
-			chdir("Picture");
 			g_HidefQuality = g_VideoMode->GetPictureQuality();
 			if(g_HidefQuality>1 && scenerymode && !g_ConfigMode->GetStereo()){
 				HidefCapture(scenerymode);
@@ -235,7 +233,9 @@ void VideoCapture(
 				HDC windc = GetDC(svw.hWnd);
 				BitBlt(g_ScreenShot.GetHDC(), 0, 0, g_DispWidth, g_DispHeight, windc, 0, 0, SRCCOPY);
 				ReleaseDC(svw.hWnd, windc);
-				g_ScreenShot.Save(FlashIn("%08d.bmp", g_PictureCount), 24);
+				char picpath[RS2_PATH_MAX];
+				if(rs2_path_join(picpath, sizeof(picpath), g_BaseDir, "Picture", FlashIn("%08d.bmp", g_PictureCount)))
+					g_ScreenShot.Save(picpath, 24);
 				CountPicture();
 				g_Skin->ScreenShot();
 			}
@@ -273,10 +273,9 @@ void VideoCapture(
 			}
 			++g_VideoAVIFrame;
 		}else{
-			chdir(g_BaseDir);
-			chdir("Video");
-			char* frame_name = FlashIn("%08d.bmp", g_VideoFrame);
-				saving_img->Save(frame_name, 24);
+			char framepath[RS2_PATH_MAX];
+			if(rs2_path_join(framepath, sizeof(framepath), g_BaseDir, "Video", FlashIn("%08d.bmp", g_VideoFrame)))
+				saving_img->Save(framepath, 24);
 		}
 		g_VideoFrame++;
 	}
@@ -287,10 +286,11 @@ void VideoCapture(
  */
 void CountPicture(){
 	FILE *file;
-	chdir(g_BaseDir);
-	chdir("Picture");
+	char path[RS2_PATH_MAX];
 	while(true){
-		if(file = fopen(FlashIn("%08d.bmp", g_PictureCount), "rb")){
+		if(!rs2_path_join(path, sizeof(path), g_BaseDir, "Picture", FlashIn("%08d.bmp", g_PictureCount)))
+			break;
+		if(file = fopen(path, "rb")){
 			fclose(file);
 			g_PictureCount++;
 		}else{
@@ -304,10 +304,11 @@ void CountPicture(){
  */
 void CountVideoBMP(){
 	FILE *file;
-	chdir(g_BaseDir);
-	chdir("Video");
+	char path[RS2_PATH_MAX];
 	while(true){
-		if(file = fopen(FlashIn("%08d.bmp", g_VideoFrame), "rb")){
+		if(!rs2_path_join(path, sizeof(path), g_BaseDir, "Video", FlashIn("%08d.bmp", g_VideoFrame)))
+			break;
+		if(file = fopen(path, "rb")){
 			fclose(file);
 			g_VideoFrame++;
 		}else{
@@ -321,10 +322,11 @@ void CountVideoBMP(){
  */
 void CountVideoAVI(){
 	FILE *file;
-	chdir(g_BaseDir);
-	chdir("Video");
+	char path[RS2_PATH_MAX];
 	while(true){
-		if(file = fopen(FlashIn("%08d.avi", g_VideoCount), "rb")){
+		if(!rs2_path_join(path, sizeof(path), g_BaseDir, "Video", FlashIn("%08d.avi", g_VideoCount)))
+			break;
+		if(file = fopen(path, "rb")){
 			fclose(file);
 			g_VideoCount++;
 		}else{
@@ -351,9 +353,9 @@ void StartVideoCapture(){
 	g_VideoSound = false;//!!g_VideoMode->GetVideoSound();
 	if(g_VideoFormat==1){
 		g_VideoAVIFrame = 0;
-		chdir(g_BaseDir);
-		chdir("Video");
-		std::string avifile_name = FlashIn("%08d.avi", g_VideoCount);
+		char avipath[RS2_PATH_MAX];
+		std::string avifile_name = rs2_path_join(avipath, sizeof(avipath), g_BaseDir, "Video", FlashIn("%08d.avi", g_VideoCount))
+			? avipath : FlashIn("%08d.avi", g_VideoCount);
 		const int video_frame_per_sec = 30;
 
 #if 0
