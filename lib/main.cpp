@@ -3,6 +3,15 @@
 #include "udx.h"
 #include "libraries.h"
 #include "sysvalue.h"
+#include <chrono>
+
+static DWORD Rs2SteadyMs(){
+	using clock = std::chrono::steady_clock;
+	static const clock::time_point origin = clock::now();
+	return (DWORD)std::chrono::duration_cast<std::chrono::milliseconds>(
+		clock::now() - origin).count();
+}
+
 
 /*
  *	コンパイル・オプション
@@ -156,7 +165,7 @@ void CFrame::Init(){
 
 	frame = 0;
 	cnt = 0;
-	start = timeGetTime();
+	start = Rs2SteadyMs();
 	old = start;
 	fps = MAXFPS;
 	framecnt = MAXFPS;
@@ -171,7 +180,7 @@ void CFrame::Sync(){
 	DWORD now;	//	現在時間
 	DWORD diff;	//	経過時間
 
-	now = timeGetTime();
+	now = Rs2SteadyMs();
 	diff = now-start;
 	frame++;
 
