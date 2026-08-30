@@ -32,7 +32,7 @@ brew bundle --file Brewfile
 | `./scripts/progress.sh` | Prints `N/254` JSON from `port/native_sources.txt` |
 | `cmake --preset check` | Configure AppleClang native target |
 | `cmake --build --preset check` | Compile allowlisted sources and link `railsim2` |
-| `ctest --preset check` | Smoke + `Sample.rs2` roundtrip harness (see [rs2-roundtrip.md](rs2-roundtrip.md)) |
+| `ctest --preset check` | Smoke + `Sample.rs2` roundtrip + text `.x` load (see [rs2-roundtrip.md](rs2-roundtrip.md), [x-file-parser.md](x-file-parser.md)) |
 
 ## Compile firewall
 
@@ -74,4 +74,5 @@ GitHub Actions runs `./scripts/check.sh` on a **macOS + Linux matrix** (`macos-1
 ## Next milestones
 
 - **#10** replaces the roundtrip passthrough with `CSaveFile` and drives byte-identity (`%p` / MD5 / float). The ctest harness itself is [#24](https://github.com/lollipop-onl/railsim2-portable/issues/24) ([rs2-roundtrip.md](rs2-roundtrip.md)).
+- **#6** replaces `CXFile` / `D3DXLoadMeshFromX` with the closed parser in `port/xfile.cpp`. Loading Distribution `.x` into memory is [#28](https://github.com/lollipop-onl/railsim2-portable/issues/28) ([x-file-parser.md](x-file-parser.md)).
 - Backend / window bring-up uses SDL2 only when a `native` preset is added (see `adr-backend.md`); keep `check` stub-only.

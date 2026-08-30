@@ -81,3 +81,13 @@ add_test(NAME rs2_roundtrip COMMAND rs2_roundtrip
   "${RS2_ROUNDTRIP_FIXTURE}"
   "${RS2_ROUNDTRIP_OUTPUT}")
 set_tests_properties(rs2_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
+
+# Closed text X-File parser (#28). Does not replace CMesh::Load (#6).
+add_executable(rs2_xfile_load port/xfile_load.cpp port/xfile.cpp)
+target_include_directories(rs2_xfile_load PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_xfile_load PRIVATE cxx_std_17)
+target_compile_options(rs2_xfile_load PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_xfile_self_test COMMAND rs2_xfile_load --self-test)
+add_test(NAME rs2_xfile_load COMMAND rs2_xfile_load "${CMAKE_SOURCE_DIR}/Distribution")
+set_tests_properties(rs2_xfile_load PROPERTIES SKIP_RETURN_CODE 77)

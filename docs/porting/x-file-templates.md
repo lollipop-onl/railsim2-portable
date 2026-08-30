@@ -2,7 +2,7 @@
 
 - **Issue**: [#23](https://github.com/lollipop-onl/railsim2-portable/issues/23) (parent [#6](https://github.com/lollipop-onl/railsim2-portable/issues/6))
 - **Tree**: `Distribution/**/*.x` at this document's commit
-- **Parser**: not implemented here. `#6` should implement **this closed set**, not the full X-File spec.
+- **Parser**: `port/xfile.cpp` (issue [#28](https://github.com/lollipop-onl/railsim2-portable/issues/28)). `#6` still has to swap `CMesh::Load`. This document is the closed set.
 
 `CMesh::Load` currently calls `D3DXLoadMeshFromX` / `D3DXLoadMeshFromXof` after `CXFile::GetTopMesh` walks to `TID_D3DRMMesh`. A portable loader only has to feed that same mesh object. `CAnim::Load` reads a **custom text sidecar** (`fopen` / `fscanf`), not `AnimationSet`.
 
