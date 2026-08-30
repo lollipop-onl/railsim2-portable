@@ -47,3 +47,4 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - Credit and overview: [`README.md`](../../README.md)
 - Dev environment: [`dev-env.md`](dev-env.md)
 - Frozen udx / D3D8 game ABI: [`api-surface.md`](api-surface.md)
+- Backend ADR: [`adr-backend.md`](adr-backend.md)
