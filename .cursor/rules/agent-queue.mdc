@@ -1,0 +1,14 @@
+---
+description: How to pick the next port slice without inventing a backlog
+alwaysApply: true
+---
+
+# Agent queue
+
+Canonical protocol: `AGENTS.md` (section "Agent queue").
+
+- Start unlabeled work only when the user names that issue.
+- Parent issues `#1`?`#17` are epics, not a session. Slice issues say `Parent: #N`.
+- On "éü" / "éüÇ‚Ç¡Çƒ" / "pick next": `gh issue list --label agent-ready --state open`. Zero Å® stop. Otherwise take **one**, comment, remove the label, open one PR, stop.
+- Do not implement a second issue in the same session.
+- `./scripts/check.sh` is the gate. Do not convert game sources to UTF-8. Do not vendor DirectX.
