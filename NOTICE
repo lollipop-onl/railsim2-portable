@@ -55,6 +55,13 @@ modified work but are not listed as "changed upstream files".
     port/stub/* (D3D8 device methods, D3DX math, DIK_*, Win32 no-ops),
     docs/porting/dev-env.md, README.md
 
+2026-08-30 -- Sample.rs2 load-save roundtrip ctest (#24)
+
+  Build / docs (new):
+    port/rs2_roundtrip.cpp, docs/porting/rs2-roundtrip.md
+  Updated:
+    CMakeLists.txt, docs/porting/dev-env.md, docs/porting/upstream.md
+
 Further changes must update this file (date + summary) and keep git
 history as the detailed record. Prefer leaving game logic untouched so
 diffs against upstream stay reviewable.

@@ -64,5 +64,20 @@ target_compile_definitions(railsim2 PRIVATE
   NOMINMAX
 )
 
+# Byte-compare harness only. Does not link railsim2_native / CSaveFile (#10).
+add_executable(rs2_roundtrip port/rs2_roundtrip.cpp)
+target_compile_features(rs2_roundtrip PRIVATE cxx_std_17)
+target_compile_options(rs2_roundtrip PRIVATE -Wall -Wextra)
+
+set(RS2_ROUNDTRIP_FIXTURE
+  "${CMAKE_SOURCE_DIR}/Distribution/en/RailSim2/Layout/Sample.rs2")
+set(RS2_ROUNDTRIP_OUTPUT
+  "${CMAKE_BINARY_DIR}/rs2_roundtrip_out.rs2")
+
 enable_testing()
 add_test(NAME rs2_smoke COMMAND "${CMAKE_COMMAND}" -E echo "ctest skeleton ok")
+add_test(NAME rs2_roundtrip_reports_diff COMMAND rs2_roundtrip --self-test-diff)
+add_test(NAME rs2_roundtrip COMMAND rs2_roundtrip
+  "${RS2_ROUNDTRIP_FIXTURE}"
+  "${RS2_ROUNDTRIP_OUTPUT}")
+set_tests_properties(rs2_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
