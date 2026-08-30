@@ -143,6 +143,17 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DBLEND_INVDESTCOLOR 10
 
 #define D3DRS_ALPHATESTENABLE 15
+#define D3DRS_ZFUNC 23
+#define D3DRS_DIFFUSEMATERIALSOURCE 145
+#define D3DRS_AMBIENTMATERIALSOURCE 147
+#define D3DRS_STENCILWRITEMASK 58
+#define D3DRS_STENCILMASK 54
+#define D3DMCS_MATERIAL 0
+#define D3DMCS_COLOR1 1
+#define D3DLOCK_READONLY 0x00000010L
+#define D3DSTENCILOP_KEEP 1
+#define D3DSTENCILOP_REPLACE 3
+#define D3DCLEAR_STENCIL 0x00000004L
 #define D3DRS_ALPHAFUNC 16
 #define D3DRS_ALPHAREF 17
 
@@ -214,17 +225,34 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetTextureStageState(DWORD, D3DTEXTURESTAGESTATETYPE, DWORD) { return S_OK; }
   HRESULT SetTransform(D3DTRANSFORMSTATETYPE, const void*) { return S_OK; }
   HRESULT SetMaterial(const void*) { return S_OK; }
+  HRESULT SetLight(DWORD, const void*) { return S_OK; }
   HRESULT LightEnable(DWORD, BOOL) { return S_OK; }
   HRESULT Clear(DWORD, const void*, DWORD, D3DCOLOR, float, DWORD) { return S_OK; }
   HRESULT SetTexture(DWORD, IDirect3DTexture8*) { return S_OK; }
   HRESULT GetTexture(DWORD, IDirect3DBaseTexture8**) { return S_OK; }
   HRESULT DrawPrimitive(D3DPRIMITIVETYPE, UINT, UINT) { return S_OK; }
+  HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE, UINT, const void*, UINT) { return S_OK; }
   HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE, UINT, UINT, UINT, UINT, const void*) { return S_OK; }
   HRESULT SetStreamSource(UINT, IDirect3DVertexBuffer8*, UINT) { return S_OK; }
   HRESULT SetVertexShader(DWORD) { return S_OK; }
   HRESULT BeginScene() { return S_OK; }
   HRESULT EndScene() { return S_OK; }
   HRESULT Present(const RECT*, const RECT*, HWND, void*) { return S_OK; }
+  HRESULT GetViewport(D3DVIEWPORT8*) { return S_OK; }
+  HRESULT SetViewport(const D3DVIEWPORT8*) { return S_OK; }
+  HRESULT CreateTexture(UINT, UINT, UINT, DWORD, D3DFORMAT, DWORD, IDirect3DTexture8**) { return S_OK; }
+  HRESULT CopyRects(IDirect3DSurface8*, const RECT*, UINT, IDirect3DSurface8*, const POINT*) { return S_OK; }
+  HRESULT GetDeviceCaps(void*) { return S_OK; }
+  HRESULT Reset(D3DPRESENT_PARAMETERS*) { return S_OK; }
+  HRESULT SetRenderTarget(IDirect3DSurface8*, IDirect3DSurface8*) { return S_OK; }
+  HRESULT GetRenderTarget(IDirect3DSurface8**) { return S_OK; }
+  HRESULT GetDepthStencilSurface(IDirect3DSurface8**) { return S_OK; }
+  HRESULT CreateVertexBuffer(UINT, DWORD, DWORD, DWORD, IDirect3DVertexBuffer8**) { return S_OK; }
+  HRESULT CreateImageSurface(UINT, UINT, D3DFORMAT, IDirect3DSurface8**) { return S_OK; }
+  HRESULT CreateDepthStencilSurface(UINT, UINT, D3DFORMAT, DWORD, IDirect3DSurface8**) { return S_OK; }
+  HRESULT TestCooperativeLevel() { return S_OK; }
+  HRESULT SetClipStatus(const void*) { return S_OK; }
+  DWORD GetAvailableTextureMem() { return 64u * 1024u * 1024u; }
 };
 
 struct IDirect3DBaseTexture8 : IUnknown {};
@@ -250,3 +278,14 @@ struct IDirect3D8 : IUnknown {
   HRESULT GetAdapterCount() { return 1; }
   HRESULT CheckDeviceFormat(UINT, DWORD, D3DFORMAT, DWORD, D3DRESOURCETYPE, D3DFORMAT) { return S_OK; }
 };
+
+#define D3D_SDK_VERSION 220
+#define D3DDEVTYPE_HAL 1
+#define D3DDEVTYPE_REF 2
+#define D3DCREATE_HARDWARE_VERTEXPROCESSING 0x00000040L
+#define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0x00000020L
+
+inline IDirect3D8* Direct3DCreate8(UINT) {
+  static IDirect3D8 inst;
+  return &inst;
+}
