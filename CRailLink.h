@@ -50,7 +50,7 @@ public:
 	CRailConnector *m_Link;	//	ƒŠƒ“ƒN
 public:
 	CRailConnectorLink(){ m_Side = m_Point = 0; m_Link = NULL; }
-	CRailConnectorLink::CRailConnectorLink(int side, int point, CRailConnector *link){
+	CRailConnectorLink(int side, int point, CRailConnector *link){
 		m_Side = side; m_Point = point; m_Link = link;
 	}
 	void Connect(CRailWayLink &);
@@ -77,7 +77,7 @@ public:
 	CRailWay *m_Link;	//	ƒŠƒ“ƒN
 public:
 	CRailWayLink(){ m_Side = 0; m_Link = NULL; }
-	CRailWayLink::CRailWayLink(int side, CRailWay *link){ m_Side = side; m_Link = link; }
+	CRailWayLink(int side, CRailWay *link){ m_Side = side; m_Link = link; }
 	float GetCant();
 	VEC3 GetPos();
 	VEC3 GetOppositePos();

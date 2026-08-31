@@ -18,6 +18,7 @@ class CLinePlugin;
 class CPolePlugin;
 class CDetectInfo;
 class CRailWayParentLink;
+class CTrainGroup;
 
 /*
  *	橋脚位置データ

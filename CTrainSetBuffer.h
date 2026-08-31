@@ -3,6 +3,8 @@
 
 class CRailWay;
 class CAxleObject;
+class CTrain;
+class CTrainGroup;
 
 /*
  *	車軸姿勢バッファ

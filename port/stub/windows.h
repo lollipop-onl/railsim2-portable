@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <vector>
 #include <list>
@@ -127,6 +128,17 @@ typedef struct _FILETIME {
   DWORD dwLowDateTime;
   DWORD dwHighDateTime;
 } FILETIME;
+
+typedef struct _SYSTEMTIME {
+  WORD wYear;
+  WORD wMonth;
+  WORD wDayOfWeek;
+  WORD wDay;
+  WORD wHour;
+  WORD wMinute;
+  WORD wSecond;
+  WORD wMilliseconds;
+} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
 
 typedef struct tagMSG {
   HWND hwnd;
@@ -274,6 +286,25 @@ inline BOOL QueryPerformanceCounter(LARGE_INTEGER* li) {
   if (!li) return FALSE;
   li->QuadPart = 0;
   return TRUE;
+}
+inline void GetLocalTime(LPSYSTEMTIME st) {
+  if (!st) return;
+  std::memset(st, 0, sizeof(*st));
+  std::time_t now = std::time(nullptr);
+  std::tm local{};
+#if defined(_WIN32)
+  localtime_s(&local, &now);
+#else
+  localtime_r(&now, &local);
+#endif
+  st->wYear = static_cast<WORD>(local.tm_year + 1900);
+  st->wMonth = static_cast<WORD>(local.tm_mon + 1);
+  st->wDayOfWeek = static_cast<WORD>(local.tm_wday);
+  st->wDay = static_cast<WORD>(local.tm_mday);
+  st->wHour = static_cast<WORD>(local.tm_hour);
+  st->wMinute = static_cast<WORD>(local.tm_min);
+  st->wSecond = static_cast<WORD>(local.tm_sec);
+  st->wMilliseconds = 0;
 }
 inline HWND GetActiveWindow() { return nullptr; }
 inline int MessageBoxA(HWND, LPCSTR, LPCSTR, UINT) { return 0; }

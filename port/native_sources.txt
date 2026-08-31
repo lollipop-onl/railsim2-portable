@@ -16,6 +16,7 @@ CPartsInst.cpp
 CPopMenu.cpp
 CPushButton.cpp
 CRadioButton.cpp
+CSaveFile.cpp
 CScrollBarV.cpp
 CSimpleDialog.cpp
 CStaticCtrl.cpp

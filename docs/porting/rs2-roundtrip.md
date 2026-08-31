@@ -4,7 +4,7 @@
 - **Binary**: `rs2_roundtrip` (`port/rs2_roundtrip.cpp`), built by the `check` preset
 - **ctest**: `rs2_roundtrip` and `rs2_roundtrip_reports_diff`
 
-This is the mechanical gate for `#10`'s "load then save, byte diff zero" goal. It does **not** call `CSaveFile` yet (that still needs udx globals). `#10` should replace `rs2_layout_roundtrip()` with `CSaveFile::Load` + `CSaveFile::Save`. Do not "fix" `%p` width, MD5, or float format in the harness.
+This is the mechanical gate for `#10`'s "load then save, byte diff zero" goal. `#36` wires `rs2_layout_roundtrip()` through `CSaveFile::Load` + `CSaveFile::Save` (path-seams option 1: `g_BaseDir` + Layout basenames). Object-graph `Read`/`Save` are still stubbed, so the ctest is marked `WILL_FAIL` until byte-identity work in `#10`. Do not "fix" `%p` width, MD5, or float format in the harness.
 
 ## Fixture
 
@@ -24,11 +24,11 @@ Japanese `Distribution/jp/RailSim2/Layout/Sample.rs2` is CP932; pass it locally 
 ctest --preset check --output-on-failure -R rs2_roundtrip
 
 # explicit paths (any .rs2):
-./build/check/rs2_roundtrip Distribution/en/RailSim2/Layout/Sample.rs2 /tmp/out.rs2
+./build/check/rs2_roundtrip Distribution/en/RailSim2/Layout/Sample.rs2 Distribution/en/RailSim2/Layout/rs2_roundtrip_out.rs2
 ```
 
 `rs2_roundtrip_reports_diff` feeds two different buffers to the comparator and checks that the failure text is `roundtrip diff`, not a missing-harness error.
 
-## After `#10` wires `CSaveFile`
+## After `#36` (current)
 
-A real save will likely differ (`%p` width on 64-bit, `LayoutInfo.Date` from `GetLocalTime`, float `%f`). That must fail as **roundtrip diff** with sizes and the first mismatch offset. Byte-identity is `#10`'s job, not this harness.
+`rs2_roundtrip` links `CSaveFile.cpp` plus `port/rs2_roundtrip_stubs.cpp`. A real byte-identical save still needs the object graph and `%p` / MD5 / float work under `#10`. Until then the test is expected to exit 1 with **roundtrip diff** (ctest `WILL_FAIL`); missing fixture still exits 77 and skips.

@@ -126,6 +126,10 @@ inline D3DXVECTOR2 operator-(const D3DXVECTOR2& a, const D3DXVECTOR2& b) {
 inline D3DXVECTOR2 operator*(const D3DXVECTOR2& a, float s) { return D3DXVECTOR2(a.x * s, a.y * s); }
 inline D3DXVECTOR2 operator*(float s, const D3DXVECTOR2& a) { return a * s; }
 inline D3DXVECTOR2 operator/(const D3DXVECTOR2& a, float s) { return a * (1.0f / s); }
+inline bool operator==(const D3DXVECTOR2& a, const D3DXVECTOR2& b) {
+  return a.x == b.x && a.y == b.y;
+}
+inline bool operator!=(const D3DXVECTOR2& a, const D3DXVECTOR2& b) { return !(a == b); }
 
 inline D3DXVECTOR3 operator+(const D3DXVECTOR3& a, const D3DXVECTOR3& b) {
   return D3DXVECTOR3(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -137,6 +141,10 @@ inline D3DXVECTOR3 operator-(const D3DXVECTOR3& a, const D3DXVECTOR3& b) {
 inline D3DXVECTOR3 operator*(const D3DXVECTOR3& a, float s) { return D3DXVECTOR3(a.x * s, a.y * s, a.z * s); }
 inline D3DXVECTOR3 operator*(float s, const D3DXVECTOR3& a) { return a * s; }
 inline D3DXVECTOR3 operator/(const D3DXVECTOR3& a, float s) { return a * (1.0f / s); }
+inline bool operator==(const D3DXVECTOR3& a, const D3DXVECTOR3& b) {
+  return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+inline bool operator!=(const D3DXVECTOR3& a, const D3DXVECTOR3& b) { return !(a == b); }
 
 inline D3DXMATRIX operator*(const D3DXMATRIX& a, const D3DXMATRIX& b) {
   D3DXMATRIX r;
