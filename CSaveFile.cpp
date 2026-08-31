@@ -955,8 +955,8 @@ int CSaveFile::Save(
 	fprintf(df, "RailBlockList{\n");
 	map<std::string, CTrainGroup *>::iterator railblock;
 	for(railblock = g_RailBlockMap.begin(); railblock!=g_RailBlockMap.end(); ++railblock){
-		if(railblock->second) fprintf(df, "\tRailBlock = \"%s\", %p;\n",
-			ExpandDoubleQuote(railblock->first).c_str(), railblock->second);
+		if(railblock->second) fprintf(df, "\tRailBlock = \"%s\", " RS2_PTR_FMT ";\n",
+			ExpandDoubleQuote(railblock->first).c_str(), rs2_ptr32(railblock->second));
 	}
 	fprintf(df, "}\n\n");
 
@@ -969,7 +969,7 @@ int CSaveFile::Save(
 	fprintf(df, "}\n\n");
 
 	fprintf(df, "SceneList{\n");
-	fprintf(df, "\tCurrentScene = %p;\n", g_Scene);
+	fprintf(df, "\tCurrentScene = " RS2_PTR_FMT ";\n", rs2_ptr32(g_Scene));
 	CScene *scene = m_SceneList;
 	while(scene){
 		scene->Save(df);

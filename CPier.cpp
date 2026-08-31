@@ -296,7 +296,7 @@ void CPier::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\t\t\tPier{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tPierPlugin = \"%s\";\n", CheckPluginID(m_PierPlugin));
 	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, R2L(m_JointObject.GetPos()), ";\n");
 	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, R2L(m_JointObject.GetDir()), ";\n");

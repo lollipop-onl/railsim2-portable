@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "lib/udx.h"
 #include "port/path.h"
+#include "port/rs2_ptr.h"
 
 typedef list<string>::iterator Istring;
 

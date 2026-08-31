@@ -163,7 +163,7 @@ void CDiaListBase::Save(
 ){
 	string ind2 = string(ind)+"\t";
 	fprintf(df, "%s%s{\n", ind, Label());
-	fprintf(df, "%s\tTrainGroup = %p;\n", ind, group);
+	fprintf(df, "%s\tTrainGroup = " RS2_PTR_FMT ";\n", ind, rs2_ptr32(group));
 	fprintf(df, "%s\tUseDefault = %s;\n", ind, YESNO[m_UseDefault]);
 	IPDiaElementBase ipde = m_DiaList.begin();
 	for(; ipde!=m_DiaList.end(); ipde++) (*ipde)->Save(df, (char *)ind2.c_str());

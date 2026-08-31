@@ -196,8 +196,8 @@ void CGroupEndLocator::Save(
 	char *pref	//	プレフィックス
 ){
 	fprintf(df, "%s%s{\n", ind, pref);
-	fprintf(df, "%s\tAddress = %p;\n", ind, this);
-	fprintf(df, "%s\tLocation = %d, %f, %p;\n", ind, m_Side, m_Offset, m_SetRail);
+	fprintf(df, "%s\tAddress = " RS2_PTR_FMT ";\n", ind, rs2_ptr32(this));
+	fprintf(df, "%s\tLocation = %d, %f, " RS2_PTR_FMT ";\n", ind, m_Side, m_Offset, rs2_ptr32(m_SetRail));
 	fprintf(df, "%s}\n", ind);
 }
 

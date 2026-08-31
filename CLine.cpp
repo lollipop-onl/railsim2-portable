@@ -64,7 +64,7 @@ void CPoleLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %d, %p;\n", pref, m_Side, m_Track, m_Link);
+	fprintf(df, "%s%d, %d, " RS2_PTR_FMT ";\n", pref, m_Side, m_Track, rs2_ptr32(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,7 +274,7 @@ void CPole::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tPole{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tPolePlugin = \"%s\";\n", CheckPluginID(m_PolePlugin));
 	fprintf(df, "\t\t\t\tPos = "); V3Save(df, m_Pos, ";\n");
 	fprintf(df, "\t\t\t\tOrigDir = "); V3Save(df, m_OrigDir, ";\n");
@@ -282,7 +282,7 @@ void CPole::Save(
 		fprintf(df, "\t\t\t\tLineList = ");
 		IPLine ipl = m_LineList.begin();
 		for(; ipl!=m_LineList.end(); ipl++) fprintf(df,
-			ipl==m_LineList.begin() ? "%p" : ", %p", *ipl);
+			ipl==m_LineList.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipl));
 		fprintf(df, ";\n");
 	}
 	fprintf(df, "\t\t\t}\n");
@@ -470,7 +470,7 @@ void CLine::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tLine{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tLinePlugin = \"%s\";\n", CheckPluginID(m_LinePlugin));
 	SaveMapVector(df, "\t\t\t\tLineMapV = ", m_LineMapV);
 	fprintf(df, "\t\t\t\tRight = "); V3Save(df, m_Right, ";\n");

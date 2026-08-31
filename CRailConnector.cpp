@@ -126,7 +126,7 @@ void CRailConnectorLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %d, %p;\n", pref, m_Side, m_Point, m_Link);
+	fprintf(df, "%s%d, %d, " RS2_PTR_FMT ";\n", pref, m_Side, m_Point, rs2_ptr32(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ void CRailWayLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %p;\n", pref, m_Side, m_Link);
+	fprintf(df, "%s%d, " RS2_PTR_FMT ";\n", pref, m_Side, rs2_ptr32(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,7 +214,7 @@ char *CPierPos::Read(
 void CPierPos::Save(
 	FILE *df	//	ファイル
 ){
-	fprintf(df, "\t\t\t\t\tPierLink = %f, %p;\n", m_Pos, m_Link);
+	fprintf(df, "\t\t\t\t\tPierLink = %f, " RS2_PTR_FMT ";\n", m_Pos, rs2_ptr32(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -252,8 +252,8 @@ char *CPolePos::Read(
 void CPolePos::Save(
 	FILE *df	//	ファイル
 ){
-	fprintf(df, "\t\t\t\t\tPoleLink = %f, %d, %s, %p;\n",
-		m_Pos, m_Track, YESNO[m_Multi], m_Link);
+	fprintf(df, "\t\t\t\t\tPoleLink = %f, %d, %s, " RS2_PTR_FMT ";\n",
+		m_Pos, m_Track, YESNO[m_Multi], rs2_ptr32(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -510,12 +510,12 @@ void CRailConnector::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tRailConnector{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	m_Splitter.Save(df, "\t\t\t\t");
 	fprintf(df, "\t\t\t\tCant = %f;\n", m_Cant);
 	fprintf(df, "\t\t\t\tSide = %d;\n", m_Side);
 	fprintf(df, "\t\t\t\tTrailPoint = %d, %d;\n", m_TrailPoint[0], m_TrailPoint[1]);
-	fprintf(df, "\t\t\t\tUser = %p;\n", m_User);
+	fprintf(df, "\t\t\t\tUser = " RS2_PTR_FMT ";\n", rs2_ptr32(m_User));
 	int i, j;
 	for(i = 0; i<2; i++) for(j = 0; j<2; j++)
 		m_Link[i][j].Save(df, FlashIn("\t\t\t\tLink%d%d = ", i, j));

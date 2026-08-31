@@ -283,8 +283,12 @@ char *HexPointer(
 			}else{
 				char save = *tmp;
 				*tmp = 0;
-				void *val;
-				sscanf(str, "%p", &val);
+				void *val = NULL;
+				/* Bare hex (8 or 16 digits). Avoid sscanf %p (0x differs by host). */
+				if(!rs2_parse_ptr(str, &val)){
+					*tmp = save;
+					return NULL;
+				}
 				*ret = val;
 				*tmp = save;
 				return Space(tmp);
