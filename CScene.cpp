@@ -899,7 +899,7 @@ void CScene::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\tScene{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\tName = \"%s\";\n", ExpandDoubleQuote(m_Name).c_str());
 	fprintf(df, "\t\tSurfacePlugin = \"%s\";\n", CheckPluginID(m_SurfacePlugin));
 	fprintf(df, "\t\tEnvPlugin = \"%s\";\n", CheckPluginID(m_EnvPlugin));

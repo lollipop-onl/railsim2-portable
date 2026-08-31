@@ -101,7 +101,7 @@ void CWindowInfo::Save(
 	if(m_Div){
 		m_Div->Save(df, indent2);
 	}else{
-		fprintf(df, "%s\tScene = %p;\n", indent.c_str(), m_Scene);
+		fprintf(df, "%s\tScene = " RS2_PTR_FMT ";\n", indent.c_str(), rs2_ptr32(m_Scene));
 		m_Camera.Save(df, indent2);
 	}
 	fprintf(df, "%s}\n", indent.c_str());

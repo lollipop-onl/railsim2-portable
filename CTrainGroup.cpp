@@ -1274,7 +1274,7 @@ void CTrainGroup::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\tTrainGroup{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\tName = \"%s\";\n", ExpandDoubleQuote(m_Name).c_str());
 	fprintf(df, "\t\tCabinPos = ");
 	V3Save(df, m_CabinPos[0], ", "); V3Save(df, m_CabinPos[1], ";\n");
@@ -1286,7 +1286,7 @@ void CTrainGroup::Save(
 		fprintf(df, "\t\tTargetSpeed = %f;\n", m_TargetSpeed);
 		fprintf(df, "\t\tCurrentSpeed = %f;\n", m_CurrentSpeed);
 		fprintf(df, "\t\tStopTarget = %f;\n", m_StopTarget);
-		fprintf(df, "\t\tDepartureTime = %p, %p;\n",
+		fprintf(df, "\t\tDepartureTime = %08x, %08x;\n",
 			*(PDWORD)&m_DepartureTime, *((PDWORD)&m_DepartureTime+1));
 		fprintf(df, "\t\tDoorWait = %d;\n", m_DoorWait);
 		fprintf(df, "\t\tOpenDoor = %s, %s;\n", YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
@@ -1298,17 +1298,17 @@ void CTrainGroup::Save(
 		if(m_PointList.size()){
 			fprintf(df, "\t\tPointList = ");
 			for(ipr = m_PointList.begin(); ipr!=m_PointList.end(); ipr++)
-				fprintf(df, ipr==m_PointList.begin() ? "%p" : ", %p", *ipr);
+				fprintf(df, ipr==m_PointList.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipr));
 			fprintf(df, ";\n");
 		}
 		if(m_SeekList.size()){
 			fprintf(df, "\t\tSeekList = ");
 			for(ipr = m_SeekList.begin(); ipr!=m_SeekList.end(); ipr++)
-				fprintf(df, ipr==m_SeekList.begin() ? "%p" : ", %p", *ipr);
+				fprintf(df, ipr==m_SeekList.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipr));
 			fprintf(df, ";\n");
 		}
 		m_DiaElement.Save(df, "\t\t");
-		fprintf(df, "\t\tPlatform = %p;\n", m_Platform);
+		fprintf(df, "\t\tPlatform = " RS2_PTR_FMT ";\n", rs2_ptr32(m_Platform));
 	}
 	CTrain *train = m_TrainList;
 	while(train){

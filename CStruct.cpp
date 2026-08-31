@@ -237,7 +237,7 @@ void CStruct::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\t\t\tStruct{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tStructPlugin = \"%s\";\n", CheckPluginID(m_StructPlugin));
 	SaveModelInst(df, "\t\t\t\t", true);
 	fprintf(df, "\t\t\t}\n");

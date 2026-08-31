@@ -141,7 +141,7 @@ void CPlatformInst::Save(
 	FILE *df	//	ファイル
 ){	
 	fprintf(df, "\t\t\t\t\tPlatform{\n");
-	fprintf(df, "\t\t\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\t\t\tStoppable = %s;\n", YESNO[m_Stoppable]);
 	fprintf(df, "\t\t\t\t\t\tOpenDoor = %s, %s;\n",
 		YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
@@ -149,7 +149,7 @@ void CPlatformInst::Save(
 		fprintf(df, "\t\t\t\t\t\tRailList = ");
 		IPRailWay ipr = m_RailList.begin();
 		for(; ipr!=m_RailList.end(); ipr++) fprintf(
-			df, ipr==m_RailList.begin() ? "%p" : ", %p", *ipr);
+			df, ipr==m_RailList.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipr));
 		fprintf(df, ";\n");
 	}
 	fprintf(df, "\t\t\t\t\t}\n");
@@ -361,7 +361,7 @@ void CStation::Save(
 	FILE *df	//	ファイル
 ){	
 	fprintf(df, "\t\t\tStation{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tStationPlugin = \"%s\";\n", CheckPluginID(m_StationPlugin));
 	SaveModelInst(df, "\t\t\t\t", true);
 	fprintf(df, "\t\t\t\tPlatformList{\n");

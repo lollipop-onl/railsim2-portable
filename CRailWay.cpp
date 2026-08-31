@@ -1425,7 +1425,7 @@ void CRailWay::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tRailWay{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tRailPlugin = \"%s\";\n", CheckPluginID(m_RailPlugin));
 	fprintf(df, "\t\t\t\tTiePlugin = \"%s\";\n", CheckPluginID(m_TiePlugin));
 	fprintf(df, "\t\t\t\tGirderPlugin = \"%s\";\n", CheckPluginID(m_GirderPlugin));
@@ -1444,7 +1444,7 @@ void CRailWay::Save(
 	}
 	m_Link[0].Save(df, "\t\t\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\t\t\tLink1 = ");
-	fprintf(df, "\t\t\t\tPlatform = %p;\n", m_Platform);
+	fprintf(df, "\t\t\t\tPlatform = " RS2_PTR_FMT ";\n", rs2_ptr32(m_Platform));
 	if(IsRailBlock()) fprintf(df, "\t\t\t\tRailBlock = \"%s\";\n", ExpandDoubleQuote(m_RailBlock).c_str());
 	if(IsSpeedLimit()) fprintf(df, "\t\t\t\tSpeedLimit = %d;\n", m_SpeedLimit);
 
@@ -1470,7 +1470,7 @@ void CRailWay::Save(
 		fprintf(df, "\t\t\t\tGroupEnd = ");
 		IPGroupEndLocator ipge = m_GroupEnd.begin();
 		for(; ipge!=m_GroupEnd.end(); ipge++)
-			fprintf(df, ipge==m_GroupEnd.begin() ? "%p" : ", %p", *ipge);
+			fprintf(df, ipge==m_GroupEnd.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipge));
 		fprintf(df, ";\n");
 	}
 
@@ -1484,7 +1484,7 @@ void CRailWay::SaveWarp(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\tWarp{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	m_Link[0].Save(df, "\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\tLink1 = ");
 	fprintf(df, "\t}\n");

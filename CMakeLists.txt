@@ -132,3 +132,11 @@ target_compile_options(rs2_path_test PRIVATE -Wall -Wextra)
 add_test(NAME rs2_path_self_test COMMAND rs2_path_test --self-test)
 add_test(NAME rs2_path_distribution COMMAND rs2_path_test "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_path_distribution PROPERTIES SKIP_RETURN_CODE 77)
+
+# Pointer ID 8-digit hex write / HexPointer-compatible parse (#40).
+add_executable(rs2_ptr_test port/rs2_ptr_test.cpp)
+target_include_directories(rs2_ptr_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ptr_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ptr_test PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_ptr_self_test COMMAND rs2_ptr_test --self-test)
