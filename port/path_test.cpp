@@ -1,4 +1,4 @@
-// Path join / list / fullpath self-test (#32). Does not link CSaveFile.
+// Path join / list / fullpath self-test (#32, case policy #41). Does not link CSaveFile.
 
 #include "path.h"
 
@@ -87,6 +87,35 @@ int self_test() {
 	f = rs2_fopen("Sample.rs2", "rb");
 	if (!expect(f != nullptr, "fopen relative after virtual cwd")) return 1;
 	std::fclose(f);
+
+	// #41: list_dir patterns stay case-insensitive (Win32 _findfirst-like);
+	// open/chdir stay strict on case-sensitive volumes.
+	if (!rs2_path_join(buf, sizeof(buf), tmp.string().c_str(), "Layout")) return 1;
+	if (!expect(rs2_chdir(tmp.string().c_str()) == 0, "chdir tmp for case probe")) return 1;
+	if (!expect(rs2_list_dir(buf, "*.RS2", false, &names) && names.size() == 1 &&
+	                names[0] == "Sample.rs2",
+	            "list *.RS2 finds Sample.rs2"))
+		return 1;
+
+	{
+		std::ofstream probe((tmp / "Layout" / "CaseProbe.txt").string());
+		probe << "probe\n";
+	}
+	char probe_wrong[RS2_PATH_MAX];
+	if (!rs2_path_join(probe_wrong, sizeof(probe_wrong), tmp.string().c_str(), "Layout",
+	                   "caseprobe.txt"))
+		return 1;
+	FILE *wrong = rs2_fopen(probe_wrong, "rb");
+	const bool fs_case_insensitive = (wrong != nullptr);
+	if (wrong) std::fclose(wrong);
+	if (!fs_case_insensitive) {
+		if (!expect(rs2_fopen(probe_wrong, "rb") == nullptr,
+		            "strict fopen rejects wrong case on case-sensitive FS"))
+			return 1;
+		if (!expect(rs2_chdir("layout") != 0,
+		            "strict chdir rejects wrong case on case-sensitive FS"))
+			return 1;
+	}
 
 	std::filesystem::remove_all(tmp, ec);
 	return 0;
