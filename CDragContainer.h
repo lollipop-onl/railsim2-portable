@@ -1,6 +1,8 @@
 #ifndef CDRAGCONTAINER_H_INCLUDED
 #define CDRAGCONTAINER_H_INCLUDED
 
+class CDragInterface;
+
 const int DRAG_THD = FONT_HEIGHT/2;
 
 //	”½•œŽq

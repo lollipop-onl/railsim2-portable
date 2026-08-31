@@ -420,3 +420,6 @@ FodyWeavers.xsd
 /Debug_vc2010
 /Release_vc2010
 /build/
+
+# Roundtrip harness output under Layout (#36)
+Distribution/**/Layout/rs2_roundtrip_out.rs2

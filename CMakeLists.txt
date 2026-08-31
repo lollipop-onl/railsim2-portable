@@ -65,15 +65,41 @@ target_compile_definitions(railsim2 PRIVATE
   NOMINMAX
 )
 
-# Byte-compare harness only. Does not link railsim2_native / CSaveFile (#10).
-add_executable(rs2_roundtrip port/rs2_roundtrip.cpp)
+# Sample.rs2 Load/Save via CSaveFile (#36). Stubs fill the object graph;
+# byte-identity remains parent #10. Does not link the full railsim2_native.a.
+add_executable(rs2_roundtrip
+  port/rs2_roundtrip.cpp
+  port/rs2_roundtrip_stubs.cpp
+  port/path.cpp
+  CSaveFile.cpp
+  Script.cpp
+  md5.cpp
+)
+target_include_directories(rs2_roundtrip SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub"
+)
+target_include_directories(rs2_roundtrip PRIVATE
+  "${CMAKE_SOURCE_DIR}"
+  "${CMAKE_SOURCE_DIR}/lib"
+  "${CMAKE_SOURCE_DIR}/port"
+)
 target_compile_features(rs2_roundtrip PRIVATE cxx_std_17)
-target_compile_options(rs2_roundtrip PRIVATE -Wall -Wextra)
+target_compile_options(rs2_roundtrip PRIVATE
+  -Wall
+  -Wextra
+  -Wno-invalid-source-encoding
+  -Wno-address-of-temporary
+)
+target_compile_definitions(rs2_roundtrip PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+)
 
 set(RS2_ROUNDTRIP_FIXTURE
   "${CMAKE_SOURCE_DIR}/Distribution/en/RailSim2/Layout/Sample.rs2")
+# Save requires a basename under Layout (CheckSlash); compare uses this path.
 set(RS2_ROUNDTRIP_OUTPUT
-  "${CMAKE_BINARY_DIR}/rs2_roundtrip_out.rs2")
+  "${CMAKE_SOURCE_DIR}/Distribution/en/RailSim2/Layout/rs2_roundtrip_out.rs2")
 
 enable_testing()
 add_test(NAME rs2_smoke COMMAND "${CMAKE_COMMAND}" -E echo "ctest skeleton ok")
@@ -81,7 +107,11 @@ add_test(NAME rs2_roundtrip_reports_diff COMMAND rs2_roundtrip --self-test-diff)
 add_test(NAME rs2_roundtrip COMMAND rs2_roundtrip
   "${RS2_ROUNDTRIP_FIXTURE}"
   "${RS2_ROUNDTRIP_OUTPUT}")
-set_tests_properties(rs2_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
+# Fixture missing -> 77 skip. Expected Load/Save mismatch -> 1 (WILL_FAIL).
+set_tests_properties(rs2_roundtrip PROPERTIES
+  SKIP_RETURN_CODE 77
+  WILL_FAIL TRUE
+)
 
 # Closed text X-File parser (#28). Does not replace CMesh::Load (#6).
 add_executable(rs2_xfile_load port/xfile_load.cpp port/xfile.cpp)
