@@ -199,3 +199,38 @@ rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!po
 ```
 
 `./scripts/check.sh` must stay green (`rs2_path_self_test` + `rs2_path_distribution`).
+
+## Case sensitivity (#41)
+
+Windows (and some macOS volumes) treat path components as case-insensitive. Linux does not. After #32, asset I/O goes through `port/path.cpp` without rewriting game path strings or renaming Distribution files.
+
+### Inventory (what can break)
+
+| Path | Role | Case risk |
+|------|------|-----------|
+| `rs2_path_join` + `rs2_fopen` / `rs2_is_dir` / `rs2_chdir` / `rs2_rename` / `rs2_remove` / `rs2_fullpath` | Closed-set open and cwd | **Exact** component spelling. Wrong case fails on Linux. |
+| `rs2_list_dir` + `glob_match` | Former `_findfirst` loops | Extension / name match uses `icmp` (case-insensitive), matching typical Win32 `_findfirst` behavior. Returned names keep **on-disk** spelling. |
+| Hardcoded `DirName()` / `TextName2()` / `LAYOUT_DIRNAME` / `Language.txt` / `Config.txt` | Install-tree literals | Must match Distribution (or runtime-created) names byte-for-byte. |
+| Plugin-relative riders after `CPlugin::ChDir` | `Model.x`, textures, `*.txt` sidecars | Resolved under the virtual cwd; same exact-match rule as `rs2_fopen`. |
+| Names from `rs2_list_dir` then re-opened | Layout / plugin / template lists | Safe: reopen uses the spelling the directory walk returned. |
+
+### Distribution check (this repo)
+
+Against `Distribution/en/RailSim2` (and the same tree under `jp/`):
+
+- Top-level type dirs (`Rail`, `Layout`, …), `Language.txt`, and `Layout/Sample.rs2` match the game literals exactly.
+- Every plugin folder has `*2.txt` (or old-form `*.txt`) with the expected casing; no sibling names that differ only by case.
+- Relative asset refs inside those `.txt` files resolve with exact case under the plugin directory (no “open only via casefold” hits in a scan of `.x` / image / wave names).
+
+Runtime-only dirs (`Undo/`, `Picture/`, `Video/`, `Config.txt`) are created with the same literals the game later opens, so they do not introduce a case gap.
+
+### Policy: keep strict open / chdir
+
+**Do not** add a case-folding resolver in `rs2_fopen` / `rs2_chdir` / `rs2_is_dir`. Evidence:
+
+1. Shipped Distribution and game string literals already agree; a folding walker would be speculative.
+2. Issue #41 forbids guessing a large path rewrite; fix the resolution layer only when a real mismatch appears.
+3. `rs2_list_dir` already folds pattern matches; callers that open listed names stay correct on Linux.
+4. If third-party or hand-edited assets ever disagree in case, prefer fixing the asset or the authoring string over silent folding (folding hides collisions and diverges from “path as written” debugging).
+
+`rs2_path_self_test` creates a probe file and, on a case-sensitive volume, asserts that a wrong-case `rs2_fopen` fails while `*.RS2`-style listing still succeeds. On case-insensitive volumes the strict-fail check is skipped.
