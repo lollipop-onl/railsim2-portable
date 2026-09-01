@@ -1440,7 +1440,7 @@ void CRailWay::Save(
 	fprintf(df, "\t\t\t\tMultiTrackDummy = %s;\n", YESNO[m_MultiTrackDummy]);
 	if(m_MultiTrackDummy){
 		fprintf(df, "\t\t\t\tDummyTrackNum = %d;\n", m_DummyTrackNum);
-		fprintf(df, "\t\t\t\tDummyTrackInterval = %f;\n", m_DummyTrackInterval);
+		fprintf(df, "\t\t\t\tDummyTrackInterval = " RS2_FLOAT_FMT ";\n", m_DummyTrackInterval);
 	}
 	m_Link[0].Save(df, "\t\t\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\t\t\tLink1 = ");
@@ -1455,13 +1455,13 @@ void CRailWay::Save(
 	fprintf(df, "\t\t\t\t}\n");
 
 	fprintf(df, "\t\t\t\tPierList{\n");
-	fprintf(df, "\t\t\t\t\tPierPos = %f;\n", m_PierPos);
+	fprintf(df, "\t\t\t\t\tPierPos = " RS2_FLOAT_FMT ";\n", m_PierPos);
 	IPierPos ipi = m_PierList.begin();
 	for(; ipi!=m_PierList.end(); ipi++) ipi->Save(df);
 	fprintf(df, "\t\t\t\t}\n");
 
 	fprintf(df, "\t\t\t\tPoleList{\n");
-	fprintf(df, "\t\t\t\t\tPolePos = %f;\n", m_PolePos);
+	fprintf(df, "\t\t\t\t\tPolePos = " RS2_FLOAT_FMT ";\n", m_PolePos);
 	IPolePos ipo = m_PoleList.begin();
 	for(; ipo!=m_PoleList.end(); ipo++) ipo->Save(df);
 	fprintf(df, "\t\t\t\t}\n");

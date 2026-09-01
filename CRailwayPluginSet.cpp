@@ -171,7 +171,7 @@ void CRailwayPluginSet::Save(
 	fprintf(file, "\tLiftRailSurface = %s;\n", YESNO[m_LiftRailSurface]);
 	fprintf(file, "\tMultiTrack = %s;\n", YESNO[m_MultiTrack]);
 	fprintf(file, "\tTrackNum = %d;\n", m_TrackNum);
-	fprintf(file, "\tTrackInterval = %f;\n", m_TrackInterval);
+	fprintf(file, "\tTrackInterval = " RS2_FLOAT_FMT ";\n", m_TrackInterval);
 	fprintf(file, "}\n");
 }
 

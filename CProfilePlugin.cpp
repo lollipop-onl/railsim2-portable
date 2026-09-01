@@ -814,6 +814,6 @@ void SaveMapVector(
 	if(!mapv.size()) return;
 	fprintf(df, pref);
 	int i;
-	for(i = 0; i<mapv.size(); i++) fprintf(df, i ? ", %f" : "%f", mapv[i]);
+	for(i = 0; i<mapv.size(); i++) fprintf(df, i ? ", " RS2_FLOAT_FMT : RS2_FLOAT_FMT, mapv[i]);
 	fprintf(df, ";\n");
 }

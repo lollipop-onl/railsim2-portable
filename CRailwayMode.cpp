@@ -168,7 +168,7 @@ void CRailwayMode::SaveRailwaySetting(
 	fprintf(file, "\tLiftRailSurface = %s;\n", YESNO[ms_LiftRailSurface.GetCheck()]);
 	fprintf(file, "\tMultiTrack = %s;\n", YESNO[ms_MultiTrackCheck.GetCheck()]);
 	fprintf(file, "\tTrackNum = %d;\n", GetTrackNum());
-	fprintf(file, "\tTrackInterval = %f;\n", GetTrackInterval());
+	fprintf(file, "\tTrackInterval = " RS2_FLOAT_FMT ";\n", GetTrackInterval());
 	fprintf(file, "}\n\n");
 }
 

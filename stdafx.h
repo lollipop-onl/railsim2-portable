@@ -9,6 +9,7 @@
 #include "lib/udx.h"
 #include "port/path.h"
 #include "port/rs2_ptr.h"
+#include "port/rs2_float.h"
 
 typedef list<string>::iterator Istring;
 

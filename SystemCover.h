@@ -74,7 +74,7 @@ inline void V3Save(
 	VEC3 &v,	//	ベクトル
 	char *e		//	サフィックス
 ){
-	fprintf(df, "(%f, %f, %f)%s", v.x, v.y, v.z, e);
+	fprintf(df, "(" RS2_FLOAT_FMT ", " RS2_FLOAT_FMT ", " RS2_FLOAT_FMT ")%s", v.x, v.y, v.z, e);
 }
 
 #endif

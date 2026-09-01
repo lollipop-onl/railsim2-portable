@@ -379,6 +379,6 @@ void CDiaElement::Save(
 	fprintf(df, "%s\tAction = %d;\n", ind, m_Action);
 	fprintf(df, "%s\tTimeType = %d;\n", ind, m_TimeType);
 	fprintf(df, "%s\tTime = %d, %d, %d;\n", ind, m_Hour, m_Minute, m_Second);
-	fprintf(df, "%s\tOffset = %f;\n", ind, m_Offset);
+	fprintf(df, "%s\tOffset = " RS2_FLOAT_FMT ";\n", ind, m_Offset);
 	fprintf(df, "%s}\n", ind, m_Offset);
 }

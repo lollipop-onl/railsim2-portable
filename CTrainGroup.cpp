@@ -1283,9 +1283,9 @@ void CTrainGroup::Save(
 	fprintf(df, "\t\tEnabled = %s;\n", YESNO[m_Enabled]);
 	if(m_Enabled){
 		fprintf(df, "\t\tState = %d;\n", m_State);
-		fprintf(df, "\t\tTargetSpeed = %f;\n", m_TargetSpeed);
-		fprintf(df, "\t\tCurrentSpeed = %f;\n", m_CurrentSpeed);
-		fprintf(df, "\t\tStopTarget = %f;\n", m_StopTarget);
+		fprintf(df, "\t\tTargetSpeed = " RS2_FLOAT_FMT ";\n", m_TargetSpeed);
+		fprintf(df, "\t\tCurrentSpeed = " RS2_FLOAT_FMT ";\n", m_CurrentSpeed);
+		fprintf(df, "\t\tStopTarget = " RS2_FLOAT_FMT ";\n", m_StopTarget);
 		fprintf(df, "\t\tDepartureTime = %08x, %08x;\n",
 			*(PDWORD)&m_DepartureTime, *((PDWORD)&m_DepartureTime+1));
 		fprintf(df, "\t\tDoorWait = %d;\n", m_DoorWait);
