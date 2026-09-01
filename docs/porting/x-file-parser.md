@@ -6,7 +6,7 @@
 - **Binary**: `rs2_xfile_load` (`port/xfile_load.cpp`), built by the `check` preset
 - **ctest**: `rs2_xfile_self_test` and `rs2_xfile_load`
 
-This is the mechanical gate for `#6`'s "`.x` is an in-memory mesh" goal. It does **not** replace `CXFile` or `CMesh::Load` (those still call `D3DXLoadMeshFromX` / `Xof`). `#6` should feed `Rs2XMesh` into that path.
+This is the mechanical gate for `#6`'s "`.x` is an in-memory mesh" goal. It does **not** replace `CXFile` or `CMesh::Load` (those still call `D3DXLoadMeshFromX` / `Xof` on upstream Windows). `#45` wires the portable `CMesh::Load` file path to `rs2_xfile_parse_file` + `port/rs2_cmesh_xfile.*`; ctest `rs2_cmesh_xfile_*` exercises that probe.
 
 Faces stay **n-gons** as written in the file. Triangulation belongs with the later `ID3DXMESH`-like object, not here.
 
