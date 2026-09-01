@@ -52,3 +52,4 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - Closed text `.x` parser: [`x-file-parser.md`](x-file-parser.md)
 - `.rs2` roundtrip ctest: [`rs2-roundtrip.md`](rs2-roundtrip.md)
 - Path I/O seams (`chdir` / `fopen` / `_findfirst`, case policy): [`path-seams.md`](path-seams.md)
+- Internal string encoding ADR: [`charset-internal.md`](charset-internal.md)
