@@ -141,6 +141,14 @@ target_compile_options(rs2_ptr_test PRIVATE -Wall -Wextra)
 
 add_test(NAME rs2_ptr_self_test COMMAND rs2_ptr_test --self-test)
 
+# Save-side float %.6f write / ConstValue-compatible parse (#50).
+add_executable(rs2_float_test port/rs2_float_test.cpp)
+target_include_directories(rs2_float_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_float_test PRIVATE cxx_std_17)
+target_compile_options(rs2_float_test PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_float_self_test COMMAND rs2_float_test --self-test)
+
 # MD5 / CheckLayoutDigest contract self-test (#44).
 add_executable(rs2_md5_digest_test port/md5_digest_test.cpp md5.cpp)
 target_include_directories(rs2_md5_digest_test PRIVATE "${CMAKE_SOURCE_DIR}")

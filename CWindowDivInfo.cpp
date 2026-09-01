@@ -6,7 +6,7 @@
 #include "CScene.h"
 #include "CSaveFile.h"
 
-//	“à•”’è”
+//	“à•”’è”
 const int DRAG_BAR_WIDTH = 1;
 
 CWindowInfo::CWindowInfo(){
@@ -66,10 +66,10 @@ void CWindowInfo::OnDeleteScene(CScene *scene){
 }
 
 /*
- *	“Ç
+ *	“Ç
  */
 char *CWindowInfo::Read(
-	char *str	//	‘ÎÛ•¶š—ñ
+	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *eee;
 	if(!(str = BeginBlock(eee = str, "WindowInfo"))) throw CSynErr(eee);
@@ -469,10 +469,10 @@ void CWindowDivInfo::OnDeleteScene(CScene *scene){
 }
 
 /*
- *	“Ç
+ *	“Ç
  */
 char *CWindowDivInfo::Read(
-	char *str	//	‘ÎÛ•¶š—ñ
+	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *eee;
 	if(!(str = BeginBlock(eee = str, "WindowDivInfo"))) throw CSynErr(eee);
@@ -498,8 +498,8 @@ void CWindowDivInfo::Save(
 	string indent	//	ƒCƒ“ƒfƒ“ƒg
 ){
 	fprintf(df, "%sWindowDivInfo{\n", indent.c_str());
-	fprintf(df, "%s\tHorzRatio = %f;\n", indent.c_str(), m_HorzRatio);
-	fprintf(df, "%s\tVertRatio = %f;\n", indent.c_str(), m_VertRatio);
+	fprintf(df, "%s\tHorzRatio = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_HorzRatio);
+	fprintf(df, "%s\tVertRatio = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_VertRatio);
 	string indent2 = indent+"\t";
 	int i, j;
 	for(i = 0; i<WIN_DIV_MAX; ++i){

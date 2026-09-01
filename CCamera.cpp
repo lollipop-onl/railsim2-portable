@@ -614,10 +614,10 @@ void CCamera::Save(
 	string indent	//	ƒCƒ“ƒfƒ“ƒg
 ){
 	fprintf(df, "%sCamera{\n", indent.c_str());
-	fprintf(df, "%s\tHead = %f;\n", indent.c_str(), m_Head);
-	fprintf(df, "%s\tPitch = %f;\n", indent.c_str(), m_Pitch);
-	fprintf(df, "%s\tDist = %f;\n", indent.c_str(), m_Dist);
-	fprintf(df, "%s\tFieldOfView = %f;\n", indent.c_str(), m_FieldOfView);
+	fprintf(df, "%s\tHead = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_Head);
+	fprintf(df, "%s\tPitch = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_Pitch);
+	fprintf(df, "%s\tDist = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_Dist);
+	fprintf(df, "%s\tFieldOfView = " RS2_FLOAT_FMT ";\n", indent.c_str(), m_FieldOfView);
 	fprintf(df, "%s\tFocus = ", indent.c_str()); V3Save(df, m_Focus, ";\n");
 	fprintf(df, "%s}\n", indent.c_str());
 }
