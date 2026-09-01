@@ -19,6 +19,8 @@
 #include "../CModelPlugin.h"
 #include "../CEnvPlugin.h"
 #include "../CConfigMode.h"
+#include "../port/rs2_cmesh_xfile.h"
+#include "../port/xfile.h"
 
 //	外部グローバル
 extern CTexList g_TexList;
@@ -166,10 +168,78 @@ BOOL CMesh::Load(
 		RELEASE(pDat);
 		xfile.Close();
 	}else{
+#if defined(RS2_PORTABLE_COMPILE_FIREWALL)
+		Rs2XMesh parsed;
+		std::string xerr;
+		if(!rs2_cmesh_probe_xfile(strName, &parsed, &xerr)){
+			Debug("open failed.\n");
+			return FALSE;
+		}
+		if(parsed.positions.empty()){
+			Debug("failed.\n");
+			return FALSE;
+		}
+		m_dwNumMat = parsed.materials.empty() ? 1 : (DWORD)parsed.materials.size();
+		m_pMatFlag = new DWORD[m_dwNumMat];
+		m_pMat = new MAT8[m_dwNumMat];
+		m_pCustomMat = new MAT8[m_dwNumMat];
+		m_pTex = new LPTEX8[m_dwNumMat];
+		m_pCustomTex = new LPTEX8[m_dwNumMat];
+		m_pTexTrans = new TTMTX[m_dwNumMat];
+		DWORD i, j;
+		for(i = 0; i<m_dwNumMat; i++){
+			m_pMatFlag[i] = 1;
+			memset(&m_pMat[i], 0, sizeof(MAT8));
+			memset(&m_pCustomMat[i], 0, sizeof(MAT8));
+			m_pTex[i] = NULL;
+			m_pCustomTex[i] = NULL;
+			m_pTexTrans[i] = TTMTX();
+			if(!parsed.materials.empty()){
+				const Rs2XMaterial &src = parsed.materials[i];
+				m_pMat[i].Diffuse.r = src.diffuse.r;
+				m_pMat[i].Diffuse.g = src.diffuse.g;
+				m_pMat[i].Diffuse.b = src.diffuse.b;
+				m_pMat[i].Diffuse.a = src.diffuse.a;
+				m_pMat[i].Ambient = m_pMat[i].Diffuse;
+				m_pMat[i].Power = src.power;
+				if(!src.texture.empty())
+					m_pTex[i] = g_TexList.Get(fRes, (char *)src.texture.c_str(), cTrans, nMipLv);
+			}
+		}
+		m_pMatOrder = new DWORD[m_dwNumMat];
+		for(i = 0; i<m_dwNumMat; i++) m_pMatOrder[i] = i;
+		for(i = 1; i<m_dwNumMat; i++){
+			for(j = i; j>0; j--){
+				DWORD &o1 = m_pMatOrder[j-1], &o2 = m_pMatOrder[j];
+				if(m_pMat[o1].Diffuse.a<m_pMat[o2].Diffuse.a){
+					int tmp = o1; o1 = o2; o2 = tmp;
+				}else{
+					break;
+				}
+			}
+		}
+		m_min = VEC3(parsed.positions[0].x, parsed.positions[0].y, parsed.positions[0].z);
+		m_max = m_min;
+		for(i = 1; i<parsed.positions.size(); i++){
+			const Rs2XVec3 &v = parsed.positions[i];
+			if(v.x<m_min.x) m_min.x = v.x;
+			if(v.y<m_min.y) m_min.y = v.y;
+			if(v.z<m_min.z) m_min.z = v.z;
+			if(v.x>m_max.x) m_max.x = v.x;
+			if(v.y>m_max.y) m_max.y = v.y;
+			if(v.z>m_max.z) m_max.z = v.z;
+		}
+		m_center = 0.5f*(m_min+m_max);
+		m_radius = 0.5f*V3Len(&(m_max-m_min));
+		m_pMesh = NULL;
+		Debug("ok.\n");
+		return TRUE;
+#else
 		//	ファイル読込み
 		hr = D3DXLoadMeshFromX(
 			strName, D3DXMESH_SYSTEMMEM/*Lock等を考えるとこれがベスト*/,
 			sv3.pDev, &pAdj, &pBuf, &m_dwNumMat, &m_pMesh);
+#endif
 	}
 
 	if(FAILED(hr)){

@@ -140,3 +140,15 @@ target_compile_features(rs2_ptr_test PRIVATE cxx_std_17)
 target_compile_options(rs2_ptr_test PRIVATE -Wall -Wextra)
 
 add_test(NAME rs2_ptr_self_test COMMAND rs2_ptr_test --self-test)
+
+# CMesh::Load file-path probe via closed X-File parser (#45).
+add_executable(rs2_cmesh_xfile_test port/rs2_cmesh_xfile_test.cpp port/rs2_cmesh_xfile.cpp port/xfile.cpp)
+target_include_directories(rs2_cmesh_xfile_test SYSTEM BEFORE PRIVATE "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_cmesh_xfile_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_cmesh_xfile_test PRIVATE cxx_std_17)
+target_compile_options(rs2_cmesh_xfile_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_cmesh_xfile_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_cmesh_xfile_self_test COMMAND rs2_cmesh_xfile_test --self-test)
+add_test(NAME rs2_cmesh_xfile_load COMMAND rs2_cmesh_xfile_test "${CMAKE_SOURCE_DIR}/Distribution")
+set_tests_properties(rs2_cmesh_xfile_load PROPERTIES SKIP_RETURN_CODE 77)
