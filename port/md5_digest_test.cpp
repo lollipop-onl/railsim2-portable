@@ -41,7 +41,7 @@ int self_test() {
 
 	static const char kLong[] =
 	    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
-	if (!expect(md5_hex_is(kLong, "feebafe9062beee05d7daba9bdb261c1"), "md5 long")) return 1;
+	if (!expect(md5_hex_is(kLong, "8215ef0796a20bcaaae116d3876c664a"), "md5 long vendored")) return 1;
 
 	unsigned char a[16] = {0};
 	unsigned char b[16] = {0};
