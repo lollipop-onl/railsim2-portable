@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #ifndef RS2_FLOAT_FMT
 #define RS2_FLOAT_FMT "%.6f"
@@ -16,6 +17,19 @@ inline bool rs2_format_float(char *buf, size_t n, float f) {
 	std::snprintf(buf, n, RS2_FLOAT_FMT, f);
 	return true;
 }
+
+#ifdef RS2_ROUNDTRIP
+void rs2_float_remember(float *slot, const char *start, const char *end);
+const char *rs2_float_lexeme_get(float *slot);
+void rs2_float_lexeme_clear();
+void rs2_float_lexeme_copy(float *from, float *to);
+const char *rs2_float_text(float *slot);
+#define RS2_FLOAT_SAVE_FMT "%s"
+#define RS2_F(var) rs2_float_text(&(var))
+#else
+#define RS2_FLOAT_SAVE_FMT RS2_FLOAT_FMT
+#define RS2_F(var) (var)
+#endif
 
 // Parse a float token the way ConstValue does after the numeric span (sscanf %f).
 inline bool rs2_parse_float(const char *text, float *out) {

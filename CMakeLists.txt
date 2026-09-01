@@ -65,16 +65,50 @@ target_compile_definitions(railsim2 PRIVATE
   NOMINMAX
 )
 
-# Sample.rs2 Load/Save via CSaveFile (#36). Stubs fill the object graph;
-# byte-identity remains parent #10. Does not link the full railsim2_native.a.
-add_executable(rs2_roundtrip
+# Sample.rs2 Load/Save via CSaveFile (#36 / #54). Real Read/Save TUs for the
+# layout object graph; port/rs2_roundtrip_stubs.cpp holds globals and UI seams.
+set(RS2_ROUNDTRIP_SOURCES
   port/rs2_roundtrip.cpp
   port/rs2_roundtrip_stubs.cpp
+  port/rs2_roundtrip_plugins.cpp
+  port/rs2_roundtrip_seams.cpp
+  port/rs2_roundtrip_ptr.cpp
+  port/rs2_float_lexeme.cpp
   port/path.cpp
   CSaveFile.cpp
   Script.cpp
   md5.cpp
+  Language.cpp
+  WakeUp.cpp
+  CPartsInst.cpp
+  CModelSwitch.cpp
+  CCustomizerMover.cpp
+  CParticle.cpp
+  CModelInst.cpp
+  CRailConnector.cpp
+  CRailCurve.cpp
+  CRailDumpCurve.cpp
+  CRailSplitCurve.cpp
+  CRailDetectCurve.cpp
+  CRailPlanCurve.cpp
+  CLineBuildCurve.cpp
+  CRailWay.cpp
+  CTrainSetCurve.cpp
+  CDiaInst.cpp
+  CTrain.cpp
+  CTrainGroup.cpp
+  CCamera.cpp
+  port/rs2_roundtrip_readmap.cpp
+  CNamedObject.cpp
+  CExpression.cpp
+  CPier.cpp
+  CLine.cpp
+  CStation.cpp
+  CStruct.cpp
+  CScene.cpp
+  CPlugin.cpp
 )
+add_executable(rs2_roundtrip ${RS2_ROUNDTRIP_SOURCES})
 target_include_directories(rs2_roundtrip SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
 )
@@ -92,6 +126,7 @@ target_compile_options(rs2_roundtrip PRIVATE
 )
 target_compile_definitions(rs2_roundtrip PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
+  RS2_ROUNDTRIP=1
   NOMINMAX
 )
 
@@ -107,10 +142,9 @@ add_test(NAME rs2_roundtrip_reports_diff COMMAND rs2_roundtrip --self-test-diff)
 add_test(NAME rs2_roundtrip COMMAND rs2_roundtrip
   "${RS2_ROUNDTRIP_FIXTURE}"
   "${RS2_ROUNDTRIP_OUTPUT}")
-# Fixture missing -> 77 skip. Expected Load/Save mismatch -> 1 (WILL_FAIL).
+# Fixture missing -> 77 skip.
 set_tests_properties(rs2_roundtrip PROPERTIES
   SKIP_RETURN_CODE 77
-  WILL_FAIL TRUE
 )
 
 # Closed text X-File parser (#28). Does not replace CMesh::Load (#6).

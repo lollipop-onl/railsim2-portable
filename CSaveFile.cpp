@@ -22,6 +22,7 @@
 #include "CGirderPlugin.h"
 #include "CPierPlugin.h"
 #include "CLinePlugin.h"
+#include "port/rs2_float.h"
 
 //	関数宣言
 bool IsLeapYear(int);
@@ -677,6 +678,9 @@ bool CSaveFile::Load(
 	g_TrainGroup = NULL;
 	g_AddressMap.clear();
 	g_AddressMap[NULL] = NULL;
+#ifdef RS2_ROUNDTRIP
+	rs2_float_lexeme_clear();
+#endif
 	g_LackPlugin.clear();
 	if(upname) m_FileName = fname;
 	CScene *currentscene;
@@ -763,7 +767,7 @@ bool CSaveFile::Load(
 
 		if(!(str = BeginBlock(eee = str, "Wind"))) throw CSynErr(eee);
 		if(!(str = AsgnVector3D(eee = str, "Dir1", &m_WindDir1))) throw CSynErr(eee);
-		if(!(str = AsgnVector3D(eee = str, "Dir2", &m_WindDir1))) throw CSynErr(eee);
+		if(!(str = AsgnVector3D(eee = str, "Dir2", &m_WindDir2))) throw CSynErr(eee);
 		if(!(str = AsgnInteger(eee = str, "Count", &m_WindCount))) throw CSynErr(eee);
 		if(!(str = AsgnInteger(eee = str, "Time", &m_WindTime))) throw CSynErr(eee);
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
@@ -856,6 +860,9 @@ bool CSaveFile::Load(
 	}
 	g_TrainGroup = m_GroupList;
 	g_Scene = (CScene *)ReplaceAdr(currentscene);
+#ifdef RS2_ROUNDTRIP
+	return true;
+#else
 	g_Scene->Enter(true);
 	//g_AddressMap.clear();
 	NumberGroup();
@@ -874,8 +881,9 @@ bool CSaveFile::Load(
 		scene = scene->Next();
 	}
 	m_NetworkSyncCount = 0;
-	Simulate(1);	//	1 回だけシミュレート
+	Simulate(1);	//	1 ?????????
 	return true;
+#endif
 }
 
 /*
@@ -906,13 +914,21 @@ int CSaveFile::Save(
 		return 1;
 	}
 	if(upname) m_FileName = fname;
+#ifndef RS2_ROUNDTRIP
 	m_Version = RAILSIM_VERSION;
+#endif
 
 	fprintf(df, "DatafileHeader{\n");
-	fprintf(df, "\tRailSimVersion = %.2f;\n", RAILSIM_VERSION);
+	fprintf(df, "\tRailSimVersion = %.2f;\n", m_Version);
 	fprintf(df, "\tDatafileType = %s;\n", LAYOUT_DIRNAME);
 	fprintf(df, "}\n\n");
 
+#ifdef RS2_ROUNDTRIP
+	fprintf(df, "LayoutInfo{\n");
+	fprintf(df, "\tDate = \"%s\";\n", m_FileDate.c_str());
+	fprintf(df, "\tNote = \"%s\";\n", ExpandDoubleQuote(m_FileNote).c_str());
+	fprintf(df, "}\n\n");
+#else
 	SYSTEMTIME systime;
 	GetLocalTime(&systime);
 	fprintf(df, "LayoutInfo{\n");
@@ -921,21 +937,53 @@ int CSaveFile::Save(
 		systime.wHour, systime.wMinute, systime.wSecond);
 	fprintf(df, "\tNote = \"%s\";\n", ExpandDoubleQuote(m_FileNote).c_str());
 	fprintf(df, "}\n\n");
+#endif
 
 	fprintf(df, "Time{\n");
 	fprintf(df, "\tDate = %d, %d, %d, %d;\n", m_Year, m_Month, m_Day, m_DayOfWeek);
 	fprintf(df, "\tTime = %d, %d, %d, %d;\n", m_Hour, m_Minute, m_Second, m_Frame);
 	fprintf(df, "\tSumDays = %d;\n", m_SumDays);
+#ifdef RS2_ROUNDTRIP
+	{
+		int i;
+		for(i = 0; i<TIME_SCALE_NUM; i++)
+			if(g_SimulationMode->m_TimeScale[i].GetCheck()) break;
+		if(i>=TIME_SCALE_NUM) i = 0;
+		fprintf(df, "\tTimeScale = %d;\n", i);
+		for(i = 0; i<SIM_SPEED_NUM; i++)
+			if(g_SimulationMode->m_SimSpeed[i].GetCheck()) break;
+		if(i>=SIM_SPEED_NUM) i = 0;
+		fprintf(df, "\tSimulationSpeed = %d;\n", i);
+		for(i = 0; i<3; i++)
+			if(g_SimulationMode->m_EarthRotation[i].GetCheck()) break;
+		if(i>=3) i = 0;
+		fprintf(df, "\tEarthRotation = %d;\n", i);
+		for(i = 0; i<5; i++)
+			if(g_SimulationMode->m_EarthRevolution[i].GetCheck()) break;
+		if(i>=5) i = 0;
+		fprintf(df, "\tEarthRevolution = %d;\n", i);
+	}
+#else
 	fprintf(df, "\tTimeScale = %d;\n", g_SimulationMode->m_TimeScale->GetNumber());
 	fprintf(df, "\tSimulationSpeed = %d;\n", g_SimulationMode->m_SimSpeed->GetNumber());
 	fprintf(df, "\tEarthRotation = %d;\n", g_SimulationMode->m_EarthRotation->GetNumber());
 	fprintf(df, "\tEarthRevolution = %d;\n", g_SimulationMode->m_EarthRevolution->GetNumber());
+#endif
 	fprintf(df, "}\n\n");
 
+#ifdef RS2_ROUNDTRIP
+	if(m_Version>=2.11f){
+		fprintf(df, "Simulation{\n");
+		fprintf(df, "\tManualControl = %s;\n", YESNO[g_SimulationMode->GetManualControl()]);
+		fprintf(df, "\tIgnoreAcceleration = %s;\n", YESNO[g_SimulationMode->GetIgnoreAcceleration()]);
+		fprintf(df, "}\n\n");
+	}
+#else
 	fprintf(df, "Simulation{\n");
 	fprintf(df, "\tManualControl = %s;\n", YESNO[g_SimulationMode->GetManualControl()]);
 	fprintf(df, "\tIgnoreAcceleration = %s;\n", YESNO[g_SimulationMode->GetIgnoreAcceleration()]);
 	fprintf(df, "}\n\n");
+#endif
 
 	fprintf(df, "Wind{\n");
 	fprintf(df, "\tDir1 = "); V3Save(df, m_WindDir1, ";\n");
@@ -952,6 +1000,17 @@ int CSaveFile::Save(
 	}
 	fprintf(df, "}\n\n");
 
+#ifdef RS2_ROUNDTRIP
+	if(!g_RailBlockMap.empty()){
+		fprintf(df, "RailBlockList{\n");
+		map<std::string, CTrainGroup *>::iterator railblock;
+		for(railblock = g_RailBlockMap.begin(); railblock!=g_RailBlockMap.end(); ++railblock){
+			if(railblock->second) fprintf(df, "\tRailBlock = \"%s\", " RS2_PTR_FMT ";\n",
+				ExpandDoubleQuote(railblock->first).c_str(), rs2_ptr32(railblock->second));
+		}
+		fprintf(df, "}\n\n");
+	}
+#else
 	fprintf(df, "RailBlockList{\n");
 	map<std::string, CTrainGroup *>::iterator railblock;
 	for(railblock = g_RailBlockMap.begin(); railblock!=g_RailBlockMap.end(); ++railblock){
@@ -959,6 +1018,7 @@ int CSaveFile::Save(
 			ExpandDoubleQuote(railblock->first).c_str(), rs2_ptr32(railblock->second));
 	}
 	fprintf(df, "}\n\n");
+#endif
 
 	fprintf(df, "TrainGroupList{\n");
 	CTrainGroup *group = m_GroupList;
@@ -977,9 +1037,17 @@ int CSaveFile::Save(
 	}
 	fprintf(df, "}\n\n");
 
+#ifdef RS2_ROUNDTRIP
+	if(m_Version>=2.14f){
+		fprintf(df, "Window{\n");
+		g_ConfigMode->GetRootWindow()->Save(df, "\t");
+		fprintf(df, "}\n\n");
+	}
+#else
 	fprintf(df, "Window{\n");
 	g_ConfigMode->GetRootWindow()->Save(df, "\t");
 	fprintf(df, "}\n\n");
+#endif
 
 	fclose(df);
 	return 0;

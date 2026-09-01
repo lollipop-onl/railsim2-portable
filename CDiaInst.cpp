@@ -214,11 +214,20 @@ CDiaListBase *CDiaInstBase::SearchEffectBase(
  *	ƒAƒhƒŒƒX•œŒ³
  */
 void CDiaInstBase::RestoreAddress(){
+#ifdef RS2_ROUNDTRIP
+	for(size_t i = 0; i<m_DiaOrder.size(); i++)
+		m_DiaOrder[i].first = (CTrainGroup *)ReplaceAdr(m_DiaOrder[i].first);
+	map<CTrainGroup *, CDiaListBase *> diamap;
+	for(size_t i = 0; i<m_DiaOrder.size(); i++)
+		diamap[m_DiaOrder[i].first] = m_DiaOrder[i].second;
+	m_DiaMap = diamap;
+#else
 	map<CTrainGroup *, CDiaListBase *> diamap;
 	IPDiaListBase ipdl = m_DiaMap.begin();
 	for(; ipdl!=m_DiaMap.end(); ipdl++)
 		diamap[(CTrainGroup *)ReplaceAdr(ipdl->first)] = ipdl->second;
 	m_DiaMap = diamap;
+#endif
 }
 
 /*
@@ -237,6 +246,9 @@ char *CDiaInstBase::Read(
 		if(tmp = dlist->Read(str, &group)){
 			str = tmp;
 			m_DiaMap[group] = dlist;
+#ifdef RS2_ROUNDTRIP
+			m_DiaOrder.push_back(make_pair(group, dlist));
+#endif
 		}else{
 			delete dlist;
 			break;
@@ -256,9 +268,14 @@ void CDiaInstBase::Save(
 	string ind2 = string(ind)+"\t";
 	fprintf(df, "%s%s{\n", ind, Label());
 	fprintf(df, "%s\tName = \"%s\";\n", ind, ExpandDoubleQuote(m_Name).c_str());
+#ifdef RS2_ROUNDTRIP
+	for(size_t i = 0; i<m_DiaOrder.size(); i++)
+		m_DiaOrder[i].second->Save(df, (char *)ind2.c_str(), m_DiaOrder[i].first);
+#else
 	IPDiaListBase ipdl = m_DiaMap.begin();
 	for(; ipdl!=m_DiaMap.end(); ipdl++) ipdl->second->Save(
 		df, (char *)ind2.c_str(), ipdl->first);
+#endif
 	fprintf(df, "%s}\n", ind);
 }
 
@@ -379,6 +396,6 @@ void CDiaElement::Save(
 	fprintf(df, "%s\tAction = %d;\n", ind, m_Action);
 	fprintf(df, "%s\tTimeType = %d;\n", ind, m_TimeType);
 	fprintf(df, "%s\tTime = %d, %d, %d;\n", ind, m_Hour, m_Minute, m_Second);
-	fprintf(df, "%s\tOffset = " RS2_FLOAT_FMT ";\n", ind, m_Offset);
+	fprintf(df, "%s\tOffset = " RS2_FLOAT_SAVE_FMT ";\n", ind, RS2_F(m_Offset));
 	fprintf(df, "%s}\n", ind, m_Offset);
 }

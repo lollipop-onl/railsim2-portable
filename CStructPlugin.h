@@ -3,6 +3,8 @@
 
 #include "CTrainPlugin.h"
 
+class CStruct;
+
 /*
  *	{İƒvƒ‰ƒOƒCƒ“
  */

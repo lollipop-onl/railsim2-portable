@@ -13,6 +13,11 @@
 #include "CTiePlugin.h"
 #include "CGirderPlugin.h"
 #include "CPierPlugin.h"
+
+#ifdef RS2_ROUNDTRIP
+void rs2_float_lexeme_copy(float *from, float *to);
+void rs2_float_lexeme_copy_vec3(const VEC3 *from, const VEC3 *to);
+#endif
 #include "CLinePlugin.h"
 #include "CPolePlugin.h"
 #include "CSkinPlugin.h"
@@ -708,7 +713,13 @@ void CRailWay::ScanInput(
 	VEC3 &rect1,	//	領域始点
 	VEC3 &rect2		//	領域終点
 ){
-	if(m_MultiTrackDummy && !g_RailEditMode->IsModeActive()) return;
+	if(m_MultiTrackDummy
+#ifdef RS2_ROUNDTRIP
+		&& !g_RailEditMode
+#else
+		&& !g_RailEditMode->IsModeActive()
+#endif
+	) return;
 	switch(mode){
 	case 0:
 		TraceRailSplit(1, &CRailDetectCurve3D(
@@ -1356,6 +1367,13 @@ char *CRailWay::Read(
 	while(tmp = spl.Read(eee = str)){
 		str = tmp;
 		m_SplitList.push_back(spl);
+#ifdef RS2_ROUNDTRIP
+		CRailSplitter &saved = m_SplitList.back();
+		rs2_float_lexeme_copy_vec3(&spl.m_Pos, &saved.m_Pos);
+		rs2_float_lexeme_copy_vec3(&spl.m_Dir, &saved.m_Dir);
+		rs2_float_lexeme_copy_vec3(&spl.m_Up, &saved.m_Up);
+		rs2_float_lexeme_copy_vec3(&spl.m_Right, &saved.m_Right);
+#endif
 	}
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
@@ -1365,6 +1383,9 @@ char *CRailWay::Read(
 	while(tmp = pierpos.Read(eee = str)){
 		str = tmp;
 		m_PierList.push_back(pierpos);
+#ifdef RS2_ROUNDTRIP
+		rs2_float_lexeme_copy(&pierpos.m_Pos, &m_PierList.back().m_Pos);
+#endif
 	}
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
@@ -1374,6 +1395,9 @@ char *CRailWay::Read(
 	while(tmp = polepos.Read(eee = str)){
 		str = tmp;
 		m_PoleList.push_back(polepos);
+#ifdef RS2_ROUNDTRIP
+		rs2_float_lexeme_copy(&polepos.m_Pos, &m_PoleList.back().m_Pos);
+#endif
 	}
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
@@ -1440,7 +1464,7 @@ void CRailWay::Save(
 	fprintf(df, "\t\t\t\tMultiTrackDummy = %s;\n", YESNO[m_MultiTrackDummy]);
 	if(m_MultiTrackDummy){
 		fprintf(df, "\t\t\t\tDummyTrackNum = %d;\n", m_DummyTrackNum);
-		fprintf(df, "\t\t\t\tDummyTrackInterval = " RS2_FLOAT_FMT ";\n", m_DummyTrackInterval);
+		fprintf(df, "\t\t\t\tDummyTrackInterval = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_DummyTrackInterval));
 	}
 	m_Link[0].Save(df, "\t\t\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\t\t\tLink1 = ");
@@ -1455,13 +1479,13 @@ void CRailWay::Save(
 	fprintf(df, "\t\t\t\t}\n");
 
 	fprintf(df, "\t\t\t\tPierList{\n");
-	fprintf(df, "\t\t\t\t\tPierPos = " RS2_FLOAT_FMT ";\n", m_PierPos);
+	fprintf(df, "\t\t\t\t\tPierPos = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_PierPos));
 	IPierPos ipi = m_PierList.begin();
 	for(; ipi!=m_PierList.end(); ipi++) ipi->Save(df);
 	fprintf(df, "\t\t\t\t}\n");
 
 	fprintf(df, "\t\t\t\tPoleList{\n");
-	fprintf(df, "\t\t\t\t\tPolePos = " RS2_FLOAT_FMT ";\n", m_PolePos);
+	fprintf(df, "\t\t\t\t\tPolePos = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_PolePos));
 	IPolePos ipo = m_PoleList.begin();
 	for(; ipo!=m_PoleList.end(); ipo++) ipo->Save(df);
 	fprintf(df, "\t\t\t\t}\n");

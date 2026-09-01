@@ -35,6 +35,9 @@ char *AsgnInteger(char *, char *, int *, int n = 1, bool fill = false);
 char *AsgnFloat(char *, char *, float *, int n = 1, bool fill = false);
 char *AsgnColor(char *, char *, D3DCOLOR *, int n = 1, bool fill = false);
 char *AsgnPointer(char *, char *, void **, int n = 1, bool fill = false);
+#ifdef RS2_ROUNDTRIP
+char *rs2_asgn_pointer32_pair(char *str, char *read, void *dest8);
+#endif
 char *AsgnVector2D(char *, char *, VEC2 *, int n = 1, bool fill = false);
 char *AsgnVector3D(char *, char *, VEC3 *, int n = 1, bool fill = false);
 char *AsgnIdentifier(char *, char *, string *, int n = 1, bool fill = false);

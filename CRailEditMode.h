@@ -4,6 +4,8 @@
 #include "CRailWay.h"
 #include "CSceneryMode.h"
 
+class CPopMenu;
+
 const int RAIL_EDIT_MODES = 11;	//	ÉÇÅ[Éhêî
 
 /*
