@@ -140,3 +140,11 @@ target_compile_features(rs2_ptr_test PRIVATE cxx_std_17)
 target_compile_options(rs2_ptr_test PRIVATE -Wall -Wextra)
 
 add_test(NAME rs2_ptr_self_test COMMAND rs2_ptr_test --self-test)
+
+# MD5 / CheckLayoutDigest contract self-test (#44).
+add_executable(rs2_md5_digest_test port/md5_digest_test.cpp md5.cpp)
+target_include_directories(rs2_md5_digest_test PRIVATE "${CMAKE_SOURCE_DIR}")
+target_compile_features(rs2_md5_digest_test PRIVATE cxx_std_17)
+target_compile_options(rs2_md5_digest_test PRIVATE -Wall -Wextra -Wno-invalid-source-encoding)
+
+add_test(NAME rs2_md5_self_test COMMAND rs2_md5_digest_test --self-test)
