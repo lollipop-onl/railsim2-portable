@@ -1,9 +1,8 @@
 #define RS2_PATH_NO_FOPEN_WRAP 1
-// Layout load->save byte-compare harness (issues #24 / #36).
+// Layout load->save byte-compare harness (issues #24 / #54).
 //
 // Calls CSaveFile::Load + CSaveFile::Save (path-seams option 1).
-// Object-graph Read/Save still stubbed (#36); a failed Load/Save or a
-// byte mismatch prints "roundtrip diff". Do not "fix" %p / MD5 / float.
+// Links real layout object-graph Read/Save TUs plus port roundtrip helpers.
 //
 // Exit codes:
 //   0  byte-identical, or --self-test-diff passed
@@ -28,6 +27,7 @@
 
 extern char g_BaseDir[1024];
 void rs2_roundtrip_init_stubs();
+void rs2_roundtrip_init_plugins();
 
 namespace {
 
@@ -80,6 +80,7 @@ bool rs2_layout_roundtrip(const char *in_path, const char *out_path, std::string
 	if (!set_base_dir_from_layout_file(in_path, err)) {
 		return false;
 	}
+	rs2_roundtrip_init_plugins();
 
 	const char *in_base = path_basename(in_path);
 	const char *out_base = path_basename(out_path);

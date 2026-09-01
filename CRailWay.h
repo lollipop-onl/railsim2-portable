@@ -30,7 +30,7 @@ public:
 public:
 	CPierPos(){ m_Pos = 0.0f; m_Link = NULL; }
 	CPierPos(float p, CPier *l){ m_Pos = p; m_Link = l; }
-	bool operator<(const CPierPos &rhs){ return m_Pos<rhs.m_Pos; }
+	bool operator<(const CPierPos &rhs) const { return m_Pos<rhs.m_Pos; }
 	void RestoreAddress();
 	char *Read(char *);
 	void Save(FILE *);
@@ -53,7 +53,7 @@ public:
 	CPolePos(float p, CPole *l, int t, bool m){
 		m_Pos = p; m_Link = l; m_Track = t; m_Multi = m;
 	}
-	bool operator<(const CPolePos &rhs){ return m_Pos<rhs.m_Pos; }
+	bool operator<(const CPolePos &rhs) const { return m_Pos<rhs.m_Pos; }
 	void RestoreAddress();
 	char *Read(char *);
 	void Save(FILE *);

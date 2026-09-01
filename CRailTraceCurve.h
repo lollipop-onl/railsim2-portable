@@ -24,7 +24,7 @@ public:
 	static void SetTerminate(bool t1, bool t2){ ms_Terminate1 = t1; ms_Terminate2 = t2; }
 	static void SetSplitItr(IRailSplitter sit){ ms_SpliceItr = sit; }
 	static void SetSplitItr(list<CRailSplitter>::reverse_iterator){}
-	CRailTraceCurve::CRailTraceCurve(
+	CRailTraceCurve(
 		CRailPlugin *rpi, CTiePlugin *tpi, CGirderPlugin *gpi, CRailWay *way){
 		m_RailPlugin = rpi; m_TiePlugin = tpi; m_GirderPlugin = gpi; m_RailWay = way;
 	}

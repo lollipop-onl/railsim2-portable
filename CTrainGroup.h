@@ -4,6 +4,10 @@
 #include "CTrainSetBuffer.h"
 #include "CDiaInst.h"
 
+#ifdef RS2_ROUNDTRIP
+#include <vector>
+#endif
+
 class CRailConnector;
 class CRailLinkTemp;
 class CModelInst;
@@ -51,8 +55,13 @@ private:
 	list<CTrainSetBuffer> m_SetBuffer;	//	配置バッファ
 	CGroupEndLocator m_Location[2];		//	終端位置
 	CGroupEndLocator m_Seeker;			//	経路探索子
+#ifdef RS2_ROUNDTRIP
+	vector<CRailConnector *> m_PointList;
+	vector<CRailConnector *> m_SeekList;
+#else
 	set<CRailConnector *> m_PointList;	//	通過中ポイントリスト
 	set<CRailConnector *> m_SeekList;	//	探索中ポイントリスト
+#endif
 	set<CRailConnector *> m_OldSeek;	//	旧探索中ポイントリスト
 	CDiaElement m_DiaElement;			//	ダイヤ要素
 	CPlatformInst *m_Platform;			//	プラットフォーム
@@ -107,7 +116,13 @@ public:
 	void DeletePlatform(CPlatformInst *pf){ if(m_Platform==pf) m_Platform = NULL; }
 	void ClearPoint();
 	void ClearSeek();
-	void AddPoint(CRailConnector *pcon){ m_PointList.insert(pcon); }
+	void AddPoint(CRailConnector *pcon){
+#ifdef RS2_ROUNDTRIP
+		m_PointList.push_back(pcon);
+#else
+		m_PointList.insert(pcon);
+#endif
+	}
 	bool AddSeek(CRailConnector *);
 	void SetConnectSwitch(CTrain *);
 	void ScanInput(int, VEC3 &, VEC3 &);

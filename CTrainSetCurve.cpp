@@ -197,7 +197,7 @@ void CGroupEndLocator::Save(
 ){
 	fprintf(df, "%s%s{\n", ind, pref);
 	fprintf(df, "%s\tAddress = " RS2_PTR_FMT ";\n", ind, rs2_ptr32(this));
-	fprintf(df, "%s\tLocation = %d, " RS2_FLOAT_FMT ", " RS2_PTR_FMT ";\n", ind, m_Side, m_Offset, rs2_ptr32(m_SetRail));
+	fprintf(df, "%s\tLocation = %d, " RS2_FLOAT_SAVE_FMT ", " RS2_PTR_FMT ";\n", ind, m_Side, RS2_F(m_Offset), rs2_ptr32(m_SetRail));
 	fprintf(df, "%s}\n", ind);
 }
 

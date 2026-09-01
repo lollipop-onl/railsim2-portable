@@ -1,6 +1,10 @@
 #ifndef CDIAINST_H_INCLUDED
 #define CDIAINST_H_INCLUDED
 
+#ifdef RS2_ROUNDTRIP
+#include <vector>
+#endif
+
 class CListElement;
 class CListView;
 class CTrainGroup;
@@ -62,6 +66,9 @@ class CDiaInstBase{
 protected:
 	string m_Name;									//	名称
 	map<CTrainGroup *, CDiaListBase *> m_DiaMap;	//	ダイヤマップ
+#ifdef RS2_ROUNDTRIP
+	vector<pair<CTrainGroup *, CDiaListBase *> > m_DiaOrder;
+#endif
 public:
 	virtual ~CDiaInstBase();
 	bool IsInside(CTrainGroup *group){ return !!m_DiaMap.count(group); }

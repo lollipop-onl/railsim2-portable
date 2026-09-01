@@ -16,7 +16,7 @@ private:
 	D3DCOLOR m_SkyColor;	//	‹ó‚ÌF
 public:
 	char *Read(char *);
-	bool operator<(const CLightSetting &rhs){
+	bool operator<(const CLightSetting &rhs) const {
 		return m_SunAlt<rhs.m_SunAlt;
 	}
 };

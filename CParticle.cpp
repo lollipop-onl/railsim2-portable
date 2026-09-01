@@ -96,7 +96,7 @@ void CParticleState::Save(
 	FILE *df,	//	ファイル
 	char *ind	//	インデント
 ){
-	fprintf(df, "%sParticleState = " RS2_FLOAT_FMT ", ", ind, m_EmissionCredit);
+	fprintf(df, "%sParticleState = " RS2_FLOAT_SAVE_FMT ", ", ind, RS2_F(m_EmissionCredit));
 	V3Save(df, m_OldPos, ";\n");
 }
 

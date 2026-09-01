@@ -9,12 +9,21 @@
 #include <cstdlib>
 
 // fprintf conversion for pointer-like IDs (use with RS2_PTR_FMT).
+#ifdef RS2_ROUNDTRIP
+unsigned rs2_ptr32_serial(const void *p);
+inline unsigned rs2_ptr32(const void *p) { return rs2_ptr32_serial(p); }
+#else
 inline unsigned rs2_ptr32(const void *p) {
 	return static_cast<unsigned>(reinterpret_cast<uintptr_t>(p));
 }
+#endif
 
 #ifndef RS2_PTR_FMT
+#ifdef RS2_ROUNDTRIP
+#define RS2_PTR_FMT "%08X"
+#else
 #define RS2_PTR_FMT "%08x"
+#endif
 #endif
 
 // Format into buf; always writes 8 lowercase hex digits (+ NUL) when n >= 9.

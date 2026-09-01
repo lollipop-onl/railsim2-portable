@@ -4,6 +4,11 @@
 #include "CPierPlugin.h"
 #include "CSurfacePlugin.h"
 
+#ifdef RS2_ROUNDTRIP
+void rs2_float_lexeme_copy(float *from, float *to);
+void rs2_float_lexeme_copy_vec3(const VEC3 *from, const VEC3 *to);
+#endif
+
 //	äOïîíËêî
 extern const float RAIL_SEG_MAX;
 
@@ -278,6 +283,14 @@ char *CPier::Read(
 	if(!(str = AsgnVector3D(eee = str, "JointPos", &jpos))) throw CSynErr(eee);
 	if(!(str = AsgnVector3D(eee = str, "JointDir", &jdir))) throw CSynErr(eee);
 	if(!(str = AsgnVector3D(eee = str, "JointUp", &jup))) throw CSynErr(eee);
+#ifdef RS2_ROUNDTRIP
+	m_RoundtripJointPos = jpos;
+	m_RoundtripJointDir = jdir;
+	m_RoundtripJointUp = jup;
+	rs2_float_lexeme_copy_vec3(&jpos, &m_RoundtripJointPos);
+	rs2_float_lexeme_copy_vec3(&jdir, &m_RoundtripJointDir);
+	rs2_float_lexeme_copy_vec3(&jup, &m_RoundtripJointUp);
+#endif
 	if(!(str = AsgnFloat(eee = str, "SurfaceAlt", &m_SurfaceAlt))) throw CSynErr(eee);
 	SetMesh();
 	m_JointObject.SetPos(jpos);
@@ -298,9 +311,15 @@ void CPier::Save(
 	fprintf(df, "\t\t\tPier{\n");
 	fprintf(df, "\t\t\t\tAddress = " RS2_PTR_FMT ";\n", rs2_ptr32(this));
 	fprintf(df, "\t\t\t\tPierPlugin = \"%s\";\n", CheckPluginID(m_PierPlugin));
+#ifdef RS2_ROUNDTRIP
+	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, m_RoundtripJointPos, ";\n");
+	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, m_RoundtripJointDir, ";\n");
+	fprintf(df, "\t\t\t\tJointUp = "); V3Save(df, m_RoundtripJointUp, ";\n");
+#else
 	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, R2L(m_JointObject.GetPos()), ";\n");
 	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, R2L(m_JointObject.GetDir()), ";\n");
 	fprintf(df, "\t\t\t\tJointUp = "); V3Save(df, R2L(m_JointObject.GetUp()), ";\n");
-	fprintf(df, "\t\t\t\tSurfaceAlt = " RS2_FLOAT_FMT ";\n", m_SurfaceAlt);
+#endif
+	fprintf(df, "\t\t\t\tSurfaceAlt = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_SurfaceAlt));
 	fprintf(df, "\t\t\t}\n");
 }

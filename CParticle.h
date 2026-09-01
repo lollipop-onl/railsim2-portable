@@ -27,7 +27,7 @@ private:
 public:
 	CParticleInst(CParticle *, VEC3, VEC3, float, float, int, CScene *);
 	void CalcDist(){ m_CameraDist = V3Len(&(GetVPos()-m_Pos)); }
-	bool operator<(const CParticleInst &rhs){ return m_CameraDist>rhs.m_CameraDist; }
+	bool operator<(const CParticleInst &rhs) const { return m_CameraDist>rhs.m_CameraDist; }
 	void Render();
 	bool Simulate();
 };

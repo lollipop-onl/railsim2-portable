@@ -1,5 +1,7 @@
 #include "stdafx.h"
+#ifndef RS2_ROUNDTRIP
 #include "CPluginTree.h"
+#endif
 #include "CSkinPlugin.h"
 
 //	外部グローバル
@@ -144,6 +146,10 @@ string CPlugin::GetBasicInfo(){
  *	必要ならロード
  */
 CPlugin *CPlugin::LoadAndGet(){
+#ifdef RS2_ROUNDTRIP
+	if(m_State>=1) return this;
+	return NULL;
+#else
 	switch(m_State){
 	case 1:	//	予備ロード済み
 		if(m_Version<2.0f){
@@ -156,11 +162,17 @@ CPlugin *CPlugin::LoadAndGet(){
 		return this;
 	}
 	return NULL;
+#endif
 }
 
 /*
  *	ツリーアイテム挿入
  */
+#ifdef RS2_ROUNDTRIP
+CTreeFileElement *CPlugin::InsertItem(CTreeDirElement *, CPluginTree *){
+	return NULL;
+}
+#else
 CTreeFileElement *CPlugin::InsertItem(
 	CTreeDirElement *p,	//	挿入先
 	CPluginTree *o		//	ツリービュー
@@ -171,6 +183,7 @@ CTreeFileElement *CPlugin::InsertItem(
 	SetTreeElement(fe);
 	return fe;
 }
+#endif
 
 /*
  *	アイコンテクスチャ設定
@@ -254,6 +267,25 @@ bool CPluginList::List(){
 	return true;
 }
 
+#ifdef RS2_ROUNDTRIP
+bool CPluginList::ListIdsOnly() {
+	CPlugin **adr = &m_List;
+	char typedir[RS2_PATH_MAX];
+	if(!rs2_path_join(typedir, sizeof(typedir), g_BaseDir, DirName()) || !rs2_is_dir(typedir))
+		return false;
+	std::vector<std::string> names;
+	if(!rs2_list_dir(typedir, "*", true, &names)) return false;
+	for(size_t i = 0; i<names.size(); i++){
+		CPlugin *newpi = NewEntry((char *)names[i].c_str());
+		newpi->m_State = 2;
+		*adr = newpi;
+		adr = &newpi->m_Next;
+		m_PluginNum++;
+	}
+	return true;
+}
+#endif
+
 /*
  *	定義ファイルのロード
  */
@@ -332,6 +364,9 @@ CPlugin *CPluginList::FindAvailable(){
 void CPluginList::BuildTree(
 	CPluginTree *tree	//	ツリービュー
 ){
+#ifdef RS2_ROUNDTRIP
+	(void)tree;
+#else
 	CPlugin *ptr = m_List;
 	CTreeDirElement *root = tree->GetRoot();
 	while(ptr){
@@ -339,6 +374,7 @@ void CPluginList::BuildTree(
 		ptr = ptr->m_Next;
 	}
 	tree->GetRoot()->Sort(true);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

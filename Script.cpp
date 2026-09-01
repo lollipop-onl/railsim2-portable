@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "port/rs2_float.h"
 
 /*
  *	コンストラクタ
@@ -159,6 +160,7 @@ char *ConstValue(
 ){
 	char *tmp;
 	bool minus = false;
+	char *lex_start = str;
 	if(tmp = Character(str, '-')){
 		str = tmp;
 		minus = true;
@@ -178,6 +180,9 @@ char *ConstValue(
 				sscanf(str, "%d", &val);
 				*reti = minus ? -val : val;
 				*retf = (float)*reti;
+#ifdef RS2_ROUNDTRIP
+				rs2_float_remember(retf, lex_start, tmp);
+#endif
 				*tmp = save;
 				return Space(tmp);
 			}
@@ -207,6 +212,9 @@ UNDERDECIMAL:
 				sscanf(str, "%f", &val);
 				*retf = minus ? -val : val;
 				*reti = (int)*retf;
+#ifdef RS2_ROUNDTRIP
+				rs2_float_remember(retf, lex_start, tmp);
+#endif
 				*tmp = save;
 				return Space(tmp);
 			}

@@ -723,8 +723,12 @@ void CTrainGroup::NotifyPlatform(
  *	ポイント情報消去
  */
 void CTrainGroup::ClearPoint(){
+#ifdef RS2_ROUNDTRIP
+	for(size_t i = 0; i<m_PointList.size(); i++) m_PointList[i]->SetUser(NULL);
+#else
 	ISPRailConnector ip = m_PointList.begin();
 	for(; ip!=m_PointList.end(); ip++) (*ip)->SetUser(NULL);
+#endif
 	m_PointList.clear();
 	ClearRailBlockUser(this);
 }
@@ -733,9 +737,15 @@ void CTrainGroup::ClearPoint(){
  *	シーカ消去
  */
 void CTrainGroup::ClearSeek(){
+#ifndef RS2_ROUNDTRIP
 	m_OldSeek = m_SeekList;
+#endif
+#ifdef RS2_ROUNDTRIP
+	for(size_t i = 0; i<m_SeekList.size(); i++) m_SeekList[i]->SetUser(NULL);
+#else
 	ISPRailConnector ip = m_SeekList.begin();
 	for(; ip!=m_SeekList.end(); ip++) (*ip)->SetUser(NULL);
+#endif
 	m_SeekList.clear();
 	ClearRailBlockUser(this);
 }
@@ -748,8 +758,13 @@ void CTrainGroup::ClearSeek(){
 bool CTrainGroup::AddSeek(
 	CRailConnector *pcon	//	ポイント
 ){
+#ifdef RS2_ROUNDTRIP
+	m_SeekList.push_back(pcon);
+	return false;
+#else
 	m_SeekList.insert(pcon);
 	return !!m_OldSeek.count(pcon);
+#endif
 }
 
 /*
@@ -1188,6 +1203,16 @@ void CTrainGroup::RestoreAddress(){
 	m_Location[0].RestoreAddress();
 	m_Location[1].RestoreAddress();
 	m_Seeker.RestoreAddress();
+#ifdef RS2_ROUNDTRIP
+	vector<CRailConnector *> pointlist;
+	for(size_t i = 0; i<m_PointList.size(); i++)
+		pointlist.push_back((CRailConnector *)ReplaceAdr(m_PointList[i]));
+	m_PointList = pointlist;
+	vector<CRailConnector *> seeklist;
+	for(size_t i = 0; i<m_SeekList.size(); i++)
+		seeklist.push_back((CRailConnector *)ReplaceAdr(m_SeekList[i]));
+	m_SeekList = seeklist;
+#else
 	set<CRailConnector *> pointlist, seeklist;
 	ISPRailConnector ipr;
 	for(ipr = m_PointList.begin(); ipr!=m_PointList.end(); ipr++)
@@ -1196,6 +1221,7 @@ void CTrainGroup::RestoreAddress(){
 	for(ipr = m_SeekList.begin(); ipr!=m_SeekList.end(); ipr++)
 		seeklist.insert((CRailConnector *)ReplaceAdr(*ipr));
 	m_SeekList = seeklist;
+#endif
 	m_Platform = (CPlatformInst *)ReplaceAdr(m_Platform);
 	CalcSpec();
 }
@@ -1225,8 +1251,13 @@ char *CTrainGroup::Read(
 		m_EffectTargetSpeed = m_TargetSpeed;
 		if(!(str = AsgnFloat(eee = str, "CurrentSpeed", &m_CurrentSpeed))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "StopTarget", &m_StopTarget))) throw CSynErr(eee);
+#ifdef RS2_ROUNDTRIP
+		if(!(str = rs2_asgn_pointer32_pair(eee = str, "DepartureTime", &m_DepartureTime)))
+			throw CSynErr(eee);
+#else
 		if(!(str = AsgnPointer(eee = str, "DepartureTime",
 			(void **)&m_DepartureTime, 2, false))) throw CSynErr(eee);
+#endif
 		if(!(str = AsgnInteger(eee = str, "DoorWait", &m_DoorWait))) throw CSynErr(eee);
 		if(!(str = AsgnYesNo(eee = str, "OpenDoor", m_OpenDoor, 2, false))) throw CSynErr(eee);
 		if(!(str = AsgnYesNo(eee = str, "Reverse", &m_Reverse))) throw CSynErr(eee);
@@ -1239,7 +1270,11 @@ char *CTrainGroup::Read(
 				if(m_PointList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 				CRailConnector *con;
 				if(!(str = HexPointer(eee = str, (void **)&con))) throw CSynErr(eee);
+#ifdef RS2_ROUNDTRIP
+				m_PointList.push_back(con);
+#else
 				m_PointList.insert(con);
+#endif
 			} while(!(tmp = Character2(str, ';')));
 			str = tmp;
 		}
@@ -1249,7 +1284,11 @@ char *CTrainGroup::Read(
 				if(m_SeekList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 				CRailConnector *con;
 				if(!(str = HexPointer(eee = str, (void **)&con))) throw CSynErr(eee);
+#ifdef RS2_ROUNDTRIP
+				m_SeekList.push_back(con);
+#else
 				m_SeekList.insert(con);
+#endif
 			} while(!(tmp = Character2(str, ';')));
 			str = tmp;
 		}
@@ -1283,17 +1322,38 @@ void CTrainGroup::Save(
 	fprintf(df, "\t\tEnabled = %s;\n", YESNO[m_Enabled]);
 	if(m_Enabled){
 		fprintf(df, "\t\tState = %d;\n", m_State);
-		fprintf(df, "\t\tTargetSpeed = " RS2_FLOAT_FMT ";\n", m_TargetSpeed);
-		fprintf(df, "\t\tCurrentSpeed = " RS2_FLOAT_FMT ";\n", m_CurrentSpeed);
-		fprintf(df, "\t\tStopTarget = " RS2_FLOAT_FMT ";\n", m_StopTarget);
+		fprintf(df, "\t\tTargetSpeed = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_TargetSpeed));
+		fprintf(df, "\t\tCurrentSpeed = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_CurrentSpeed));
+		fprintf(df, "\t\tStopTarget = " RS2_FLOAT_SAVE_FMT ";\n", RS2_F(m_StopTarget));
+#ifdef RS2_ROUNDTRIP
+		{
+			const uint32_t *dep = reinterpret_cast<const uint32_t *>(&m_DepartureTime);
+			fprintf(df, "\t\tDepartureTime = %08X, %08X;\n", dep[0], dep[1]);
+		}
+#else
 		fprintf(df, "\t\tDepartureTime = %08x, %08x;\n",
 			*(PDWORD)&m_DepartureTime, *((PDWORD)&m_DepartureTime+1));
+#endif
 		fprintf(df, "\t\tDoorWait = %d;\n", m_DoorWait);
 		fprintf(df, "\t\tOpenDoor = %s, %s;\n", YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
 		fprintf(df, "\t\tReverse = %s;\n", YESNO[m_Reverse]);
 		m_Location[0].Save(df, "\t\t", "GroupEnd0");
 		m_Location[1].Save(df, "\t\t", "GroupEnd1");
 		m_Seeker.Save(df, "\t\t", "Seeker");
+#ifdef RS2_ROUNDTRIP
+		if(m_PointList.size()){
+			fprintf(df, "\t\tPointList = ");
+			for(size_t i = 0; i<m_PointList.size(); i++)
+				fprintf(df, i ? ", " RS2_PTR_FMT : RS2_PTR_FMT, rs2_ptr32(m_PointList[i]));
+			fprintf(df, ";\n");
+		}
+		if(m_SeekList.size()){
+			fprintf(df, "\t\tSeekList = ");
+			for(size_t i = 0; i<m_SeekList.size(); i++)
+				fprintf(df, i ? ", " RS2_PTR_FMT : RS2_PTR_FMT, rs2_ptr32(m_SeekList[i]));
+			fprintf(df, ";\n");
+		}
+#else
 		ISPRailConnector ipr;
 		if(m_PointList.size()){
 			fprintf(df, "\t\tPointList = ");
@@ -1307,6 +1367,7 @@ void CTrainGroup::Save(
 				fprintf(df, ipr==m_SeekList.begin() ? RS2_PTR_FMT : ", " RS2_PTR_FMT, rs2_ptr32(*ipr));
 			fprintf(df, ";\n");
 		}
+#endif
 		m_DiaElement.Save(df, "\t\t");
 		fprintf(df, "\t\tPlatform = " RS2_PTR_FMT ";\n", rs2_ptr32(m_Platform));
 	}

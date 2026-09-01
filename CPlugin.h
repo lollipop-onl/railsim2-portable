@@ -85,6 +85,9 @@ public:
 	CPlugin *FindPlugin(const char *, bool load = true);
 	CPlugin *FindAvailable();
 	void BuildTree(CPluginTree *);
+#ifdef RS2_ROUNDTRIP
+	bool ListIdsOnly();
+#endif
 };
 
 //	ÉLÉÉÉXÉgä÷êî

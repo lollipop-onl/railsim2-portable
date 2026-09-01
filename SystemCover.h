@@ -1,3 +1,7 @@
+#ifdef RS2_ROUNDTRIP
+#include "port/rs2_float.h"
+#endif
+
 #ifndef SYSTEMCOVER_H_INCLUDED
 #define SYSTEMCOVER_H_INCLUDED
 
@@ -74,7 +78,14 @@ inline void V3Save(
 	VEC3 &v,	//	ベクトル
 	char *e		//	サフィックス
 ){
+#ifdef RS2_ROUNDTRIP
+	const char *ax = rs2_float_text(&v.x);
+	const char *ay = rs2_float_text(&v.y);
+	const char *az = rs2_float_text(&v.z);
+	fprintf(df, "(%s, %s, %s)%s", ax, ay, az, e);
+#else
 	fprintf(df, "(" RS2_FLOAT_FMT ", " RS2_FLOAT_FMT ", " RS2_FLOAT_FMT ")%s", v.x, v.y, v.z, e);
+#endif
 }
 
 #endif

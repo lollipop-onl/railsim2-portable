@@ -7,6 +7,8 @@
 #include "CDragContainer.h"
 #include "CPopMenu.h"
 
+class CListView;
+
 /*
  *	ƒŠƒXƒg—v‘f
  */
