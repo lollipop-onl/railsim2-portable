@@ -14,7 +14,7 @@ Use **one implementation** for macOS, Linux, and a later WebAssembly build:
 | Window, events, GL context | **SDL2** |
 | GPU API | **OpenGL ES 3.0 / WebGL2 subset**, expressed on desktop as **OpenGL 3.3 core** (macOS: 4.1 core, the last Apple GL) |
 | Fixed-function pipeline | **Our own FFP + FVF shader family** in `lib/` / a small port backend. Not bgfx. Not Emscripten `-sLEGACY_GL_EMULATION`. |
-| Audio | **OpenAL Soft** (3D listener / sources map to existing `CWave` / `svs`) |
+| Audio | **OpenAL Soft** (3D listener / sources map to existing `CWave` / `svs`). Closed call set: [`audio-seams.md`](audio-seams.md) (#68 / #7). |
 | Text (later, #16) | **FreeType** replacing GDI/`HFONT`; not part of this ADR?fs runtime |
 | Math | Keep **D3DX-shaped types** (`VEC3`, `MTX4`, ?c). Implement D3DX helpers in `port/stub/` (glm internally is allowed; the public names stay D3D) |
 
@@ -119,6 +119,7 @@ Optional preset `native` (link SDL2) vs `check` (stubs only) is the expected spl
 ## Related
 
 - ABI freeze: `docs/porting/api-surface.md` (issue #1 / PR #20)
+- Audio seams (DirectSound / mmio / `wave_stream` + OpenAL Soft pick): [`audio-seams.md`](audio-seams.md) (issue #68 / parent #7)
 - Dev env: [`dev-env.md`](dev-env.md)
 - Emscripten GL modes: https://emscripten.org/docs/porting/multimedia_and_graphics/OpenGL-support.html
 - SDL Emscripten: https://github.com/libsdl-org/SDL/blob/SDL2/docs/README-emscripten.md
