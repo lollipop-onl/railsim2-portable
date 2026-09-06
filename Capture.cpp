@@ -9,7 +9,6 @@
 #include "CSaveFile.h"
 
 #include <vfw.h>
-#pragma comment ( lib, "vfw32.lib" )
 
 //	“à•”ƒOƒ[ƒoƒ‹
 int g_VideoState = 0;				//	ŽB‰eó‘Ô
@@ -40,31 +39,27 @@ PAVISTREAM g_AudioStream;
  *	ŽB‰e‰Šú‰»
  */
 void InitCapture(){
-	AVIFileInit();
 	g_VideoState = 0;
 	g_VideoFrame = 0;
 	g_VideoCount = 0;
 	g_PictureCount = 0;
-//	g_HidefCapture.Create(g_HidefBufferSize, g_HidefBufferSize);
-	g_ScreenShot.Clear(g_DispWidth, g_DispHeight);
-	g_HidefBufferSize = CheckArguments("-voodoo") ? 256 : 512;
 	char capdir[RS2_PATH_MAX];
 	if(rs2_path_join(capdir, sizeof(capdir), g_BaseDir, "Picture")) rs2_mkdir(capdir);
 	if(rs2_path_join(capdir, sizeof(capdir), g_BaseDir, "Video")) rs2_mkdir(capdir);
-	CountPicture();
-	CountVideoAVI();
 }
 /*
  *	ŽB‰e‰ð•ú
  */
 void ReleaseCaptureRS(){
-	AVIFileExit( );
 }
 
 /*
  *	‚‰æŽ¿ŽB‰e
  */
 void HidefCapture(CSceneryMode *scenerymode){
+	(void)scenerymode;
+	return;
+#if 0
 	LPTEX8 tex;
 	HRESULT hr = sv3.pDev->CreateTexture(
 		g_HidefBufferSize, g_HidefBufferSize,
@@ -159,6 +154,7 @@ void HidefCapture(CSceneryMode *scenerymode){
 	g_HidefCaptureFlag = false;
 	g_HidefCapture.Free();
 	RELEASE(tex);
+#endif
 }
 
 /*
@@ -224,6 +220,10 @@ void VideoCapture(
 	int video,	//	ƒrƒfƒIŽB‰eƒ‚[ƒh (1: record, 2: paused, 4: photo mode)
 	CSceneryMode *scenerymode	//	ƒV[ƒiƒŠƒ‚[ƒh
 ){
+	(void)video;
+	(void)scenerymode;
+	return;
+#if 0
 	if(GetKey(DIK_F12)==S_PUSH){
 		if(g_RSPV || !CheckCtrl()){
 			g_HidefQuality = g_VideoMode->GetPictureQuality();
@@ -279,6 +279,7 @@ void VideoCapture(
 		}
 		g_VideoFrame++;
 	}
+#endif
 }
 
 /*
@@ -339,6 +340,8 @@ void CountVideoAVI(){
  *	ƒrƒfƒIŽB‰eŠJŽn
  */
 void StartVideoCapture(){
+	return;
+#if 0
 	if(g_VideoState) return;
 	g_DownsampleMode = g_VideoMode->GetDownsample();
 	int exp_ds = 1<<g_DownsampleMode;
@@ -456,12 +459,15 @@ void StartVideoCapture(){
 	}
 	g_VideoState  = 1;
 	g_Skin->VideoStart();
+#endif
 }
 
 /*
  *	ƒrƒfƒIŽB‰e’âŽ~
  */
 void StopVideoCapture(){
+	return;
+#if 0
 	if(!g_VideoState) return;
 	if(g_VideoFormat==1){
 #if 0
@@ -484,4 +490,5 @@ void StopVideoCapture(){
 	}
 	g_VideoState  = 0;
 	g_Skin->VideoStop();
+#endif
 }

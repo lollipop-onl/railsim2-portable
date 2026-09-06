@@ -36,7 +36,8 @@ endif()
 
 add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
-  "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp")
+  "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
+  "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"

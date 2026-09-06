@@ -183,7 +183,7 @@ M4 goal (parent `#16`): **readable Japanese UI in single-player Sample**, not pi
 | 234 | F12 screenshot (non-hidef branch) | `GetDC(svw.hWnd)` | `g_ScreenShot.GetHDC()` | Then `Save` BMP under `Picture/` |
 | 252 | Video capture frame tick | same | same | Then downsample / `PlainStamp` / AVI or frame BMP |
 
-Both paired with `ReleaseDC(svw.hWnd, windc)`. `#17` replaces or no-ops this readback without changing the `CPixelbit` buffer layout documented here.
+Both paired with `ReleaseDC(svw.hWnd, windc)`. `#76` no-ops this readback (`VideoCapture` / `HidefCapture` return immediately). `#16` still owns the `CPixelbit` DIB layout; see [capture-seams.md](capture-seams.md).
 
 ## Out of scope (this slice / `#70`)
 

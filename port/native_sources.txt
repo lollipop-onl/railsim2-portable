@@ -66,3 +66,4 @@ CEnvPlugin.cpp
 CStructPlugin.cpp
 CTrainPlugin.cpp
 CStationPlugin.cpp
+Capture.cpp
