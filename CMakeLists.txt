@@ -202,3 +202,17 @@ target_compile_definitions(rs2_cmesh_xfile_test PRIVATE RS2_PORTABLE_COMPILE_FIR
 add_test(NAME rs2_cmesh_xfile_self_test COMMAND rs2_cmesh_xfile_test --self-test)
 add_test(NAME rs2_cmesh_xfile_load COMMAND rs2_cmesh_xfile_test "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_cmesh_xfile_load PROPERTIES SKIP_RETURN_CODE 77)
+
+# Config.txt smoke/roundtrip and *2.txt LoadHeader (#58). Does not link CConfigMode.
+add_executable(rs2_config_plugin_test
+  port/rs2_config_plugin_test.cpp
+  port/rs2_config_plugin.cpp
+  port/path.cpp)
+target_include_directories(rs2_config_plugin_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_config_plugin_test PRIVATE cxx_std_17)
+target_compile_options(rs2_config_plugin_test PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_config_plugin_self_test COMMAND rs2_config_plugin_test --self-test)
+add_test(NAME rs2_config_plugin_load COMMAND rs2_config_plugin_test
+  "${CMAKE_SOURCE_DIR}/Distribution")
+set_tests_properties(rs2_config_plugin_load PROPERTIES SKIP_RETURN_CODE 77)
