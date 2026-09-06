@@ -786,7 +786,7 @@ CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 
 	while(p){
 		//	見つかれば参照カウンタを増やし、メッシュを返す
-		if(!_mbsicmp((PUCHAR)p->strName.c_str(), (PUCHAR)strName)
+		if(!rs2_text_icmp((PUCHAR)p->strName.c_str(), (PUCHAR)strName)
 			&& p->cTrans==cTrans && p->nMipLv==nMipLv){
 			//	Debug("[%s] is in mesh-list.\n", strName); /*デバッグ*/
 			p->nRef++;

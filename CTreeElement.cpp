@@ -99,7 +99,7 @@ int CTreeElement::Compare(
 	int ret;
 	if(IsDirectory()){
 		if(rhs->IsDirectory()){
-			ret = _mbsicmp(
+			ret = rs2_text_icmp(
 				(PUCHAR)m_String.c_str(), (PUCHAR)rhs->m_String.c_str());
 		}else{
 			return -1;
@@ -108,7 +108,7 @@ int CTreeElement::Compare(
 		if(rhs->IsDirectory()){
 			return 1;
 		}else{
-			ret = _mbsicmp(
+			ret = rs2_text_icmp(
 				(PUCHAR)m_String.c_str(), (PUCHAR)rhs->m_String.c_str());
 		}
 	}

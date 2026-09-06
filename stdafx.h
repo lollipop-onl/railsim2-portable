@@ -10,6 +10,7 @@
 #include "port/path.h"
 #include "port/rs2_ptr.h"
 #include "port/rs2_float.h"
+#include "port/rs2_text.h"
 
 typedef list<string>::iterator Istring;
 

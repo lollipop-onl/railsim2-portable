@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.24)
 
 project(railsim2-portable LANGUAGES CXX)
 
+# iconv for port/rs2_text CP932<->UTF-8 (#75). Not SDL; glibc is built-in on Linux.
+find_package(Iconv REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -32,7 +35,8 @@ if(RS2_NATIVE_SOURCES STREQUAL "")
 endif()
 
 add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
-  "${CMAKE_SOURCE_DIR}/port/path.cpp")
+  "${CMAKE_SOURCE_DIR}/port/path.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
@@ -53,6 +57,7 @@ target_compile_definitions(railsim2_native PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
   NOMINMAX
 )
+target_link_libraries(railsim2_native PRIVATE Iconv::Iconv)
 
 # Link skeleton: POSIX main only. Allowlisted game objects compile into
 # railsim2_native.a but are not linked yet — they still need udx globals
@@ -75,6 +80,7 @@ set(RS2_ROUNDTRIP_SOURCES
   port/rs2_roundtrip_ptr.cpp
   port/rs2_float_lexeme.cpp
   port/path.cpp
+  port/rs2_text.cpp
   CSaveFile.cpp
   Script.cpp
   md5.cpp
@@ -129,6 +135,7 @@ target_compile_definitions(rs2_roundtrip PRIVATE
   RS2_ROUNDTRIP=1
   NOMINMAX
 )
+target_link_libraries(rs2_roundtrip PRIVATE Iconv::Iconv)
 
 set(RS2_ROUNDTRIP_FIXTURE
   "${CMAKE_SOURCE_DIR}/Distribution/en/RailSim2/Layout/Sample.rs2")
@@ -227,3 +234,12 @@ target_compile_options(rs2_ffp_fvf_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_ffp_fvf_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_ffp_fvf_self_test COMMAND rs2_ffp_fvf_test --self-test)
+
+# CP932 <-> UTF-8 and closed _mbsicmp replacement (#75). No SDL.
+add_executable(rs2_text_test port/rs2_text_test.cpp port/rs2_text.cpp)
+target_include_directories(rs2_text_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_text_test PRIVATE cxx_std_17)
+target_compile_options(rs2_text_test PRIVATE -Wall -Wextra)
+target_link_libraries(rs2_text_test PRIVATE Iconv::Iconv)
+
+add_test(NAME rs2_text_self_test COMMAND rs2_text_test --self-test)

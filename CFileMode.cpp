@@ -77,7 +77,7 @@ bool CFileListView::ConfirmRename(
 ){
 	char *oldname = item->GetString(0);
 	newname = FixFileExt((char *)newname.c_str(), "rs2");
-	if(!_mbsicmp((PUCHAR)oldname, (PUCHAR)newname.c_str())) return false;
+	if(!rs2_text_icmp((PUCHAR)oldname, (PUCHAR)newname.c_str())) return false;
 	char dir[RS2_PATH_MAX] = {}, from[RS2_PATH_MAX] = {}, to[RS2_PATH_MAX] = {};
 	if(CheckSlash(newname.c_str())
 		|| !rs2_path_join(dir, sizeof(dir), g_BaseDir, LAYOUT_DIRNAME)
@@ -586,7 +586,7 @@ void CFileMode::ScanInputInterface(){
 		CListElement *le = m_FileListView.GetFocusItem();
 		m_NewFileName = le && le->IsSelected() ? le->GetString(0) : g_SaveFile->m_FileName;
 		if(m_NewFileName.size()){
-			if(_mbsicmp((PUCHAR)m_NewFileName.c_str(), (PUCHAR)g_SaveFile->GetFileName()))
+			if(rs2_text_icmp((PUCHAR)m_NewFileName.c_str(), (PUCHAR)g_SaveFile->GetFileName()))
 				SaveFile((char *)m_NewFileName.c_str());
 			else if(!g_SaveFile->Save(
 				m_NewFileName.c_str(), LAYOUT_DIRNAME, true, true)) ListFile();
@@ -687,7 +687,7 @@ void CFileMode::ListFile(){
 	ILayoutInfo ili = m_LayoutInfoList.begin();
 	int current = -1;
 	for(; ili!=m_LayoutInfoList.end(); ili++){
-		if(!_mbsicmp((PUCHAR)ili->m_FileName.c_str(),
+		if(!rs2_text_icmp((PUCHAR)ili->m_FileName.c_str(),
 			(PUCHAR)g_SaveFile->GetFileName())){
 			current = m_FileListView.GetItemNum();
 			g_SaveFile->SetFileName((char *)ili->m_FileName.c_str());
