@@ -50,23 +50,24 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DCULL_CW 2
 #define D3DCULL_CCW 3
 
-#define D3DRS_LIGHTING 7
-#define D3DRS_AMBIENT 27
-#define D3DRS_SPECULARENABLE 29
-#define D3DRS_CULLMODE 22
-#define D3DRS_SHADEMODE 9
-#define D3DRS_NORMALIZENORMALS 21
+// D3D8 enumerants (unique so the FFP shadow can switch on type).
 #define D3DRS_ZENABLE 7
+#define D3DRS_SHADEMODE 9
 #define D3DRS_ZWRITEENABLE 14
-#define D3DRS_ALPHABLENDENABLE 27
 #define D3DRS_SRCBLEND 19
 #define D3DRS_DESTBLEND 20
+#define D3DRS_NORMALIZENORMALS 21
+#define D3DRS_CULLMODE 22
+#define D3DRS_SPECULARENABLE 29
+#define D3DRS_ALPHABLENDENABLE 27
 #define D3DRS_FOGENABLE 28
 #define D3DRS_FOGCOLOR 34
-#define D3DRS_FOGVERTEXMODE 35
-#define D3DRS_FOGTABLEMODE 36
+#define D3DRS_FOGTABLEMODE 35
 #define D3DRS_FOGSTART 36
 #define D3DRS_FOGEND 37
+#define D3DRS_LIGHTING 137
+#define D3DRS_AMBIENT 139
+#define D3DRS_FOGVERTEXMODE 140
 #define D3DRS_FOGDENSITY 38
 #define D3DRS_STENCILENABLE 52
 #define D3DRS_STENCILREF 57
@@ -216,13 +217,22 @@ typedef IDirect3DTexture8* LPDIRECT3DTEXTURE8;
 typedef IDirect3DSurface8* LPDIRECT3DSURFACE8;
 typedef IDirect3DVertexBuffer8* LPDIRECT3DVERTEXBUFFER8;
 
+// M3 core FFP shadow (#80). Bodies in port/ffp_state.cpp.
+HRESULT rs2_ffp_set_render_state(D3DRENDERSTATETYPE type, DWORD value);
+HRESULT rs2_ffp_get_render_state(D3DRENDERSTATETYPE type, DWORD* value);
+HRESULT rs2_ffp_set_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE type,
+                                        DWORD value);
+
 struct IDirect3DDevice8 : IUnknown {
-  HRESULT SetRenderState(D3DRENDERSTATETYPE, DWORD) { return S_OK; }
-  HRESULT GetRenderState(D3DRENDERSTATETYPE, DWORD* state) {
-    if (state) *state = 0;
-    return S_OK;
+  HRESULT SetRenderState(D3DRENDERSTATETYPE type, DWORD value) {
+    return rs2_ffp_set_render_state(type, value);
   }
-  HRESULT SetTextureStageState(DWORD, D3DTEXTURESTAGESTATETYPE, DWORD) { return S_OK; }
+  HRESULT GetRenderState(D3DRENDERSTATETYPE type, DWORD* state) {
+    return rs2_ffp_get_render_state(type, state);
+  }
+  HRESULT SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value) {
+    return rs2_ffp_set_texture_stage_state(stage, type, value);
+  }
   HRESULT SetTransform(D3DTRANSFORMSTATETYPE, const void*) { return S_OK; }
   HRESULT SetMaterial(const void*) { return S_OK; }
   HRESULT SetLight(DWORD, const void*) { return S_OK; }

@@ -238,8 +238,25 @@ rg -n 'SetVertexShader\(' --glob '*.{cpp,h}' --glob '!port/stub/**'
 
 Stride, attribute offsets, CPU vertex buffers, and `DrawPrimitiveUP` ring records are in [`ffp-vertex-layer.md`](ffp-vertex-layer.md) (`port/ffp_fvf.*`). `FVF_S` stays rejected. GLSL / render-state emulation is a later `#5` slice.
 
+## State shadow / shader key (port, #80)
+
+M3 required `D3DRS_*` / stage-0 / stage-1-env live in `port/ffp_state.*`. There is no GLSL and no GL link.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_state_reset` / `rs2_ffp_state_get` | `InitRenderState` snapshot (lighting on, ambient `0xff808080`, Gouraud, CCW, Z read/write, SRCALPHA/INVSRCALPHA, stage 0 MODULATE + point filter, stage 1 DISABLE) |
+| `rs2_ffp_set_render_state` / `rs2_ffp_set_texture_stage_state` | Shadow the closed core set. Unknown type, stage `> 1`, and deferrable stencil return `E_FAIL` (debug log). |
+| `rs2_ffp_shader_key(fvf)` | Pack closed FVF index + core toggles (lighting, alpha test, env-map stage, blends). Ambient / fog distances stay on the snapshot as uniforms. Unknown / `FVF_S` returns `0`. |
+| `Rs2FfpUpRecord.shader_key` | Copied from `rs2_ffp_shader_key` at each `rs2_ffp_draw_primitive_up`. Later GL selects a variant from this field. |
+
+`IDirect3DDevice8::SetRenderState` / `GetRenderState` / `SetTextureStageState` in `port/stub/d3d8.h` call the shadow. `DrawPrimitiveUP` stays a no-op (record via `rs2_ffp_draw_primitive_up` only).
+
+Stub `D3DRS_LIGHTING` / `D3DRS_AMBIENT` / `D3DRS_FOGVERTEXMODE` / `D3DRS_FOGTABLEMODE` use the real D3D8 numbers so the shadow can switch on type (the previous stub reused `7` / `27` / `36`).
+
+ctest: `rs2_ffp_state_self_test` (`port/ffp_state_test.cpp --self-test`).
+
 ## What #5 should implement next
 
-1. **M3 required tier** ? Implement the core `D3DRS_*` / stage-0 / stage-1-env / FVF shader matrix rows above until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF stride / CPU VB / UP *record* already live in `port/ffp_fvf` (#74); wire `IDirect3DDevice8` and upload the ring to a dynamic VBO.
-2. **Deferrable tier** ? Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
-3. **Do not expand** ? No new render states in game code without updating this document; unknown FVF/state combos should assert in debug builds ([adr-backend.md](adr-backend.md)).
+1. **M3 required tier (GL)** -- Wire `IDirect3DDevice8` draw to a dynamic VBO and pick a shader variant from `rs2_ffp_shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74) and the state shadow (#80) are already in `port/`.
+2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
+3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).

@@ -2,6 +2,8 @@
 
 #include "ffp_fvf.h"
 
+#include "ffp_state.h"
+
 #include <cstring>
 #include <vector>
 
@@ -193,6 +195,7 @@ HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *
 	slot.rec.stride = stride;
 	slot.rec.bytes = bytes;
 	slot.rec.vertices = slot.bytes.data();
+	slot.rec.shader_key = rs2_ffp_shader_key(g_fvf);
 
 	g_head = (g_head + 1u) % kUpRing;
 	if (g_count < kUpRing) ++g_count;
