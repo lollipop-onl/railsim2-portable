@@ -216,3 +216,14 @@ add_test(NAME rs2_config_plugin_self_test COMMAND rs2_config_plugin_test --self-
 add_test(NAME rs2_config_plugin_load COMMAND rs2_config_plugin_test
   "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_config_plugin_load PROPERTIES SKIP_RETURN_CODE 77)
+
+# Closed FVF stride / CPU VB / DrawPrimitiveUP ring (#74). No GL draw.
+add_executable(rs2_ffp_fvf_test port/ffp_fvf_test.cpp port/ffp_fvf.cpp)
+target_include_directories(rs2_ffp_fvf_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_ffp_fvf_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ffp_fvf_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ffp_fvf_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_ffp_fvf_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_ffp_fvf_self_test COMMAND rs2_ffp_fvf_test --self-test)

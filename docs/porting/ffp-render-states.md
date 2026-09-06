@@ -234,8 +234,12 @@ rg -n 'SetVertexShader\(' --glob '*.{cpp,h}' --glob '!port/stub/**'
 
 ---
 
+## Vertex layer (port, #74)
+
+Stride, attribute offsets, CPU vertex buffers, and `DrawPrimitiveUP` ring records are in [`ffp-vertex-layer.md`](ffp-vertex-layer.md) (`port/ffp_fvf.*`). `FVF_S` stays rejected. GLSL / render-state emulation is a later `#5` slice.
+
 ## What #5 should implement next
 
-1. **M3 required tier** ? Implement the core `D3DRS_*` / stage-0 / stage-1-env / FVF matrix rows above until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles.
+1. **M3 required tier** ? Implement the core `D3DRS_*` / stage-0 / stage-1-env / FVF shader matrix rows above until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF stride / CPU VB / UP *record* already live in `port/ffp_fvf` (#74); wire `IDirect3DDevice8` and upload the ring to a dynamic VBO.
 2. **Deferrable tier** ? Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** ? No new render states in game code without updating this document; unknown FVF/state combos should assert in debug builds ([adr-backend.md](adr-backend.md)).
