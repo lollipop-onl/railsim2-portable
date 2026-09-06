@@ -32,6 +32,8 @@ All live uses are **case-insensitive compare**. None walk or measure CP932 chara
 
 Do not expand a `_mbs*` rewrite into plugin `Load()` bodies, `CSaveFile` parsers, or `Language.txt`. Those files never call `_mbs*`.
 
+`port/rs2_text` (#75) is the closed-set helper: `rs2_cp932_to_utf8` / `rs2_utf8_to_cp932` convert at file boundaries (iconv; `.rs2` on-disk bytes stay CP932), and `rs2_text_icmp` replaces the twelve `_mbsicmp` calls in the five files above by decoding CP932 to UTF-8 then ASCII-case-folding. IME (`Imm*`) is unchanged.
+
 ## File I/O vs internal UI
 
 ADR rule: CP932 stays on disk; `std::string` after load becomes UTF-8. Classify the closed set that way so a helper slice knows **where** to convert.
@@ -148,8 +150,6 @@ Later slices must **not** treat these as part of the `_mbs*` / Imm* closed set, 
 
 ## What a follow-up slice may touch
 
-One conversion-helper PR should be enough for `_mbsicmp` if it supplies a UTF-8 (or explicit CP932) case-fold compare and is wired **only** into the five files above.
-
 One IME PR should replace `lib/editbox.cpp` + the `WM_IME_SETCONTEXT` hide in `lib/window.cpp` with backend `TEXTINPUT` (UTF-8) writing `m_str` / `m_comp`. Do not reimplement `CEditCtrl` / list / tree rename.
 
 **Must not** (this inventory and those follow-ups):
@@ -169,6 +169,6 @@ rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!po
   '\b_mbs|\b_ismb|ImmGet|ImmSet|ImmRelease|#include\s*<imm\.h>'
 ```
 
-Expect: five `_mbsicmp` files, `lib/editbox.cpp` / `lib/editbox.h`, `lib/window.cpp`, and `lib/headers.h`'s `#include <imm.h>`.
+Expect: Imm* in `lib/editbox.cpp` / `lib/editbox.h`, `lib/window.cpp`, and `lib/headers.h`'s `#include <imm.h>`. Live `_mbsicmp` is gone (stub + comments only).
 
-`./scripts/check.sh` must stay green (docs only).
+`./scripts/check.sh` must stay green.

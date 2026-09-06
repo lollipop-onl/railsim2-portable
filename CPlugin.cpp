@@ -39,9 +39,9 @@ CPlugin::~CPlugin(){
 int CPlugin::Compare(
 	CPlugin *rhs	//	‰E•Ó
 ){
-	int ret = _mbsicmp((PUCHAR)m_Name.c_str(), (PUCHAR)rhs->m_Name.c_str());
-	if(!ret) ret = _mbsicmp((PUCHAR)m_ID.c_str(), (PUCHAR)rhs->m_ID.c_str());
-	if(!ret) ret = _mbsicmp((PUCHAR)m_Author.c_str(), (PUCHAR)rhs->m_Author.c_str());
+	int ret = rs2_text_icmp((PUCHAR)m_Name.c_str(), (PUCHAR)rhs->m_Name.c_str());
+	if(!ret) ret = rs2_text_icmp((PUCHAR)m_ID.c_str(), (PUCHAR)rhs->m_ID.c_str());
+	if(!ret) ret = rs2_text_icmp((PUCHAR)m_Author.c_str(), (PUCHAR)rhs->m_Author.c_str());
 	return ret;
 }
 
@@ -336,11 +336,11 @@ CPlugin *CPluginList::FindPlugin(
 	if(!*id) return NULL;
 	CPlugin *ptr = m_List;
 	while(ptr){
-		if(!_mbsicmp((PUCHAR)id, (PUCHAR)ptr->m_ID.c_str()))
+		if(!rs2_text_icmp((PUCHAR)id, (PUCHAR)ptr->m_ID.c_str()))
 			return load ? ptr->LoadAndGet() : ptr;
 		ptr = ptr->m_Next;
 	}
-	if(Default() && _mbsicmp((PUCHAR)id, (PUCHAR)Default()))
+	if(Default() && rs2_text_icmp((PUCHAR)id, (PUCHAR)Default()))
 		return FindPlugin(Default(), load);
 	g_LackPlugin.insert(FlashIn("%s\\%s", DirName(), id));
 	return NULL;
