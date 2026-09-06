@@ -67,3 +67,4 @@ CStructPlugin.cpp
 CTrainPlugin.cpp
 CStationPlugin.cpp
 Capture.cpp
+lib/input.cpp
