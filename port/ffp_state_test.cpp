@@ -128,12 +128,28 @@ bool key_toggles_ok() {
 	const std::uint64_t env = rs2_ffp_shader_key(RS2_FVF_NX);
 	if (!expect(env != base && env != atest, "env-map changes key")) return false;
 
+	// TCI/env-map must fork the key by itself, not only via COLOROP/args.
+	rs2_ffp_state_reset();
+	if (!expect(rs2_ffp_set_texture_stage_state(
+	                1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACENORMAL) == S_OK,
+	            "tci only"))
+		return false;
+	const std::uint64_t tci = rs2_ffp_shader_key(RS2_FVF_NX);
+	if (!expect(tci != base && tci != 0, "TCI changes key")) return false;
+
 	// Ambient is a uniform; it must not fork the shader variant key.
 	rs2_ffp_state_reset();
 	if (!expect(rs2_ffp_set_render_state(D3DRS_AMBIENT, 0xff112233u) == S_OK,
 	            "ambient"))
 		return false;
 	if (!expect(rs2_ffp_shader_key(RS2_FVF_NX) == base, "ambient not in key"))
+		return false;
+
+	rs2_ffp_state_reset();
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ALPHAREF, 0x80) == S_OK,
+	            "alpharef"))
+		return false;
+	if (!expect(rs2_ffp_shader_key(RS2_FVF_NX) == base, "alpharef not in key"))
 		return false;
 	return true;
 }

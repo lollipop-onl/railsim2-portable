@@ -360,9 +360,17 @@ std::uint64_t rs2_ffp_shader_key(DWORD fvf) {
 	const Rs2FfpTexStage &s0 = g_snap.stage[0];
 	const Rs2FfpTexStage &s1 = g_snap.stage[1];
 
+	// alpharef stays a snapshot uniform (live value is 0). Packing it as 8
+	// bits overflowed uint64_t and made the TCI put a <<64 UB.
+	constexpr unsigned kKeyBits =
+	    4 + 1 + 1 + 1 + 2 + 2 + 1 + 1 + 4 + 1 + 4 + 1 + 4 + 4 + 1 + 1 + 1 +
+	    4 + 4 + 2 + 2 + 4 + 2 + 2 + 2 + 1;
+	static_assert(kKeyBits <= 64, "shader key overflow");
+
 	std::uint64_t k = 0;
 	unsigned bit = 0;
 	const auto put = [&](std::uint64_t v, unsigned n) {
+		if (n == 0 || bit >= 64 || n > 64u - bit) return;
 		k |= (v & ((1ull << n) - 1ull)) << bit;
 		bit += n;
 	};
@@ -378,7 +386,6 @@ std::uint64_t rs2_ffp_shader_key(DWORD fvf) {
 	put(rs.zfunc, 4);
 	put(rs.alphatest ? 1u : 0u, 1);
 	put(rs.alphafunc, 4);
-	put(rs.alpharef, 8);
 	put(rs.alphablend ? 1u : 0u, 1);
 	put(rs.srcblend, 4);
 	put(rs.destblend, 4);

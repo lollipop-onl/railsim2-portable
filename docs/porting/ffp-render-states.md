@@ -246,7 +246,7 @@ M3 required `D3DRS_*` / stage-0 / stage-1-env live in `port/ffp_state.*`. There 
 |-----|------|
 | `rs2_ffp_state_reset` / `rs2_ffp_state_get` | `InitRenderState` snapshot (lighting on, ambient `0xff808080`, Gouraud, CCW, Z read/write, SRCALPHA/INVSRCALPHA, stage 0 MODULATE + point filter, stage 1 DISABLE) |
 | `rs2_ffp_set_render_state` / `rs2_ffp_set_texture_stage_state` | Shadow the closed core set. Unknown type, stage `> 1`, and deferrable stencil return `E_FAIL` (debug log). |
-| `rs2_ffp_shader_key(fvf)` | Pack closed FVF index + core toggles (lighting, alpha test, env-map stage, blends). Ambient / fog distances stay on the snapshot as uniforms. Unknown / `FVF_S` returns `0`. |
+| `rs2_ffp_shader_key(fvf)` | Pack closed FVF index + core toggles (lighting, alpha test, env-map TCI, blends) into `uint64_t`. Ambient / alpharef / fog distances stay on the snapshot as uniforms. Unknown / `FVF_S` returns `0`. |
 | `Rs2FfpUpRecord.shader_key` | Copied from `rs2_ffp_shader_key` at each `rs2_ffp_draw_primitive_up`. Later GL selects a variant from this field. |
 
 `IDirect3DDevice8::SetRenderState` / `GetRenderState` / `SetTextureStageState` in `port/stub/d3d8.h` call the shadow. `DrawPrimitiveUP` stays a no-op (record via `rs2_ffp_draw_primitive_up` only).

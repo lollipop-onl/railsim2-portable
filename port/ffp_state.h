@@ -65,6 +65,6 @@ HRESULT rs2_ffp_set_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE ty
 HRESULT rs2_ffp_get_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE type,
                                         DWORD *value);
 
-// Packed FVF + core-state key. Ambient / fog distances stay as uniforms
-// on the snapshot, not variant bits. Unknown / deferred FVF returns 0.
+// Packed FVF + core-state key. Ambient / alpharef / fog distances stay as
+// uniforms on the snapshot, not variant bits. Unknown / deferred FVF returns 0.
 std::uint64_t rs2_ffp_shader_key(DWORD fvf);
