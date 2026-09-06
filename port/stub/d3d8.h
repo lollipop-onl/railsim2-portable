@@ -231,6 +231,7 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetTexture(DWORD, IDirect3DTexture8*) { return S_OK; }
   HRESULT GetTexture(DWORD, IDirect3DBaseTexture8**) { return S_OK; }
   HRESULT DrawPrimitive(D3DPRIMITIVETYPE, UINT, UINT) { return S_OK; }
+  // CPU record: port/ffp_fvf.h (rs2_ffp_draw_primitive_up). Draw stays no-op.
   HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE, UINT, const void*, UINT) { return S_OK; }
   HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE, UINT, UINT, UINT, UINT, const void*) { return S_OK; }
   HRESULT SetStreamSource(UINT, IDirect3DVertexBuffer8*, UINT) { return S_OK; }
@@ -247,6 +248,7 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetRenderTarget(IDirect3DSurface8*, IDirect3DSurface8*) { return S_OK; }
   HRESULT GetRenderTarget(IDirect3DSurface8**) { return S_OK; }
   HRESULT GetDepthStencilSurface(IDirect3DSurface8**) { return S_OK; }
+  // CPU VB: port/ffp_fvf.h (rs2_ffp_vb_*). Closed FVF only; not wired here yet.
   HRESULT CreateVertexBuffer(UINT, DWORD, DWORD, DWORD, IDirect3DVertexBuffer8**) { return S_OK; }
   HRESULT CreateImageSurface(UINT, UINT, D3DFORMAT, IDirect3DSurface8**) { return S_OK; }
   HRESULT CreateDepthStencilSurface(UINT, UINT, D3DFORMAT, DWORD, IDirect3DSurface8**) { return S_OK; }
