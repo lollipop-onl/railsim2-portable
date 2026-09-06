@@ -313,4 +313,14 @@ rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!po
 
 Expect: `lib/sound.cpp` / `sound.h`, `lib/wave.cpp` / `wave.h`, `lib/wave_stream.cpp` / `wave_stream.h`, `lib/headers.h` typedefs, `lib/main.cpp` init, `RailSim2.cpp` / `CGameMode.cpp` listener, `CConfigMode.cpp` `svs.pDS` check, `CWaveArray` / `CSoundEffector` / skin / rail wrappers, and dead `lib/music.cpp`. No `waveIn*` / `waveOut*`.
 
-`./scripts/check.sh` must stay green (docs only).
+`./scripts/check.sh` must stay green. `rs2_wav_pcm_self_test` / `rs2_wav_pcm_distribution` cover the PCM field table (#81).
+
+## Port PCM parser (`port/wav_pcm`)
+
+- **Issue**: [#81](https://github.com/lollipop-onl/railsim2-portable/issues/81) (parent [#7](https://github.com/lollipop-onl/railsim2-portable/issues/7))
+- **Entry**: `rs2_wav_pcm_parse` / `rs2_wav_pcm_parse_file` in `port/wav_pcm.h`
+- **Result**: `Rs2WavPcm` holds `wFormatTag`, `nChannels`, `nSamplesPerSec`, `nAvgBytesPerSec`, `nBlockAlign`, `wBitsPerSample`, and the raw `data` payload
+
+This is the portable stand-in for the [mmio* contract](#closed-mmio-set-wav-parser). It requires RIFF form `WAVE`, accepts only `wFormatTag == WAVE_FORMAT_PCM` (1), and copies `fmt ` + `data` fields from the [minimum field table](#minimum-fields-a-replacement-parser-must-honor). Other chunks (`fact`, `LIST`, pad bytes) are skipped; extra `fmt` bytes (`cbSize`) are ignored. Non-PCM, truncated RIFF, missing `fmt` / `data`, or a short `data` payload fail with `bool` + reason string.
+
+`CWave::Load` still calls `mmio*`. A later `#7` slice should call this API from `Load` and leave `lib/wave.cpp` off the allowlist until then. Do not link OpenAL in the `check` preset.
