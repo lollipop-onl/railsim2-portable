@@ -29,7 +29,7 @@ Rationale: UTF-8 keeps `std::string` safe on Linux/macOS without widening every 
 
 ## Consequences (follow-up slices, not this ADR)
 
-- Replace `_mbs*` with a small `lib/rs2_text` (or `port/`) facade: `to_utf8(cp932)`, `to_cp932(utf8)`, NFC/NFD only where paths cross OS APIs.
+- Replace `_mbs*` with a small `lib/rs2_text` (or `port/`) facade: `to_utf8(cp932)`, `to_cp932(utf8)`, NFC/NFD only where paths cross OS APIs. Closed call set: [charset-seams.md](charset-seams.md).
 - IME: SDL / backend `TEXTINPUT` events deliver UTF-8; `CEditBox` stops calling `Imm*` directly.
 - Tests: Japanese layout name and `Sample.rs2` string fields must **byte-match** Windows saves after load->save (parent #9 / #10).
 
