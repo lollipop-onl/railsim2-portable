@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <d3d8.h>
 
 #ifndef RS2_FFP_ABSENT
@@ -68,6 +70,7 @@ struct Rs2FfpUpRecord {
 	UINT stride;
 	UINT bytes;
 	const void *vertices;
+	std::uint64_t shader_key;
 };
 
 void rs2_ffp_up_reset();
