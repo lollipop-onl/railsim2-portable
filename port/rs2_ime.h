@@ -12,7 +12,16 @@
 // Same numbers as <imm.h>; stub/imm.h does not define these yet.
 enum {
 	RS2_IME_GCS_COMPSTR = 0x0008,
+	RS2_IME_GCS_COMPATTR = 0x0010,
+	RS2_IME_GCS_COMPCLAUSE = 0x0020,
+	RS2_IME_GCS_CURSORPOS = 0x0080,
 	RS2_IME_GCS_RESULTSTR = 0x0800
+};
+
+// Win32 IME composition attributes used by CEditBox::ScanInput / Render.
+enum {
+	RS2_IME_ATTR_INPUT = 0x00,
+	RS2_IME_ATTR_TARGET_CONVERTED = 0x01
 };
 
 // --- thin backend (stub here; SDL_TEXTINPUT later) ---
@@ -29,6 +38,12 @@ void rs2_ime_stub_commit(const char *utf8);
 void rs2_ime_stub_clear();
 
 void rs2_ime_reset();
+
+// ImmSetOpenStatus / ImmGetOpenStatus stand-in. Independent of composition
+// buffers. 0 = off, non-zero = on. Default off. rs2_ime_reset does not
+// change this flag.
+void rs2_ime_set_open(int open);
+int rs2_ime_is_open();
 
 // UTF-8 views (in-process ADR). Never null; empty when none.
 const char *rs2_ime_composition_utf8();

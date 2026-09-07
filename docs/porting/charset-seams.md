@@ -198,6 +198,17 @@ Check preset records UTF-8 composition (`SDL_TEXTEDITING`) and result (`SDL_TEXT
 | `ImmGetCompositionStringA` | `rs2_ime_get_composition_string_a` | same helper (CP932 at the Win32-compat edge) |
 | cancel / focus loss | `rs2_ime_backend_clear` | stop text input + empty both |
 
-A later IME PR still replaces `lib/editbox.cpp` + the `WM_IME_SETCONTEXT` hide in `lib/window.cpp` with these hooks. Do not rewrite `CEditCtrl` / list / tree rename here. Do not add SDL2 to the `check` preset.
+A later IME PR still replaces the `WM_IME_SETCONTEXT` hide in `lib/window.cpp` with these hooks. `lib/editbox.cpp` now calls `rs2_ime_*` (#102). Do not rewrite `CEditCtrl` / list / tree rename here. Do not add SDL2 to the `check` preset.
 
 ctest: `rs2_ime_self_test` (`port/rs2_ime_test.cpp --self-test`) covers empty composition, ASCII commit, CP932 2-byte roundtrip, and clear.
+
+## CEditBox Imm* routed through `port/rs2_ime` (`#102`)
+
+- **Issue**: [#102](https://github.com/lollipop-onl/railsim2-portable/issues/102) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#100](https://github.com/lollipop-onl/railsim2-portable/issues/100))
+- **Entry**: `rs2_ime_composition_utf8` / `rs2_ime_result_utf8` / `rs2_ime_get_composition_string_a` / `rs2_ime_set_open` / `rs2_ime_is_open` in `port/rs2_ime.h`
+
+`CEditBox` no longer calls Imm*. `Create` / `Release` use a dummy `m_hImc` session token and `rs2_ime_set_open` for the `imm` argument (`-1` off, `>0` on, `0` leave). `IsFEPOpen` is `rs2_ime_is_open`. `GetCompStr` / `GetResultStr` copy UTF-8 into `m_comp` (ADR in-process text); `CompEnd` still inserts `m_comp` into `m_str`. `ScanInput` / `Render` / `GetFEPCursorPos` call `rs2_ime_get_composition_string_a` with `RS2_IME_GCS_COMPCLAUSE` / `COMPATTR` / `CURSORPOS`, which return 0 in the record-only stub (no clause underlines). `lib/window.cpp` `WM_IME_SETCONTEXT` / `ImmGetDefaultIMEWnd` is unchanged.
+
+`lib/editbox.cpp` stays off the allowlist: a check compile of that TU fails on leftover clipboard / common-dialog symbols and an include-order miss of `RS2_FLOAT_FMT` from `SystemCover.h`, not on Imm*. Follow-up (not this slice): `GMEM_DDESHARE` / `GMEM_MOVEABLE` / `lstrcpy` / `CF_TEXT` (`ClipCopy` / `ClipPaste`), `wsprintf` (`SelectFile`), and `#include "rs2_float.h"` before `SystemCover.h`. Do not add SDL2 to `check`. Do not rewrite `CEditCtrl` / list / tree rename. Game sources stay CP932.
+
+ctest: `rs2_ime_self_test` also covers open-status on/off and zero-size COMPATTR / COMPCLAUSE / CURSORPOS.

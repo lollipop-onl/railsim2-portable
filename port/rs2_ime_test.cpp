@@ -128,6 +128,36 @@ int self_test() {
 	            "GCS_RESULTCLAUSE is not RESULTSTR"))
 		return 1;
 
+	// Win32 COMPATTR / COMPCLAUSE / CURSORPOS numbers; stub returns 0.
+	if (!expect(RS2_IME_GCS_COMPATTR == 0x0010 &&
+	                RS2_IME_GCS_COMPCLAUSE == 0x0020 &&
+	                RS2_IME_GCS_CURSORPOS == 0x0080,
+	            "Win32 GCS_COMPATTR / COMPCLAUSE / CURSORPOS numbers"))
+		return 1;
+	rs2_ime_stub_set_composition("ab");
+	if (!expect(rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPATTR, nullptr,
+	                                            0) == 0 &&
+	                rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPCLAUSE,
+	                                                 nullptr, 0) == 0 &&
+	                rs2_ime_get_composition_string_a(RS2_IME_GCS_CURSORPOS,
+	                                                 nullptr, 0) == 0,
+	            "clause/attr/cursor empty in record-only stub"))
+		return 1;
+
+	// ImmSetOpenStatus / ImmGetOpenStatus stand-in. Independent of buffers.
+	rs2_ime_reset();
+	if (!expect(rs2_ime_is_open() == 0, "open defaults off"))
+		return 1;
+	rs2_ime_set_open(1);
+	if (!expect(rs2_ime_is_open() != 0, "set open on"))
+		return 1;
+	rs2_ime_stub_set_composition("ab");
+	if (!expect(rs2_ime_is_open() != 0, "composition does not clear open"))
+		return 1;
+	rs2_ime_set_open(0);
+	if (!expect(rs2_ime_is_open() == 0, "set open off"))
+		return 1;
+
 	return 0;
 }
 

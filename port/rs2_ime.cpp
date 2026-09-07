@@ -12,6 +12,7 @@ namespace {
 
 std::string g_composition_utf8;
 std::string g_result_utf8;
+int g_open = 0;
 
 const char *as_cstr(const std::string &s) { return s.c_str(); }
 
@@ -52,6 +53,10 @@ void rs2_ime_stub_clear() { rs2_ime_backend_clear(); }
 
 void rs2_ime_reset() { rs2_ime_backend_reset(); }
 
+void rs2_ime_set_open(int open) { g_open = open ? 1 : 0; }
+
+int rs2_ime_is_open() { return g_open; }
+
 const char *rs2_ime_composition_utf8() { return as_cstr(g_composition_utf8); }
 
 const char *rs2_ime_result_utf8() { return as_cstr(g_result_utf8); }
@@ -63,6 +68,11 @@ int rs2_ime_get_composition_string_a(unsigned dw_index, void *buf,
 		return copy_cp932(g_composition_utf8, buf, buf_size);
 	case RS2_IME_GCS_RESULTSTR:
 		return copy_cp932(g_result_utf8, buf, buf_size);
+	case RS2_IME_GCS_COMPATTR:
+	case RS2_IME_GCS_COMPCLAUSE:
+	case RS2_IME_GCS_CURSORPOS:
+		// No clause / attr / caret in the record-only stub. SDL later.
+		return 0;
 	default:
 		return 0;
 	}

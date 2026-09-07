@@ -74,9 +74,7 @@ public:
 	 *
 	 *	戻り値：TRUE＝FEP起動中、FALSE＝非起動中
 	 */
-	BOOL IsFEPOpen(){
-		return ImmGetOpenStatus(m_hImc);
-	}
+	BOOL IsFEPOpen();
 	/*
 	 *	変換中であるかを取得
 	 *
@@ -89,9 +87,7 @@ public:
 	/*
 	 *	変換中のカーソル位置の取得
 	 */
-	int GetFEPCursorPos(){
-		return ImmGetCompositionString(m_hImc, GCS_CURSORPOS, NULL, 0);
-	}
+	int GetFEPCursorPos();
 };
 
 /*
