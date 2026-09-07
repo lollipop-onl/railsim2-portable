@@ -6,6 +6,7 @@
 #include "sound.h"
 #include "wave.h"
 #include "wav_pcm.h"
+#include "rs2_audio.h"
 
 #include <cstring>
 
@@ -59,6 +60,7 @@ CWave::CWave(){
 	m_pSB = NULL;
 	m_p3D = NULL;
 	m_pFX = NULL;
+	m_audio = NULL;
 	m_BytesPerSec = 0;
 	m_nChannels = 0;
 	m_wBitsPerSample = 0;
@@ -162,7 +164,23 @@ BOOL CWave::Duplicate(CWave *pWav){
  *	len	: ウエーブサイズ
  */
 BOOL CWave::CreateBuffer(LPWAVEFORMATEX pFmt, DWORD len){
-	if(!svs.pDS) return FALSE;
+	m_audio = NULL;
+	Rs2WavPcm intern{};
+	if(pFmt){
+		intern.wFormatTag = pFmt->wFormatTag;
+		intern.nChannels = pFmt->nChannels;
+		intern.nSamplesPerSec = pFmt->nSamplesPerSec;
+		intern.nAvgBytesPerSec = pFmt->nAvgBytesPerSec;
+		intern.nBlockAlign = pFmt->nBlockAlign;
+		intern.wBitsPerSample = pFmt->wBitsPerSample;
+	}
+	intern.pcm = m_pcm;
+	if(!rs2_audio_intern(&intern, &m_audio)){
+		m_audio = NULL;
+		return FALSE;
+	}
+
+	if(!svs.pDS) return TRUE;
 	//	バッファの作成
 	DSBUFFERDESC desc;
 
@@ -255,6 +273,7 @@ void CWave::Free(){
 	RELEASE(m_p3D);
 	RELEASE(m_pFX);
 	RELEASE(m_pSB);
+	m_audio = NULL;
 	m_pcm.clear();
 	m_nChannels = 0;
 	m_wBitsPerSample = 0;
@@ -267,6 +286,7 @@ void CWave::Free(){
  *	ms	: 再生開始位置 [ms] (<0 でループ)
  */
 void CWave::Play(int ms){
+	if(m_audio) rs2_audio_play(m_audio, ms);
 	if(!m_pSB) return;
 
 	m_pSB->Stop();
@@ -284,6 +304,21 @@ void CWave::Play(int ms){
 #endif
 		Load((char *)m_strName.c_str());
 	}
+}
+
+void CWave::Stop(){
+	if(m_audio) rs2_audio_stop(m_audio);
+	if(m_pSB) m_pSB->Stop();
+}
+
+void CWave::SetVolume(LONG dB){
+	if(m_audio) rs2_audio_set_volume(m_audio, dB);
+	if(m_pSB) m_pSB->SetVolume(dB);
+}
+
+void CWave::SetPos(VEC3 v){
+	if(m_audio) rs2_audio_set_pos(m_audio, v.x, v.y, v.z);
+	if(svs.f3D && m_p3D) m_p3D->SetPosition(v.x, v.y, v.z, DS3D_IMMEDIATE);
 }
 
 /*

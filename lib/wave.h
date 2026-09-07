@@ -26,6 +26,7 @@ public:
 	WORD		m_nChannels;	//	WAVE channels
 	WORD		m_wBitsPerSample;	//	WAVE bits
 	vector<unsigned char>	m_pcm;	//	PCM payload
+	const struct Rs2AudioBuffer *m_audio;	// interned PCM handle
 
 	CWave();
 	~CWave();
@@ -40,19 +41,19 @@ public:
 /*
  *	停止
  */
-	void Stop(){if(m_pSB) m_pSB->Stop();}
+	void Stop();
 /*
  *	音量の設定 
  *
  *	dB	: DSBVOLUME_MIN-DSBVOLUME_MAX(1/100dB単位)
  */
-	void SetVolume(LONG dB = DSBVOLUME_MAX){if(m_pSB) m_pSB->SetVolume(dB);}
+	void SetVolume(LONG dB = DSBVOLUME_MAX);
 /*
  *	3D定位の設定
  *
  *	v		: 位置(メートル)
  */
-	void SetPos(VEC3 v){if(svs.f3D && m_p3D) m_p3D->SetPosition(v.x, v.y, v.z, DS3D_IMMEDIATE);}
+	void SetPos(VEC3 v);
 /*
  *	音源の移動速度の設定
  *

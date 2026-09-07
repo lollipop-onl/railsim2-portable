@@ -318,9 +318,9 @@ add_test(NAME rs2_wav_pcm_distribution COMMAND rs2_wav_pcm_test
   "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_wav_pcm_distribution PROPERTIES SKIP_RETURN_CODE 77)
 
-# CWave::Load maps Rs2WavPcm onto CWave fields (#86). No OpenAL / sound.cpp.
+# CWave::Load maps Rs2WavPcm onto CWave fields (#86). Play records intern handle (#96). No OpenAL / sound.cpp.
 add_executable(rs2_wave_load_test port/wave_load_test.cpp lib/wave.cpp port/wav_pcm.cpp
-  port/path.cpp)
+  port/path.cpp port/rs2_audio.cpp)
 target_include_directories(rs2_wave_load_test SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub")
 target_include_directories(rs2_wave_load_test PRIVATE
