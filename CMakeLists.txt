@@ -44,6 +44,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp"
   "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
@@ -357,3 +358,12 @@ target_compile_features(rs2_audio_test PRIVATE cxx_std_17)
 target_compile_options(rs2_audio_test PRIVATE -Wall -Wextra)
 
 add_test(NAME rs2_audio_self_test COMMAND rs2_audio_test --self-test)
+
+# Stub IME / TEXTINPUT composition + result (#100). No SDL / Imm COM.
+add_executable(rs2_ime_test port/rs2_ime_test.cpp port/rs2_ime.cpp port/rs2_text.cpp)
+target_include_directories(rs2_ime_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ime_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ime_test PRIVATE -Wall -Wextra)
+target_link_libraries(rs2_ime_test PRIVATE Iconv::Iconv)
+
+add_test(NAME rs2_ime_self_test COMMAND rs2_ime_test --self-test)
