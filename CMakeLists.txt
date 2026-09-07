@@ -77,6 +77,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_fvf.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_glsl.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_program.cpp"
+  "${CMAKE_SOURCE_DIR}/port/ffp_gl.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
@@ -102,8 +103,12 @@ target_compile_options(railsim2_native PRIVATE
 target_compile_definitions(railsim2_native PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
   NOMINMAX
+  RS2_HAVE_OPENGL=$<BOOL:${RS2_HAVE_OPENGL}>
 )
 target_link_libraries(railsim2_native PRIVATE Iconv::Iconv)
+if(RS2_HAVE_OPENGL)
+  target_link_libraries(railsim2_native PRIVATE OpenGL::GL)
+endif()
 
 # Link skeleton: POSIX main only. Allowlisted game objects compile into
 # railsim2_native.a but are not linked yet — they still need udx globals
@@ -334,6 +339,28 @@ target_compile_options(rs2_ffp_program_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_ffp_program_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_ffp_program_self_test COMMAND rs2_ffp_program_test --self-test)
+
+# Link interned FFP GLSL (#111). check/CI: RS2_HAVE_OPENGL off, no SDL window.
+# The test TU always compiles with RS2_HAVE_OPENGL=0 so ctest verifies no-GL
+# failure even when the runtime preset found OpenGL for railsim2_native.
+add_executable(rs2_ffp_gl_test
+  port/ffp_gl_test.cpp
+  port/ffp_gl.cpp
+  port/ffp_program.cpp
+  port/ffp_glsl.cpp
+  port/ffp_state.cpp
+  port/ffp_fvf.cpp)
+target_include_directories(rs2_ffp_gl_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_ffp_gl_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ffp_gl_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ffp_gl_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_ffp_gl_test PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+  RS2_HAVE_OPENGL=0)
+
+add_test(NAME rs2_ffp_gl_self_test COMMAND rs2_ffp_gl_test --self-test)
 
 # CP932 <-> UTF-8 and closed _mbsicmp replacement (#75). No SDL.
 add_executable(rs2_text_test port/rs2_text_test.cpp port/rs2_text.cpp)
