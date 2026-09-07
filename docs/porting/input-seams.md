@@ -233,10 +233,17 @@ After `#8`, a reader should be able to answer: swap these functions and stub sym
 
 - **Issue**: [#82](https://github.com/lollipop-onl/railsim2-portable/issues/82) (parent [#8](https://github.com/lollipop-onl/railsim2-portable/issues/8))
 - **Entry**: `rs2_input_poll_once` / `rs2_input_scan_*` / `rs2_input_edge` in `port/rs2_input.h`
-- **Backend hooks**: `rs2_input_backend_*` (stub in `port/rs2_input.cpp`; SDL2 later replaces these five poll/cursor functions)
+- **Backend hooks**: `rs2_input_backend_*` (stub in `port/rs2_input.cpp`; SDL2 poll in `port/rs2_input_sdl.cpp` when `RS2_HAVE_SDL2`, see below)
 
 `lib/input.cpp` no longer calls DirectInput COM. `ScanInputDevice` still merges poll buffers, then `ScanKeyboard` / `ScanMouse` / `ScanJoyStick`. Cursor position is client coordinates from the backend (Win32 `GetCursorPos` + `ScreenToClient` later; injected in the stub). `GetKey` / `GetButton` / `GetJoy` keep `S_FREE`..`S_HOLD` via `rs2_input_edge`. `port/stub/dinput.h` now defines the inventory-missing `DIK_*` tokens (`DIK_5`..`DIK_8`, `DIK_A`/`W`/`X`/`C`/`V`/`B`, `DIK_F3`/`F5`/`F6`).
 
 The check preset links the stub only and does **not** start the original `CCrtThread` poll loop (`_beginthreadex` in `port/stub/process.h` would run it inline). `ScanInputDevice` already calls `InputPollOnce` when `g_InputPollCount==0`. Do not add SDL2 to the `check` preset. `MsgBox` / `MsgYesNo` stay sync `MessageBox` until [#12](https://github.com/lollipop-onl/railsim2-portable/issues/12).
 
 `rs2_input_self_test` covers `GetKey` edge/hold, `GetWheel` accumulation, client cursor + inside, joystick axis thresholds, and the stub-missing `DIK_*` constants.
+
+## SDL2 poll backend (`port/rs2_input_sdl.cpp`)
+
+- **Issue**: [#122](https://github.com/lollipop-onl/railsim2-portable/issues/122) (parent [#8](https://github.com/lollipop-onl/railsim2-portable/issues/8))
+- **On (`RS2_HAVE_SDL2`)**: `rs2_input_backend_poll_keys` / `_mouse` / `_get_cursor` / `_set_cursor` read SDL. Scancodes map through a closed table onto the `DIK_*` already in `port/stub/dinput.h` (M3 camera: arrows, WASD, HOME/END, PRIOR/NEXT, plus the rest of that stub set). Unknown scancodes stay 0. Mouse `DIM_LEFT` / `RIGHT` / `MIDDLE` come from `SDL_BUTTON_*`. Wheel is `SDL_MOUSEWHEEL.y * 120` (Win32 `WHEEL_DELTA`).
+- **Cursor**: if an FFP window exists, client coordinates come from that native `SDL_Window` (`SDL_GetMouseState` when it has mouse focus, else global minus window origin). `set_cursor` is `SDL_WarpMouseInWindow`. No FFP window: poll / get / set do not crash; cursor is the last `set_cursor` value. This TU never creates a window.
+- **Off (check/CI)**: existing stub in `port/rs2_input.cpp`. `rs2_input_self_test` stays on that path and does not link SDL2. Joystick stays stub. Do not add SDL2 to the `check` preset. `MsgBox` / IME / OpenAL are other issues.

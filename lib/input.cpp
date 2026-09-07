@@ -14,7 +14,7 @@ CRITICAL_SECTION g_InputPollCriticalSection;
 
 /*
  *	DirectInput no longer owns devices. Init wires the port backend
- *	(stub in check; SDL2 later) and keeps ScanInputDevice() as the
+ *	(stub in check; SDL2 when RS2_HAVE_SDL2) and keeps ScanInputDevice() as the
  *	per-frame merge. The Win32 poll thread is omitted here: the
  *	process.h _beginthreadex stub runs the start routine inline, and
  *	ScanInputDevice already calls InputPollOnce when the count is 0.

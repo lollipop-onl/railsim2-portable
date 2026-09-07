@@ -1,7 +1,8 @@
-// Stub input backend + poll/scan merge (#82, parent #8).
+// Stub input backend + poll/scan merge (#82 / #122, parent #8).
 // See docs/porting/input-seams.md. Check preset links this stub only.
-// A later SDL2 TU can replace rs2_input_backend_* without changing merge
-// or GetKey / GetWheel / cursor semantics.
+// When RS2_HAVE_SDL2, port/rs2_input_sdl.cpp replaces poll_keys / poll_mouse
+// / get_cursor / set_cursor without changing merge or GetKey / GetWheel
+// / cursor semantics. Joystick stays the stub.
 
 #pragma once
 
@@ -25,7 +26,7 @@ enum {
 	RS2_INPUT_DIJ_BOTTOM = 5
 };
 
-// --- thin backend (stub here; SDL2 later) ---
+// --- thin backend (stub here; SDL2 poll_keys/mouse/cursor when RS2_HAVE_SDL2) ---
 
 void rs2_input_backend_reset();
 void rs2_input_backend_poll_keys(unsigned char out[RS2_INPUT_KEY_COUNT]);

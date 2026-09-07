@@ -2,13 +2,19 @@
 
 #include <cstring>
 
+#ifndef RS2_HAVE_SDL2
+#define RS2_HAVE_SDL2 0
+#endif
+
 namespace {
 
+#if !RS2_HAVE_SDL2
 unsigned char g_keys[RS2_INPUT_KEY_COUNT];
 unsigned char g_btn[RS2_INPUT_BTN_COUNT];
 long g_wheel_delta;
 int g_cur_x;
 int g_cur_y;
+#endif
 
 struct JoySample {
 	long lx;
@@ -22,14 +28,17 @@ JoySample g_joy[RS2_INPUT_MAX_JOY];
 }  // namespace
 
 void rs2_input_backend_reset() {
+#if !RS2_HAVE_SDL2
 	std::memset(g_keys, 0, sizeof(g_keys));
 	std::memset(g_btn, 0, sizeof(g_btn));
 	g_wheel_delta = 0;
 	g_cur_x = 0;
 	g_cur_y = 0;
+#endif
 	std::memset(g_joy, 0, sizeof(g_joy));
 }
 
+#if !RS2_HAVE_SDL2
 void rs2_input_backend_poll_keys(unsigned char out[RS2_INPUT_KEY_COUNT]) {
 	std::memcpy(out, g_keys, RS2_INPUT_KEY_COUNT);
 }
@@ -42,6 +51,7 @@ void rs2_input_backend_poll_mouse(unsigned char btn[RS2_INPUT_BTN_COUNT],
 	}
 	g_wheel_delta = 0;
 }
+#endif
 
 void rs2_input_backend_poll_joy(int n, long *lx, long *ly, long *lz,
                                 unsigned char buttons[RS2_INPUT_JOY_BTN]) {
@@ -58,6 +68,7 @@ void rs2_input_backend_poll_joy(int n, long *lx, long *ly, long *lz,
 	if (buttons) std::memcpy(buttons, g_joy[n].buttons, RS2_INPUT_JOY_BTN);
 }
 
+#if !RS2_HAVE_SDL2
 void rs2_input_backend_get_cursor(int *x, int *y) {
 	if (x) *x = g_cur_x;
 	if (y) *y = g_cur_y;
@@ -67,19 +78,34 @@ void rs2_input_backend_set_cursor(int x, int y) {
 	g_cur_x = x;
 	g_cur_y = y;
 }
+#endif
 
 void rs2_input_stub_set_key(int dik, int down) {
+#if !RS2_HAVE_SDL2
 	if (dik < 0 || dik >= RS2_INPUT_KEY_COUNT) return;
 	g_keys[dik] = down ? static_cast<unsigned char>(RS2_INPUT_DOWN) : 0;
+#else
+	(void)dik;
+	(void)down;
+#endif
 }
 
 void rs2_input_stub_set_button(int dim, int down) {
+#if !RS2_HAVE_SDL2
 	if (dim < 0 || dim >= RS2_INPUT_BTN_COUNT) return;
 	g_btn[dim] = down ? static_cast<unsigned char>(RS2_INPUT_DOWN) : 0;
+#else
+	(void)dim;
+	(void)down;
+#endif
 }
 
 void rs2_input_stub_add_wheel(long dz) {
+#if !RS2_HAVE_SDL2
 	g_wheel_delta += dz;
+#else
+	(void)dz;
+#endif
 }
 
 void rs2_input_stub_set_cursor(int x, int y) {
