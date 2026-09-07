@@ -72,3 +72,4 @@ CFileMode.cpp
 CTreeElement.cpp
 lib/input.cpp
 lib/wave.cpp
+SystemCover.cpp

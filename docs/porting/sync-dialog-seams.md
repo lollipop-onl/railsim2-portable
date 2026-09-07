@@ -182,3 +182,17 @@ Replace **this closed sync set** ? eight `MessageBox` sites, four `Get*FileName`
 4. Redesigning **`ErrorDialog`** as fatal shutdown, not an in-frame dialog.
 
 After `#12` planning, a reader should be able to answer: Ågswap these wrappers and Win32 calls, and every remaining sync modal is accounted for.Åh
+
+## Dialog / ErrorDialog replacement (#97)
+
+- **Issue**: [#97](https://github.com/lollipop-onl/railsim2-portable/issues/97) (parent [#12](https://github.com/lollipop-onl/railsim2-portable/issues/12))
+- **Entry**: `SystemCover.cpp` `Dialog` / `ErrorDialog` (void signatures unchanged)
+- **Allowlist**: `SystemCover.cpp` in `port/native_sources.txt`
+
+`Dialog` still formats into `g_FlashBuf`, then `EnqueueCommonDialog(new CSimpleDialog(text, DIALOG_TITLE))`. `CInterface::Init` copies the label into `std::string`, so the flash buffer may be reused after return. This is the same OK-only queue as the rest of the game; the caller does not block.
+
+`ErrorDialog` is not queued. It logs to stderr, then the existing teardown (`ShowCursor(TRUE)`, `DestroyWindow(svw.hWnd)`, `ExitProcess(0)`). `ExitProcess` is the port exit in `port/stub/windows.h` (no-op under the check firewall). No sync `MessageBox`.
+
+`RS2_ROUNDTRIP` keeps `port/rs2_roundtrip_stubs.cpp` `ErrorDialog` as log-only so `Sample.rs2` load can fail into `CSynErr` without process teardown.
+
+Do not change `YesNo` / `YesNoCancel` / `SelectFile` / `ShowLastError` / `ColorDialog`, or `lib/input.cpp` `MsgBox` / `MsgYesNo`. Those wrappers still compile through the firewall (`OPENFILENAME` / `CHOOSECOLOR` / `FormatMessage` stubs in `port/stub/windows.h` are compile-only; not a file-picker backend).

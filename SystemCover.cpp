@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CPixelbit.h"
+#include "CSimpleDialog.h"
 
 //	ì‡ïîíËêî
 const char *const DIALOG_TITLE = "RailSim II";
@@ -48,8 +49,8 @@ void Dialog(
 	va_start(vl, format);
 	vsprintf(g_FlashBuf[g_FlashBufSelect], format, vl);
 	va_end(vl);
-	MessageBox(GetActiveWindow(),
-		g_FlashBuf[g_FlashBufSelect], DIALOG_TITLE, MB_APPLMODAL);
+	EnqueueCommonDialog(new CSimpleDialog(
+		g_FlashBuf[g_FlashBufSelect], (char *)DIALOG_TITLE));
 }
 
 /*
@@ -64,11 +65,9 @@ void ErrorDialog(
 	va_start(vl, format);
 	vsprintf(g_FlashBuf[g_FlashBufSelect], format, vl);
 	va_end(vl);
+	fprintf(stderr, "ErrorDialog: %s\n", g_FlashBuf[g_FlashBufSelect]);
 	ShowCursor(TRUE);
 	DestroyWindow(svw.hWnd);
-	MessageBox(GetActiveWindow(),
-		g_FlashBuf[g_FlashBufSelect], DIALOG_TITLE, MB_APPLMODAL);
-	//PostQuitMessage(0);
 	ExitProcess(0);
 }
 
