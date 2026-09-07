@@ -33,6 +33,7 @@ brew bundle --file Brewfile
 | `cmake --preset check` | Configure AppleClang native target |
 | `cmake --build --preset check` | Compile allowlisted sources and link `railsim2` |
 | `ctest --preset check` | Smoke + `Sample.rs2` roundtrip + text `.x` load + path join (see [rs2-roundtrip.md](rs2-roundtrip.md), [x-file-parser.md](x-file-parser.md), [path-seams.md](path-seams.md)) |
+| `cmake --preset runtime` | Same sources, plus **optional** SDL2 / OpenGL / OpenAL search. Not CI. |
 
 ## Compile firewall
 
@@ -69,10 +70,34 @@ We do **not** vendor DirectX SDK headers or adopt MinGW for CI. The compile-fire
 
 ## CI
 
-GitHub Actions runs `./scripts/check.sh` on a **macOS + Linux matrix** (`macos-15`, `ubuntu-24.04`). Both jobs use `mise install` for cmake/ninja; Linux also installs `clang` from apt. Local Mac dev can use the same path via `.mise.toml`, or legacy `brew bundle`.
+GitHub Actions runs `./scripts/check.sh` on a **macOS + Linux matrix** (`macos-15`, `ubuntu-24.04`). Both jobs use `mise install` for cmake/ninja; Linux also installs `clang` from apt. Local Mac dev can use the same path via `.mise.toml`, or legacy `brew bundle`. Do **not** apt-install SDL2, OpenGL loaders, or OpenAL Soft on that job.
+
+## check vs runtime
+
+`check` is the gate. `runtime` is a local-only configure that **may** find window / GL / audio packages. Later GL link, SDL input, and OpenAL play slices use `runtime`; they must not add those packages to `check` or to CI apt.
+
+| Preset | Who runs it | SDL2 / OpenGL / OpenAL |
+|--------|-------------|------------------------|
+| `check` (`./scripts/check.sh`, CI) | Everyone | **Not searched.** `RS2_RUNTIME=OFF`. Stubs only. |
+| `runtime` | Local machine with optional packages | `find_package` **QUIET / not REQUIRED**. Missing package → feature off, configure still succeeds. |
+
+This slice does **not** draw, poll SDL events, or play OpenAL. `cmake --preset runtime` only records `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` (`ON` or `OFF` in the configure log). Do not link `lib/graphic.cpp` / `lib/vertex.cpp` / `lib/sound.cpp` from this preset yet.
+
+Optional local packages (Homebrew; not in `Brewfile`, not required for `check`):
+
+```bash
+brew install sdl2 openal-soft
+# OpenAL Soft is keg-only on macOS; prefix it if FindOpenAL misses it:
+cmake --preset runtime --fresh \
+  -DCMAKE_PREFIX_PATH="$(brew --prefix openal-soft)"
+```
+
+Linux: install distro `libsdl2-dev`, OpenGL headers, and `libopenal-dev` the same way — locally, never as a `check` CI step. If nothing is installed, `cmake --preset runtime` must still succeed with all three features off.
+
+See [adr-backend.md](adr-backend.md) for why the stack is SDL2 + GL 3.3 core / GLES3 + OpenAL Soft.
 
 ## Next milestones
 
 - **#10** replaces the roundtrip passthrough with `CSaveFile` and drives byte-identity (`%p` / MD5 / float). The ctest harness itself is [#24](https://github.com/lollipop-onl/railsim2-portable/issues/24) ([rs2-roundtrip.md](rs2-roundtrip.md)).
 - **#6** replaces `CXFile` / `D3DXLoadMeshFromX` with the closed parser in `port/xfile.cpp`. Loading Distribution `.x` into memory is [#28](https://github.com/lollipop-onl/railsim2-portable/issues/28) ([x-file-parser.md](x-file-parser.md)).
-- Backend / window bring-up uses SDL2 only when a `native` preset is added (see `adr-backend.md`); keep `check` stub-only.
+- Backend / window bring-up uses the `runtime` preset for optional SDL2 / GL / OpenAL (see `adr-backend.md`); keep `check` stub-only.

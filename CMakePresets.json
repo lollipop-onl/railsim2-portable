@@ -33,6 +33,14 @@
         "CMAKE_C_COMPILER": "gcc-14",
         "CMAKE_CXX_COMPILER": "g++-14"
       }
+    },
+    {
+      "name": "runtime",
+      "displayName": "Optional SDL2 / OpenGL / OpenAL (local; not CI)",
+      "inherits": "check",
+      "cacheVariables": {
+        "RS2_RUNTIME": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -43,6 +51,10 @@
     {
       "name": "check-gcc",
       "configurePreset": "check-gcc"
+    },
+    {
+      "name": "runtime",
+      "configurePreset": "runtime"
     }
   ],
   "testPresets": [
@@ -56,6 +68,13 @@
     {
       "name": "check-gcc",
       "configurePreset": "check-gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "runtime",
+      "configurePreset": "runtime",
       "output": {
         "outputOnFailure": true
       }
