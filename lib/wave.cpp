@@ -5,6 +5,50 @@
 #include "window.h"
 #include "sound.h"
 #include "wave.h"
+#include "wav_pcm.h"
+
+#include <cstring>
+
+#ifndef DSBUFFERDESC
+typedef struct _DSBUFFERDESC {
+	DWORD dwSize;
+	DWORD dwFlags;
+	DWORD dwBufferBytes;
+	DWORD dwReserved;
+	LPWAVEFORMATEX lpwfxFormat;
+	GUID guid3DAlgorithm;
+} DSBUFFERDESC;
+#endif
+#ifndef DSBCAPS_CTRLVOLUME
+#define DSBCAPS_CTRLVOLUME 0x00000080
+#endif
+#ifndef DSBCAPS_CTRL3D
+#define DSBCAPS_CTRL3D 0x00000010
+#endif
+#ifndef DSERR_BUFFERTOOSMALL
+#define DSERR_BUFFERTOOSMALL ((HRESULT)0x8878004AL)
+#endif
+#ifndef DSERR_OUTOFMEMORY
+#define DSERR_OUTOFMEMORY ((HRESULT)0x00000007L)
+#endif
+#ifndef DSERR_BUFFERLOST
+#define DSERR_BUFFERLOST ((HRESULT)0x88780096L)
+#endif
+#ifndef DS_OK
+#define DS_OK S_OK
+#endif
+#ifndef DSBPLAY_LOOPING
+#define DSBPLAY_LOOPING 0x00000001
+#endif
+#ifndef DSBSTATUS_PLAYING
+#define DSBSTATUS_PLAYING 0x00000001
+#endif
+#ifndef IID_IDirectSoundBuffer8
+static const GUID IID_IDirectSoundBuffer8 = {0,0,0,{0,0,0,0,0,0,0,0}};
+#endif
+#ifndef IID_IDirectSound3DBuffer
+static const GUID IID_IDirectSound3DBuffer = {0,0,0,{0,0,0,0,0,0,0,0}};
+#endif
 
 /*
  *	コンストラクタ
@@ -15,6 +59,9 @@ CWave::CWave(){
 	m_pSB = NULL;
 	m_p3D = NULL;
 	m_pFX = NULL;
+	m_BytesPerSec = 0;
+	m_nChannels = 0;
+	m_wBitsPerSample = 0;
 }
 
 /*
@@ -30,7 +77,7 @@ CWave::~CWave(){
  *	strFile	: ファイル名
  */
 BOOL CWave::Load(char *strFile){
-	//	既存なら解放
+	//	existing buffer
 	if(m_pSB) Free();
 
 	Debug("load(%s) ... ", strFile);
@@ -38,70 +85,45 @@ BOOL CWave::Load(char *strFile){
 	_fullpath(full, strFile, _MAX_PATH);
 	m_strName = full;
 
-	HMMIO			hMMI;
-	MMCKINFO		parent, child;
-	WAVEFORMATEX	wfmtx;
-	DWORD			len;
-	BOOL			ret = FALSE;
-
-	parent.ckid = (FOURCC)0;
-	parent.cksize = 0;
-	parent.fccType = (FOURCC)0;
-	parent.dwDataOffset = 0;
-	parent.dwFlags = 0;
-	child = parent;
-
-	//	オープン
-	hMMI = mmioOpen(strFile, NULL, MMIO_READ|MMIO_ALLOCBUF);
-
-	if(!hMMI){
-		Debug("open error.\n");
+	Rs2WavPcm wav;
+	std::string err;
+	if(!rs2_wav_pcm_parse_file(strFile, &wav, &err)){
+		if(err.find("cannot open") != std::string::npos ||
+		   err.find("null path") != std::string::npos){
+			Debug("open error.\n");
+		}else if(err.find("not a RIFF") != std::string::npos){
+			Debug("RIFF is not found.\n");
+		}else if(err.find("fmt is not found") != std::string::npos){
+			Debug("fmt is not found.\n");
+		}else if(err.find("PCM") != std::string::npos){
+			Debug("is not PCM format.\n");
+		}else if(err.find("data is not found") != std::string::npos){
+			Debug("chunk is not found.\n");
+		}else{
+			Debug("open error.\n");
+		}
 		return FALSE;
 	}
-	//	RIFFチャンクの読み込み＆チェック
-	parent.fccType = mmioFOURCC('W', 'A', 'V', 'E');
 
-	if(mmioDescend(hMMI, &parent, NULL, MMIO_FINDRIFF)!=0){
-		Debug("RIFF is not found.\n"); goto error;
-	}
-	//	fmtチャンクの読み込み＆チェック
-	child.ckid = mmioFOURCC('f', 'm', 't', ' ');
+	m_BytesPerSec = wav.nAvgBytesPerSec;
+	m_nChannels = wav.nChannels;
+	m_wBitsPerSample = wav.wBitsPerSample;
+	m_pcm = wav.pcm;
 
-	if(mmioDescend(hMMI, &child, &parent, 0)!=0){
-		Debug("fmt is not found.\n"); goto error;
-	}
-	//	フォーマットの取得
-	mmioRead(hMMI, (char *)&wfmtx, sizeof(wfmtx));
-	m_BytesPerSec = wfmtx.nAvgBytesPerSec;
+	WAVEFORMATEX wfmtx;
+	memset(&wfmtx, 0, sizeof(wfmtx));
+	wfmtx.wFormatTag = WAVE_FORMAT_PCM;
+	wfmtx.nChannels = wav.nChannels;
+	wfmtx.nSamplesPerSec = wav.nSamplesPerSec;
+	wfmtx.nAvgBytesPerSec = wav.nAvgBytesPerSec;
+	wfmtx.nBlockAlign = wav.nBlockAlign;
+	wfmtx.wBitsPerSample = wav.wBitsPerSample;
+	wfmtx.cbSize = 0;
 
-	//	PCMフォーマットか？
-	if(wfmtx.wFormatTag!=WAVE_FORMAT_PCM){
-		Debug("is not PCM format.\n"); goto error;
-	}
+	if(!CreateBuffer(&wfmtx, (DWORD)m_pcm.size())) return FALSE;
 
-	if(mmioAscend(hMMI, &child, 0)!=0){
-		Debug("ascend error.\n"); goto error;
-	}
-	//	dataチャンクの読み込み＆チェック
-	child.ckid = mmioFOURCC('d', 'a', 't', 'a');
-
-	if(mmioDescend(hMMI, &child, &parent, MMIO_FINDCHUNK)!=0){
-		Debug("chunk is not found.\n"); goto error;
-	}
-	//	dataチャンク長を取得
-	len = child.cksize;
-
-	//	バッファを作成、ロード
-	if(!CreateBuffer(hMMI, &wfmtx, len)) goto error;
-
-	//	クローズ
-	mmioClose(hMMI, 0);
 	Debug("ok.\n");
 	return TRUE;
-
-error:
-	mmioClose(hMMI, 0);
-	return FALSE;
 }
 
 /*
@@ -112,11 +134,24 @@ error:
 BOOL CWave::Duplicate(CWave *pWav){
 	if(!svs.pDS || m_pSB) Free();
 
-	int err;
-	//	バッファの複製
-	if(FAILED(err = svs.pDS->DuplicateSoundBuffer(pWav->m_pSB, &m_pSB))) return FALSE;
+	m_strName = pWav->m_strName;
+	m_BytesPerSec = pWav->m_BytesPerSec;
+	m_nChannels = pWav->m_nChannels;
+	m_wBitsPerSample = pWav->m_wBitsPerSample;
+	m_pcm = pWav->m_pcm;
 
-	return Query();
+	WAVEFORMATEX wfmtx;
+	memset(&wfmtx, 0, sizeof(wfmtx));
+	wfmtx.wFormatTag = WAVE_FORMAT_PCM;
+	wfmtx.nChannels = m_nChannels;
+	wfmtx.nSamplesPerSec = (m_nChannels && m_wBitsPerSample)
+		? m_BytesPerSec / ((m_wBitsPerSample/8)*m_nChannels) : 0;
+	wfmtx.nAvgBytesPerSec = m_BytesPerSec;
+	wfmtx.nBlockAlign = (WORD)((m_wBitsPerSample/8)*m_nChannels);
+	wfmtx.wBitsPerSample = m_wBitsPerSample;
+	wfmtx.cbSize = 0;
+
+	return CreateBuffer(&wfmtx, (DWORD)m_pcm.size());
 }
 
 /*
@@ -126,7 +161,7 @@ BOOL CWave::Duplicate(CWave *pWav){
  *	pFmt	: ウエーブフォーマット
  *	len	: ウエーブサイズ
  */
-BOOL CWave::CreateBuffer(HMMIO hMMI, LPWAVEFORMATEX pFmt, DWORD len){
+BOOL CWave::CreateBuffer(LPWAVEFORMATEX pFmt, DWORD len){
 	if(!svs.pDS) return FALSE;
 	//	バッファの作成
 	DSBUFFERDESC desc;
@@ -161,11 +196,24 @@ BOOL CWave::CreateBuffer(HMMIO hMMI, LPWAVEFORMATEX pFmt, DWORD len){
 	DWORD length1, length2;
 
 	if(m_pSB->Lock(0, len, &write1, &length1, &write2, &length2, 0)==DSERR_BUFFERLOST){
-		m_pSB->Restore(); return FALSE;
+#if !defined(RS2_PORTABLE_COMPILE_FIREWALL)
+		m_pSB->Restore();
+#endif
+		return FALSE;
 	}
-	//	dataチャンクをバッファにロード
-	if((DWORD)mmioRead(hMMI, (char *)write1, length1)==length1){
-		if(length2!=0) mmioRead(hMMI, (char *)write2, length2);
+	//	PCM payload into the locked buffer
+	if(write1 && length1){
+		DWORD n = length1;
+		if(n > (DWORD)m_pcm.size()) n = (DWORD)m_pcm.size();
+		if(n) memcpy(write1, m_pcm.data(), n);
+	}
+	if(write2 && length2){
+		DWORD off = length1;
+		DWORD n = length2;
+		if(off < (DWORD)m_pcm.size()){
+			if(off + n > (DWORD)m_pcm.size()) n = (DWORD)m_pcm.size() - off;
+			memcpy(write2, m_pcm.data() + off, n);
+		}
 	}
 	//	バッファのアンロック
 	if(m_pSB->Unlock(write1, length1, write2, length2)!=DS_OK)
@@ -207,6 +255,10 @@ void CWave::Free(){
 	RELEASE(m_p3D);
 	RELEASE(m_pFX);
 	RELEASE(m_pSB);
+	m_pcm.clear();
+	m_nChannels = 0;
+	m_wBitsPerSample = 0;
+	m_BytesPerSec = 0;
 }
 
 /*
@@ -218,14 +270,18 @@ void CWave::Play(int ms){
 	if(!m_pSB) return;
 
 	m_pSB->Stop();
+#if !defined(RS2_PORTABLE_COMPILE_FIREWALL)
 	m_pSB->SetCurrentPosition(ms<0 ? 0 : m_BytesPerSec*ms/1000);
+#endif
 	HRESULT hr = m_pSB->Play(0, 0, ms<0 ? DSBPLAY_LOOPING : 0);
 	//	リロード処理
 	if(hr==DSERR_BUFFERLOST){
 		Debug("DSERR_BUFFERLOST:%s", m_strName.c_str());
 
 		PrimaryBufferVerify();	//	先にプライマリバッファを検証する
+#if !defined(RS2_PORTABLE_COMPILE_FIREWALL)
 		m_pSB->Restore();	//	どの道Free()するが念のため
+#endif
 		Load((char *)m_strName.c_str());
 	}
 }
@@ -252,6 +308,9 @@ BOOL CWave::GetStatus(){
  */
 void CWave::SetFX(int fx){
 	if(!svs.fFX || !m_pFX) return;
+#if defined(RS2_PORTABLE_COMPILE_FIREWALL)
+	(void)fx;
+#else
 
 	//	エフェクトのリセット
 	if(fx==FX_DRY){
@@ -279,4 +338,5 @@ void CWave::SetFX(int fx){
 	default				: SetFX(FX_DRY); return;
 	}
 	m_pFX->SetFX(1, &desc, &rc);
+#endif
 }

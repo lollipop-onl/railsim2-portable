@@ -323,4 +323,13 @@ Expect: `lib/sound.cpp` / `sound.h`, `lib/wave.cpp` / `wave.h`, `lib/wave_stream
 
 This is the portable stand-in for the [mmio* contract](#closed-mmio-set-wav-parser). It requires RIFF form `WAVE`, accepts only `wFormatTag == WAVE_FORMAT_PCM` (1), and copies `fmt ` + `data` fields from the [minimum field table](#minimum-fields-a-replacement-parser-must-honor). Other chunks (`fact`, `LIST`, pad bytes) are skipped; extra `fmt` bytes (`cbSize`) are ignored. Non-PCM, truncated RIFF, missing `fmt` / `data`, or a short `data` payload fail with `bool` + reason string.
 
-`CWave::Load` still calls `mmio*`. A later `#7` slice should call this API from `Load` and leave `lib/wave.cpp` off the allowlist until then. Do not link OpenAL in the `check` preset.
+`CWave::Load` now calls `rs2_wav_pcm_parse_file` (#86). `lib/wave.cpp` is on the allowlist. Do not link OpenAL in the `check` preset.
+
+
+## CWave::Load uses port/wav_pcm (#86)
+
+- **Issue**: [#86](https://github.com/lollipop-onl/railsim2-portable/issues/86) (parent [#7](https://github.com/lollipop-onl/railsim2-portable/issues/7))
+- **Entry**: `CWave::Load` in `lib/wave.cpp` calls `rs2_wav_pcm_parse_file`
+- **Allowlist**: `lib/wave.cpp` is in `port/native_sources.txt`
+
+`mmioOpen` / `mmioDescend` / `mmioRead` / `mmioAscend` / `mmioClose` are gone from `Load` and `CreateBuffer`. Non-PCM, broken RIFF, missing `fmt ` / `data`, or a file that cannot be opened still return `FALSE`. On a successful parse, `Rs2WavPcm` maps to `m_BytesPerSec` (`nAvgBytesPerSec`), `m_nChannels`, `m_wBitsPerSample`, and `m_pcm` (raw `data` payload). `CreateBuffer` still fills the DirectSound secondary buffer with `Lock` / `Unlock` from that payload; `lib/sound.cpp` and `port/stub/dsound.h` COM are unchanged. `rs2_wave_load_self_test` / `rs2_wave_load_distribution` check the mapping against the #81 field table. Do not link OpenAL in the `check` preset.

@@ -16,13 +16,16 @@ using namespace std;
 class CWave{
 	//	コピーコンストラクタ封印
 	CWave& operator = (const CWave&){return *this;}
-	BOOL CreateBuffer(HMMIO hMMI, LPWAVEFORMATEX pFmt, DWORD len);
+	BOOL CreateBuffer(LPWAVEFORMATEX pFmt, DWORD len);
 public:
 	LPSNDBUF	m_pSB;			//	セカンダリバッファ
 	LPSNDBUF8	m_pFX;			//	エフェクト使用のため
 	LP3DBUF		m_p3D;			//	3Dバッファ
 	string		m_strName;		//	ファイル名 (リロード用)
 	DWORD		m_BytesPerSec;	//	秒当たりバイト数
+	WORD		m_nChannels;	//	WAVE channels
+	WORD		m_wBitsPerSample;	//	WAVE bits
+	vector<unsigned char>	m_pcm;	//	PCM payload
 
 	CWave();
 	~CWave();

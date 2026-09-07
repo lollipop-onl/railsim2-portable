@@ -1,5 +1,5 @@
-// PCM-only RIFF WAVE reader for the closed mmio* contract (#81, parent #7).
-// See docs/porting/audio-seams.md. Does not replace CWave::Load.
+// PCM-only RIFF WAVE reader for the closed mmio* contract (#81 / #86, parent #7).
+// See docs/porting/audio-seams.md. CWave::Load calls rs2_wav_pcm_parse_file.
 
 #pragma once
 
