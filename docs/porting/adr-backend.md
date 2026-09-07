@@ -110,11 +110,13 @@ Wrappers in `render.h` / `texture.h` **and** raw `sv3.pDev` from the seven leak 
 - Ship communication-wire compatibility (#11) or Capture/AVI (#17) as part of this backend.
 - Enable Emscripten legacy FFP emulation to ?gget something on screen.?h
 
-## CMake / CI notes (for #3)
+## CMake / CI notes (for #3 / #105)
 
-M1 CMake should grow a **linkable native target** that can later `find_package(SDL2)` without requiring SDL at the current object-only `check` preset. SDL/OpenAL as hard dependencies belong when the first window TU is allowlisted (M3), not as a gate that turns M0 `check.sh` red.
+`check` (`./scripts/check.sh`, GitHub Actions) never searches SDL2, OpenGL, or OpenAL. Those packages stay off apt CI.
 
-Optional preset `native` (link SDL2) vs `check` (stubs only) is the expected split.
+The **`runtime`** preset sets `RS2_RUNTIME=ON` and calls `find_package` **without REQUIRED**. Configure succeeds with features off when a package is missing. `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` are the flags later GL-link / SDL-input / OpenAL-play slices consume. This preset does not draw, poll, or play.
+
+See [dev-env.md](dev-env.md) (`check` vs `runtime`).
 
 ## Related
 

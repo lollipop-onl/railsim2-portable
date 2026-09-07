@@ -5,6 +5,42 @@ project(railsim2-portable LANGUAGES CXX)
 # iconv for port/rs2_text CP932<->UTF-8 (#75). Not SDL; glibc is built-in on Linux.
 find_package(Iconv REQUIRED)
 
+# Optional runtime deps (#105). The check preset leaves RS2_RUNTIME OFF and
+# must not search SDL2 / OpenGL / OpenAL. CI apt does not install them.
+# find_package is QUIET (not REQUIRED): missing packages leave the feature off.
+option(RS2_RUNTIME "Search optional SDL2 / OpenGL / OpenAL (runtime preset)" OFF)
+set(RS2_HAVE_SDL2 OFF)
+set(RS2_HAVE_OPENGL OFF)
+set(RS2_HAVE_OPENAL OFF)
+if(RS2_RUNTIME)
+  find_package(SDL2 CONFIG QUIET)
+  if(NOT SDL2_FOUND)
+    find_package(SDL2 QUIET)
+  endif()
+  if(SDL2_FOUND OR TARGET SDL2::SDL2)
+    set(RS2_HAVE_SDL2 ON)
+  endif()
+
+  find_package(OpenGL QUIET)
+  if(OpenGL_FOUND OR OPENGL_FOUND)
+    set(RS2_HAVE_OPENGL ON)
+  endif()
+
+  find_package(OpenAL QUIET)
+  if(OpenAL_FOUND OR OPENAL_FOUND)
+    set(RS2_HAVE_OPENAL ON)
+  endif()
+
+  message(STATUS "RS2 runtime SDL2: ${RS2_HAVE_SDL2}")
+  message(STATUS "RS2 runtime OpenGL: ${RS2_HAVE_OPENGL}")
+  message(STATUS "RS2 runtime OpenAL: ${RS2_HAVE_OPENAL}")
+else()
+  message(STATUS "RS2 runtime: off (check preset; SDL2/GL/OpenAL not searched)")
+endif()
+set(RS2_HAVE_SDL2 "${RS2_HAVE_SDL2}" CACHE BOOL "SDL2 found (runtime preset; unused by check)" FORCE)
+set(RS2_HAVE_OPENGL "${RS2_HAVE_OPENGL}" CACHE BOOL "OpenGL found (runtime preset; unused by check)" FORCE)
+set(RS2_HAVE_OPENAL "${RS2_HAVE_OPENAL}" CACHE BOOL "OpenAL found (runtime preset; unused by check)" FORCE)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
