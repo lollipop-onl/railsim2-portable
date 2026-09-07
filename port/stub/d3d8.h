@@ -230,6 +230,12 @@ HRESULT rs2_ffp_set_material(const void* material);
 // CPU UP ring + program intern (#74 / #92). Bodies in port/ffp_fvf.cpp.
 HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *data,
                                   UINT stride);
+HRESULT rs2_ffp_set_fvf(DWORD fvf);
+
+// Device wire (#120). GL/SDL failures are ignored; HRESULT stays the CPU result.
+void rs2_ffp_gl_try_after_up();
+void rs2_ffp_gl_try_clear(DWORD flags, D3DCOLOR color, float z);
+void rs2_ffp_window_try_present();
 
 struct IDirect3DDevice8 : IUnknown {
   HRESULT SetRenderState(D3DRENDERSTATETYPE type, DWORD value) {
@@ -247,22 +253,30 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetMaterial(const void* material) { return rs2_ffp_set_material(material); }
   HRESULT SetLight(DWORD, const void*) { return S_OK; }
   HRESULT LightEnable(DWORD, BOOL) { return S_OK; }
-  HRESULT Clear(DWORD, const void*, DWORD, D3DCOLOR, float, DWORD) { return S_OK; }
+  HRESULT Clear(DWORD, const void *, DWORD flags, D3DCOLOR color, float z, DWORD) {
+    rs2_ffp_gl_try_clear(flags, color, z);
+    return S_OK;
+  }
   HRESULT SetTexture(DWORD, IDirect3DTexture8*) { return S_OK; }
   HRESULT GetTexture(DWORD, IDirect3DBaseTexture8**) { return S_OK; }
   HRESULT DrawPrimitive(D3DPRIMITIVETYPE, UINT, UINT) { return S_OK; }
-  // CPU record + interned program handle. No auto GL draw (no window).
+  // CPU record, then try apply_uniforms + gl_draw. GL false is ignored.
   HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE type, UINT count, const void *data,
                           UINT stride) {
-    return rs2_ffp_draw_primitive_up(type, count, data, stride);
+    const HRESULT hr = rs2_ffp_draw_primitive_up(type, count, data, stride);
+    if (hr == S_OK) rs2_ffp_gl_try_after_up();
+    return hr;
   }
   HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE, UINT, UINT, UINT, UINT, const void*) { return S_OK; }
   HRESULT SetStreamSource(UINT, IDirect3DVertexBuffer8*, UINT) { return S_OK; }
-  HRESULT SetVertexShader(DWORD) { return S_OK; }
+  HRESULT SetVertexShader(DWORD fvf) { return rs2_ffp_set_fvf(fvf); }
   HRESULT BeginScene() { return S_OK; }
   HRESULT EndScene() { return S_OK; }
-  // No GL/SDL swap. rs2_ffp_window_present is a separate port API (#116).
-  HRESULT Present(const RECT*, const RECT*, HWND, void*) { return S_OK; }
+  // Swap last rs2_ffp_window_create handle if any. Never auto-creates a window.
+  HRESULT Present(const RECT *, const RECT *, HWND, void *) {
+    rs2_ffp_window_try_present();
+    return S_OK;
+  }
   HRESULT GetViewport(D3DVIEWPORT8*) { return S_OK; }
   HRESULT SetViewport(const D3DVIEWPORT8* viewport) {
     return rs2_ffp_set_viewport(viewport);

@@ -329,19 +329,25 @@ target_compile_definitions(rs2_ffp_glsl_test PRIVATE RS2_PORTABLE_COMPILE_FIREWA
 
 add_test(NAME rs2_ffp_glsl_self_test COMMAND rs2_ffp_glsl_test --self-test)
 
-# Interned FFP program handle + stub DrawPrimitiveUP (#92). No GL link.
+# Interned FFP program handle + stub DrawPrimitiveUP (#92). Device UP also
+# tries GL after the CPU record (#120); this TU links ffp_gl.cpp compiled
+# with RS2_HAVE_OPENGL=0 so the try is a no-op.
 add_executable(rs2_ffp_program_test
   port/ffp_program_test.cpp
   port/ffp_program.cpp
   port/ffp_glsl.cpp
   port/ffp_state.cpp
-  port/ffp_fvf.cpp)
+  port/ffp_fvf.cpp
+  port/ffp_gl.cpp)
 target_include_directories(rs2_ffp_program_test SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub")
 target_include_directories(rs2_ffp_program_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
 target_compile_features(rs2_ffp_program_test PRIVATE cxx_std_17)
 target_compile_options(rs2_ffp_program_test PRIVATE -Wall -Wextra)
-target_compile_definitions(rs2_ffp_program_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+target_compile_definitions(rs2_ffp_program_test PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+  RS2_HAVE_OPENGL=0)
 
 add_test(NAME rs2_ffp_program_self_test COMMAND rs2_ffp_program_test --self-test)
 
@@ -386,6 +392,54 @@ target_compile_definitions(rs2_ffp_window_test PRIVATE
   RS2_HAVE_OPENGL=0)
 
 add_test(NAME rs2_ffp_window_self_test COMMAND rs2_ffp_window_test --self-test)
+
+# Wire DrawPrimitiveUP / Present / Clear / SetVertexShader (#120).
+# check/CI: OpenGL and SDL2 off, no SDL window. Present without a created
+# window is S_OK; DrawPrimitiveUP still records on the CPU.
+add_executable(rs2_ffp_device_test
+  port/ffp_device_test.cpp
+  port/ffp_gl.cpp
+  port/ffp_window.cpp
+  port/ffp_program.cpp
+  port/ffp_glsl.cpp
+  port/ffp_state.cpp
+  port/ffp_fvf.cpp)
+target_include_directories(rs2_ffp_device_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_ffp_device_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ffp_device_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ffp_device_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_ffp_device_test PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+  RS2_HAVE_OPENGL=0
+  RS2_HAVE_SDL2=0)
+
+add_test(NAME rs2_ffp_device_self_test COMMAND rs2_ffp_device_test --self-test)
+
+# Runtime-only smoke: solid UP triangle through create/draw/present/destroy.
+# Not added to ctest / CI. Missing SDL2 or OpenGL leaves the target out.
+if(RS2_RUNTIME AND RS2_HAVE_SDL2 AND RS2_HAVE_OPENGL)
+  add_executable(rs2_ffp_smoke
+    port/ffp_smoke.cpp
+    port/ffp_gl.cpp
+    port/ffp_window.cpp
+    port/ffp_program.cpp
+    port/ffp_glsl.cpp
+    port/ffp_state.cpp
+    port/ffp_fvf.cpp)
+  target_include_directories(rs2_ffp_smoke SYSTEM BEFORE PRIVATE
+    "${CMAKE_SOURCE_DIR}/port/stub")
+  target_include_directories(rs2_ffp_smoke PRIVATE "${CMAKE_SOURCE_DIR}/port")
+  target_compile_features(rs2_ffp_smoke PRIVATE cxx_std_17)
+  target_compile_options(rs2_ffp_smoke PRIVATE -Wall -Wextra)
+  target_compile_definitions(rs2_ffp_smoke PRIVATE
+    RS2_PORTABLE_COMPILE_FIREWALL=1
+    NOMINMAX
+    RS2_HAVE_OPENGL=1
+    RS2_HAVE_SDL2=1)
+  target_link_libraries(rs2_ffp_smoke PRIVATE OpenGL::GL SDL2::SDL2)
+endif()
 
 # CP932 <-> UTF-8 and closed _mbsicmp replacement (#75). No SDL.
 add_executable(rs2_text_test port/rs2_text_test.cpp port/rs2_text.cpp)
