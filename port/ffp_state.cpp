@@ -5,6 +5,7 @@
 #include "ffp_fvf.h"
 
 #include <cstdio>
+#include <cstring>
 
 namespace {
 
@@ -51,6 +52,29 @@ void apply_init_defaults(Rs2FfpSnapshot *s) {
 		st.textransform = D3DTTFF_DISABLE;
 		st.texcoordindex = D3DTSS_TCI_PASSTHRU;
 	}
+
+	const auto identity = [](float *m) {
+		std::memset(m, 0, 16 * sizeof(float));
+		m[0] = m[5] = m[10] = m[15] = 1.0f;
+	};
+	identity(s->world);
+	identity(s->view);
+	identity(s->proj);
+	identity(s->tex0);
+	identity(s->tex1);
+
+	s->viewport.X = 0;
+	s->viewport.Y = 0;
+	s->viewport.Width = 0;
+	s->viewport.Height = 0;
+	s->viewport.MinZ = 0.0f;
+	s->viewport.MaxZ = 1.0f;
+
+	std::memset(&s->material, 0, sizeof(s->material));
+	s->material.diffuse[0] = s->material.diffuse[1] = s->material.diffuse[2] =
+	    s->material.diffuse[3] = 1.0f;
+	s->material.ambient[0] = s->material.ambient[1] = s->material.ambient[2] =
+	    s->material.ambient[3] = 1.0f;
 }
 
 struct InitOnce {
@@ -350,6 +374,44 @@ HRESULT rs2_ffp_get_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE ty
 		*value = 0;
 		return unknown_fail("D3DTSS", static_cast<unsigned long>(type));
 	}
+}
+
+HRESULT rs2_ffp_set_transform(D3DTRANSFORMSTATETYPE type, const void *matrix) {
+	if (!matrix) return unknown_fail("D3DTS", static_cast<unsigned long>(type));
+	float *slot = nullptr;
+	switch (type) {
+	case D3DTS_WORLD:
+		slot = g_snap.world;
+		break;
+	case D3DTS_VIEW:
+		slot = g_snap.view;
+		break;
+	case D3DTS_PROJECTION:
+		slot = g_snap.proj;
+		break;
+	case D3DTS_TEXTURE0:
+		slot = g_snap.tex0;
+		break;
+	case D3DTS_TEXTURE1:
+		slot = g_snap.tex1;
+		break;
+	default:
+		return unknown_fail("D3DTS", static_cast<unsigned long>(type));
+	}
+	std::memcpy(slot, matrix, 16 * sizeof(float));
+	return S_OK;
+}
+
+HRESULT rs2_ffp_set_viewport(const D3DVIEWPORT8 *viewport) {
+	if (!viewport) return unknown_fail("viewport", 0);
+	g_snap.viewport = *viewport;
+	return S_OK;
+}
+
+HRESULT rs2_ffp_set_material(const void *material) {
+	if (!material) return unknown_fail("material", 0);
+	std::memcpy(&g_snap.material, material, sizeof(g_snap.material));
+	return S_OK;
 }
 
 std::uint64_t rs2_ffp_shader_key(DWORD fvf) {

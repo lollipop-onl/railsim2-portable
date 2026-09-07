@@ -49,9 +49,26 @@ struct Rs2FfpRs {
 	DWORD fogend;
 };
 
+// D3DMATERIAL8 layout (d3dx8.h). Stored here so ffp_state.h stays on d3d8.h.
+struct Rs2FfpMaterial {
+	float diffuse[4];
+	float ambient[4];
+	float specular[4];
+	float emissive[4];
+	float power;
+};
+
 struct Rs2FfpSnapshot {
 	Rs2FfpRs rs;
 	Rs2FfpTexStage stage[2];
+	// Row-major D3D matrices (16 floats). Closed SetTransform set only.
+	float world[16];
+	float view[16];
+	float proj[16];
+	float tex0[16];
+	float tex1[16];
+	D3DVIEWPORT8 viewport;
+	Rs2FfpMaterial material;
 };
 
 // Restore InitRenderState defaults (lib/graphic.cpp).
@@ -64,6 +81,9 @@ HRESULT rs2_ffp_set_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE ty
                                         DWORD value);
 HRESULT rs2_ffp_get_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE type,
                                         DWORD *value);
+HRESULT rs2_ffp_set_transform(D3DTRANSFORMSTATETYPE type, const void *matrix);
+HRESULT rs2_ffp_set_viewport(const D3DVIEWPORT8 *viewport);
+HRESULT rs2_ffp_set_material(const void *material);
 
 // Packed FVF + core-state key. Ambient / alpharef / fog distances stay as
 // uniforms on the snapshot, not variant bits. Unknown / deferred FVF returns 0.

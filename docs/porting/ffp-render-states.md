@@ -322,8 +322,23 @@ ctest: `rs2_ffp_gl_self_test` also verifies draw failure without GL (no SDL wind
 
 ctest: `rs2_ffp_window_self_test` (`port/ffp_window_test.cpp --self-test`). Verifies create / present / destroy failure without SDL/GL (no window).
 
+## FFP uniforms / CPU texture bind (port, #118)
+
+GLSL uniforms declared in #88 (`u_world` / `u_view` / `u_proj` / `u_viewport` / `u_tex*_xform` / `u_ambient` / `u_tex0` / `u_tex1` / `u_alpharef`) now have a CPU shadow and a GL upload. `check` / CI still do not search or link OpenGL. File textures / DXT / `D3DXCreateTextureFromFile*` stay later.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_set_transform` / `_viewport` / `_material` | Shadow `D3DTS_WORLD` / `VIEW` / `PROJECTION` / `TEXTURE0` / `TEXTURE1`, `D3DVIEWPORT8`, and `D3DMATERIAL8`. Unknown transform type or a null pointer returns `E_FAIL`. Matrices are 16 floats, D3D row-major. |
+| `IDirect3DDevice8::SetTransform` / `SetViewport` / `SetMaterial` | Call the shadow (same pattern as `SetRenderState` in #80). `SetTexture` / `CreateTexture` stay no-ops. |
+| `rs2_ffp_gl_apply_uniforms(program)` | `RS2_HAVE_OPENGL` off: false. When on: `glUniform*` the snapshot (matrices, viewport xywh, ambient, alpharef / 255, material) and bind `u_tex0` / `u_tex1`. Unbound stages use a 1x1 white texel. |
+| `rs2_ffp_gl_tex_bind(stage, w, h, rgba)` | CPU RGBA8 to `GL_TEXTURE_2D` for stage 0/1. Off / bad stage / zero size / null pixels: false. Not a file loader. |
+
+`DrawPrimitiveUP` still does not call `rs2_ffp_gl_draw`. `Present` still does not swap. `port/ffp_gl.cpp` still compiles on `check` (GL calls `#if`'d out).
+
+ctest: `rs2_ffp_state_self_test` covers transform / viewport / material shadow without GL. `rs2_ffp_gl_self_test` covers apply/bind failure without GL (no SDL window).
+
 ## What #5 should implement next
 
-1. **M3 required tier (sample)** -- Set FFP uniforms, bind textures, and Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), UP VBO draw (#114), and the SDL window + GL 3.3 context (#116) are already in `port/`. SDL2 stays off the check preset. Do not auto-wire `DrawPrimitiveUP` to `rs2_ffp_gl_draw` or `Present` to `rs2_ffp_window_present` until a later slice.
+1. **M3 required tier (sample)** -- Wire uniforms + CPU textures through a windowed Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), UP VBO draw (#114), the SDL window + GL 3.3 context (#116), and FFP uniforms / 1x1 bind (#118) are already in `port/`. SDL2 stays off the check preset. Do not auto-wire `DrawPrimitiveUP` to `rs2_ffp_gl_draw` or `Present` to `rs2_ffp_window_present` until a later slice.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).

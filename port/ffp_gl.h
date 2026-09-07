@@ -1,5 +1,5 @@
-// Link interned FFP GLSL and draw a CPU UP record through a VBO ring
-// (#111 / #114, parent #5). check/CI leave RS2_HAVE_OPENGL off.
+// Link interned FFP GLSL, draw a CPU UP record, and apply FFP uniforms
+// (#111 / #114 / #118, parent #5). check/CI leave RS2_HAVE_OPENGL off.
 
 #pragma once
 
@@ -26,3 +26,21 @@ bool rs2_ffp_gl_link(Rs2FfpProgramHandle handle, unsigned *out_program);
 // IDirect3DDevice8::DrawPrimitiveUP stays a CPU record; it does not call
 // this function.
 bool rs2_ffp_gl_draw(const Rs2FfpUpRecord *record);
+
+// Upload the CPU FFP snapshot (matrices, viewport, ambient, alpharef,
+// material) plus bound samplers into a linked GL program.
+//
+// RS2_HAVE_OPENGL off (check/CI): always false.
+// RS2_HAVE_OPENGL on: glUseProgram + glUniform*. program 0 fails.
+// Caller must already have a current GL context. Does not create a
+// window, draw, or Present.
+bool rs2_ffp_gl_apply_uniforms(unsigned program);
+
+// Upload CPU RGBA8 pixels to GL_TEXTURE_2D for sampler u_tex0 / u_tex1.
+// stage must be 0 or 1. Unbound stages use a 1x1 white texel on apply.
+//
+// RS2_HAVE_OPENGL off (check/CI): always false.
+// RS2_HAVE_OPENGL on: glTexImage2D. w/h must be > 0; rgba must be
+// w*h*4 bytes. This is not a file / DXT loader.
+bool rs2_ffp_gl_tex_bind(unsigned stage, unsigned width, unsigned height,
+                         const unsigned char *rgba);
