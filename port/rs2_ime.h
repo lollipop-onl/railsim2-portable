@@ -45,6 +45,11 @@ void rs2_ime_reset();
 void rs2_ime_set_open(int open);
 int rs2_ime_is_open();
 
+// ImmGetDefaultIMEWnd + SendMessage(WM_CLOSE) stand-in. Hide OS IME UI
+// so CEditBox draws composition. Does not change open status or
+// composition / result buffers. Record-only stub is a no-op.
+void rs2_ime_hide();
+
 // UTF-8 views (in-process ADR). Never null; empty when none.
 const char *rs2_ime_composition_utf8();
 const char *rs2_ime_result_utf8();

@@ -57,6 +57,10 @@ void rs2_ime_set_open(int open) { g_open = open ? 1 : 0; }
 
 int rs2_ime_is_open() { return g_open; }
 
+void rs2_ime_hide() {
+	// No OS IME window in the record-only stub. SDL later hides UI.
+}
+
 const char *rs2_ime_composition_utf8() { return as_cstr(g_composition_utf8); }
 
 const char *rs2_ime_result_utf8() { return as_cstr(g_result_utf8); }

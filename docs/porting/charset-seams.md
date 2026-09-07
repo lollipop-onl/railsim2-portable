@@ -86,7 +86,7 @@ Plugin-tree **directory** labels are UI-only (`CTreeDirElement::ConfirmRename` r
 | `lib/editbox.cpp` | `Render` | `GCS_COMPCLAUSE` + `GCS_COMPATTR` | Clause underlines. **Does not write** `m_str`. |
 | `lib/editbox.cpp` | `GetCompStr` | `GCS_COMPSTR` | Preview bytes -> `m_comp` only. |
 | `lib/editbox.cpp` | `GetResultStr` | `GCS_RESULTSTR` | Confirmed bytes -> `m_comp`, then `CompEnd` inserts into `m_str`. |
-| `lib/window.cpp` | `WindowProc` `WM_IME_SETCONTEXT` | `ImmGetDefaultIMEWnd` | `SendMessage(..., WM_CLOSE)` so the OS IME window stays hidden. **Not declared** in `port/stub/imm.h`. |
+| `lib/window.cpp` | `WindowProc` `WM_IME_SETCONTEXT` | `rs2_ime_hide` (`#104`) | Was `ImmGetDefaultIMEWnd` + `SendMessage(..., WM_CLOSE)`. Stub hides no OS window; open / buffers stay. |
 
 `ImmSetCompositionWindow` / `ImmSetCandidateWindow` are stub-only. No callers.
 
@@ -130,7 +130,7 @@ On the native `check` build, `ImmGetOpenStatus` is `FALSE` and `ImmGetCompositio
 | `ImmGetContext` | `nullptr` | `m_hImc` is null; further Imm* no-ops. |
 | `ImmGetOpenStatus` | `FALSE` | `GetCompStr` skipped. |
 | `ImmGetCompositionStringA` | `0` | No composition / result bytes. |
-| `ImmSetOpenStatus` / `ImmGetDefaultIMEWnd` | **missing** | Only needed when `lib/editbox.cpp` / `lib/window.cpp` are linked. `CEditCtrl.cpp` is allowlisted and includes the header; `lib/editbox.cpp` is the udx object that actually calls `ImmSetOpenStatus`. |
+| `ImmSetOpenStatus` / `ImmGetDefaultIMEWnd` | **missing** | Live callers are gone (`#102` / `#104`). Header include in `lib/headers.h` remains. |
 
 Do not grow these stubs in a helper slice except to compile. Behavior belongs in `lib/` / `port/` as [charset-internal.md](charset-internal.md) says.
 
@@ -169,7 +169,7 @@ rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!po
   '\b_mbs|\b_ismb|ImmGet|ImmSet|ImmRelease|#include\s*<imm\.h>'
 ```
 
-Expect: Imm* in `lib/editbox.cpp` / `lib/editbox.h`, `lib/window.cpp`, and `lib/headers.h`'s `#include <imm.h>`. Live `_mbsicmp` is gone (stub + comments only).
+Expect: live Imm* calls gone from `lib/editbox.cpp` / `lib/editbox.h` / `lib/window.cpp`. Remaining: `lib/headers.h`'s `#include <imm.h>`. Live `_mbsicmp` is gone (stub + comments only).
 
 `./scripts/check.sh` must stay green.
 
@@ -198,7 +198,7 @@ Check preset records UTF-8 composition (`SDL_TEXTEDITING`) and result (`SDL_TEXT
 | `ImmGetCompositionStringA` | `rs2_ime_get_composition_string_a` | same helper (CP932 at the Win32-compat edge) |
 | cancel / focus loss | `rs2_ime_backend_clear` | stop text input + empty both |
 
-A later IME PR still replaces the `WM_IME_SETCONTEXT` hide in `lib/window.cpp` with these hooks. `lib/editbox.cpp` now calls `rs2_ime_*` (#102). Do not rewrite `CEditCtrl` / list / tree rename here. Do not add SDL2 to the `check` preset.
+`lib/editbox.cpp` now calls `rs2_ime_*` (#102). `lib/window.cpp` `WM_IME_SETCONTEXT` calls `rs2_ime_hide` (#104). Do not rewrite `CEditCtrl` / list / tree rename here. Do not add SDL2 to the `check` preset.
 
 ctest: `rs2_ime_self_test` (`port/rs2_ime_test.cpp --self-test`) covers empty composition, ASCII commit, CP932 2-byte roundtrip, and clear.
 
@@ -207,8 +207,19 @@ ctest: `rs2_ime_self_test` (`port/rs2_ime_test.cpp --self-test`) covers empty co
 - **Issue**: [#102](https://github.com/lollipop-onl/railsim2-portable/issues/102) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#100](https://github.com/lollipop-onl/railsim2-portable/issues/100))
 - **Entry**: `rs2_ime_composition_utf8` / `rs2_ime_result_utf8` / `rs2_ime_get_composition_string_a` / `rs2_ime_set_open` / `rs2_ime_is_open` in `port/rs2_ime.h`
 
-`CEditBox` no longer calls Imm*. `Create` / `Release` use a dummy `m_hImc` session token and `rs2_ime_set_open` for the `imm` argument (`-1` off, `>0` on, `0` leave). `IsFEPOpen` is `rs2_ime_is_open`. `GetCompStr` / `GetResultStr` copy UTF-8 into `m_comp` (ADR in-process text); `CompEnd` still inserts `m_comp` into `m_str`. `ScanInput` / `Render` / `GetFEPCursorPos` call `rs2_ime_get_composition_string_a` with `RS2_IME_GCS_COMPCLAUSE` / `COMPATTR` / `CURSORPOS`, which return 0 in the record-only stub (no clause underlines). `lib/window.cpp` `WM_IME_SETCONTEXT` / `ImmGetDefaultIMEWnd` is unchanged.
+`CEditBox` no longer calls Imm*. `Create` / `Release` use a dummy `m_hImc` session token and `rs2_ime_set_open` for the `imm` argument (`-1` off, `>0` on, `0` leave). `IsFEPOpen` is `rs2_ime_is_open`. `GetCompStr` / `GetResultStr` copy UTF-8 into `m_comp` (ADR in-process text); `CompEnd` still inserts `m_comp` into `m_str`. `ScanInput` / `Render` / `GetFEPCursorPos` call `rs2_ime_get_composition_string_a` with `RS2_IME_GCS_COMPCLAUSE` / `COMPATTR` / `CURSORPOS`, which return 0 in the record-only stub (no clause underlines). `lib/window.cpp` hide is `#104`.
 
 `lib/editbox.cpp` stays off the allowlist: a check compile of that TU fails on leftover clipboard / common-dialog symbols and an include-order miss of `RS2_FLOAT_FMT` from `SystemCover.h`, not on Imm*. Follow-up (not this slice): `GMEM_DDESHARE` / `GMEM_MOVEABLE` / `lstrcpy` / `CF_TEXT` (`ClipCopy` / `ClipPaste`), `wsprintf` (`SelectFile`), and `#include "rs2_float.h"` before `SystemCover.h`. Do not add SDL2 to `check`. Do not rewrite `CEditCtrl` / list / tree rename. Game sources stay CP932.
 
 ctest: `rs2_ime_self_test` also covers open-status on/off and zero-size COMPATTR / COMPCLAUSE / CURSORPOS.
+
+## Window `WM_IME_SETCONTEXT` hide routed through `port/rs2_ime` (`#104`)
+
+- **Issue**: [#104](https://github.com/lollipop-onl/railsim2-portable/issues/104) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#102](https://github.com/lollipop-onl/railsim2-portable/issues/102))
+- **Entry**: `rs2_ime_hide` in `port/rs2_ime.h`
+
+`MessageProc` no longer calls Imm*. `WM_IME_SETCONTEXT` calls `rs2_ime_hide` (Win32: `ImmGetDefaultIMEWnd` + `SendMessage(WM_CLOSE)`). The stub is a no-op: there is no OS IME window, and hide must not flip `rs2_ime_set_open` or clear composition / result. `CEditBox` still draws composition itself.
+
+`lib/window.cpp` stays off the allowlist. A check compile of that TU fails on leftover Win32 window / GDI symbols, not on Imm*. Follow-up (not this slice): `<windowsx.h>` (`GetWindowStyle` / `GetWindowExStyle`), `WNDCLASSEX` / `RegisterClassEx` / `CreateWindow`, `LoadIcon` / `LoadCursor` / `GetStockObject`, `AdjustWindowRectEx` / `SetWindowPos` / `GetDesktopWindow` / `GetWindowRect` / `GetMenu`, `BeginPaint` / `EndPaint` / `PAINTSTRUCT`, `SetWindowText` / `SendMessage`, `WM_IME_SETCONTEXT` / `WM_DISPLAYCHANGE` / `WM_SYSCOMMAND` / `SC_SCREENSAVE`, and A/W macros (`PeekMessage` / `DispatchMessage` / `DefWindowProc`). Do not grow those stubs in a charset slice. Do not add SDL2 to `check`. Do not allowlist `lib/editbox.cpp`. Game sources stay CP932.
+
+ctest: `rs2_ime_self_test` also covers hide leaving open status and composition intact.
