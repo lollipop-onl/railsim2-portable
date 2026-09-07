@@ -182,3 +182,22 @@ Expect: Imm* in `lib/editbox.cpp` / `lib/editbox.h`, `lib/window.cpp`, and `lib/
 The twelve live `_mbsicmp` calls in the [closed compare set](#closed-_mbsicmp-set-compare) are gone. Those five files call `rs2_text_icmp` (CP932 decode, then ASCII A-Z fold). On-disk `.rs2` / plugin txt bytes stay CP932. IME (`Imm*`) is unchanged.
 
 `lib/texture.cpp` and `lib/mesh.cpp` still use `rs2_text_icmp` but stay off the allowlist: they fail on D3D/GDI / `rmxfguid.h`, not on `_mbsicmp`. Do not grow those drawing stubs in a charset slice. `rs2_text_self_test` keeps the #75 icmp cases (ASCII fold, trail-byte trap, layout name).
+
+## Port IME / TEXTINPUT stub backend (`port/rs2_ime`)
+
+- **Issue**: [#100](https://github.com/lollipop-onl/railsim2-portable/issues/100) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#75](https://github.com/lollipop-onl/railsim2-portable/issues/75) / [#87](https://github.com/lollipop-onl/railsim2-portable/issues/87))
+- **Entry**: `rs2_ime_composition_utf8` / `rs2_ime_result_utf8` / `rs2_ime_get_composition_string_a` in `port/rs2_ime.h`
+- **Backend hooks**: `rs2_ime_backend_*` (stub in `port/rs2_ime.cpp`; SDL2 later replaces composition + TEXTINPUT commit)
+
+Check preset records UTF-8 composition (`SDL_TEXTEDITING`) and result (`SDL_TEXTINPUT`) only. There is no Imm COM, no SDL2, and no `lib/editbox.cpp` / `lib/window.cpp` allowlist. `rs2_ime_get_composition_string_a` is the `ImmGetCompositionStringA` stand-in: `RS2_IME_GCS_COMPSTR` / `RS2_IME_GCS_RESULTSTR` (same numbers as Win32 `GCS_COMPSTR` / `GCS_RESULTSTR`) return CP932 via `rs2_utf8_to_cp932`. In-process getters stay UTF-8 ([charset-internal.md](charset-internal.md)).
+
+| Imm* / `CEditBox` | `port/rs2_ime` | Later SDL2 |
+|-------------------|----------------|------------|
+| `GCS_COMPSTR` -> `m_comp` | `rs2_ime_backend_set_composition` / `rs2_ime_composition_utf8` | `SDL_TEXTEDITING` |
+| `GCS_RESULTSTR` -> `CompEnd` | `rs2_ime_backend_commit` / `rs2_ime_result_utf8` | `SDL_TEXTINPUT` |
+| `ImmGetCompositionStringA` | `rs2_ime_get_composition_string_a` | same helper (CP932 at the Win32-compat edge) |
+| cancel / focus loss | `rs2_ime_backend_clear` | stop text input + empty both |
+
+A later IME PR still replaces `lib/editbox.cpp` + the `WM_IME_SETCONTEXT` hide in `lib/window.cpp` with these hooks. Do not rewrite `CEditCtrl` / list / tree rename here. Do not add SDL2 to the `check` preset.
+
+ctest: `rs2_ime_self_test` (`port/rs2_ime_test.cpp --self-test`) covers empty composition, ASCII commit, CP932 2-byte roundtrip, and clear.
