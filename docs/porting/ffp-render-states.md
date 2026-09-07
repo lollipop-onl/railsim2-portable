@@ -280,12 +280,24 @@ ctest: `rs2_ffp_glsl_self_test` (`port/ffp_glsl_test.cpp --self-test`).
 | `rs2_ffp_program_vs` / `rs2_ffp_program_fs` | Interned NUL-terminated sources; must match `#88` for that key. |
 | `IDirect3DDevice8::DrawPrimitiveUP` | Calls `rs2_ffp_draw_primitive_up`. The UP record stores `shader_key` and the interned handle. Draw stays a CPU record. |
 
-`lib/graphic.cpp` / `lib/vertex.cpp` stay off the allowlist. SDL2 stays off the check preset. Real GL program link + VBO upload is the next `#5` slice.
+`lib/graphic.cpp` / `lib/vertex.cpp` stay off the allowlist. SDL2 stays off the check preset. GL program link is `#111` (`port/ffp_gl.*`). VBO upload / draw is the next `#5` slice.
 
 ctest: `rs2_ffp_program_self_test` (`port/ffp_program_test.cpp --self-test`).
 
+## GL program link (port, #111)
+
+Interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) can be linked to a GL program in `port/ffp_gl.*`. There is still no VBO, draw, or SDL window.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_gl_link(handle, &program)` | Link interned GLSL. `RS2_HAVE_OPENGL` off (`check` / CI) always fails and writes `0`. When on, `glCreateShader` / `glLinkProgram`; the caller must already have a current GL context. |
+
+`check` does not search or link OpenGL. `runtime` may set `RS2_HAVE_OPENGL` when `find_package(OpenGL)` succeeds. `port/ffp_gl.cpp` still compiles on `check` (the GL calls are `#if`'d out). The ctest does not create an SDL window.
+
+ctest: `rs2_ffp_gl_self_test` (`port/ffp_gl_test.cpp --self-test`). Verifies link failure without GL.
+
 ## What #5 should implement next
 
-1. **M3 required tier (GL)** -- Link interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) to a real GL program, upload `Rs2FfpUpRecord` through a dynamic VBO, and pick the variant from `Rs2FfpUpRecord.program` / `shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), and the program intern + stub draw hook (#92) are already in `port/`. SDL2 stays off the check preset.
+1. **M3 required tier (GL)** -- Upload `Rs2FfpUpRecord` through a dynamic VBO, bind the program from `rs2_ffp_gl_link`, and pick the variant from `Rs2FfpUpRecord.program` / `shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), and GL program link (#111) are already in `port/`. SDL2 stays off the check preset.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).
