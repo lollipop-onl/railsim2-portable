@@ -2,7 +2,17 @@
 
 #include <cstdio>
 #include <cstring>
+
+// glibc unistd.h uses __argv as a parameter name (char *const __argv[]).
+// windows.h maps MSVC CRT __argv/__argc to rs2_argv()/rs2_argc(); if those
+// macros are live here, execve prototypes become "function returning array".
+#pragma push_macro("__argc")
+#pragma push_macro("__argv")
+#undef __argc
+#undef __argv
 #include <unistd.h>
+#pragma pop_macro("__argv")
+#pragma pop_macro("__argc")
 
 #ifndef _access
 #define _access access
