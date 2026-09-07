@@ -73,4 +73,5 @@ CTreeElement.cpp
 lib/input.cpp
 lib/wave.cpp
 lib/editbox.cpp
+lib/window.cpp
 SystemCover.cpp
