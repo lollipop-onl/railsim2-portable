@@ -382,6 +382,79 @@ typedef struct _RTL_CRITICAL_SECTION {
 #ifndef strcmpi
 #define strcmpi strcasecmp
 #endif
+#ifndef _strcmpi
+#define _strcmpi strcasecmp
+#endif
+
+typedef DWORD COLORREF;
+typedef HANDLE HLOCAL;
+typedef char* LPTSTR;
+
+#ifndef RGB
+#define RGB(r, g, b) \
+  ((COLORREF)(((BYTE)(r) | ((WORD)((BYTE)(g)) << 8)) | (((DWORD)(BYTE)(b)) << 16)))
+#endif
+#ifndef GetRValue
+#define GetRValue(rgb) ((BYTE)((rgb) & 0xff))
+#endif
+#ifndef GetGValue
+#define GetGValue(rgb) ((BYTE)(((WORD)(rgb) >> 8) & 0xff))
+#endif
+#ifndef GetBValue
+#define GetBValue(rgb) ((BYTE)(((rgb) >> 16) & 0xff))
+#endif
+
+#define OFN_OVERWRITEPROMPT 0x00000002
+#define OFN_HIDEREADONLY 0x00000004
+#define OFN_FILEMUSTEXIST 0x00001000
+
+typedef struct tagOPENFILENAMEA {
+  DWORD lStructSize;
+  HWND hwndOwner;
+  LPCSTR lpstrFilter;
+  DWORD nFilterIndex;
+  LPCSTR lpstrDefExt;
+  DWORD nMaxFile;
+  LPSTR lpstrFile;
+  DWORD Flags;
+} OPENFILENAMEA, OPENFILENAME, *LPOPENFILENAME;
+
+inline BOOL GetOpenFileNameA(OPENFILENAME *) { return FALSE; }
+inline BOOL GetSaveFileNameA(OPENFILENAME *) { return FALSE; }
+inline BOOL GetOpenFileName(OPENFILENAME *o) { return GetOpenFileNameA(o); }
+inline BOOL GetSaveFileName(OPENFILENAME *o) { return GetSaveFileNameA(o); }
+
+#define CC_RGBINIT 0x00000001
+#define CC_FULLOPEN 0x00000002
+
+typedef struct tagCHOOSECOLORA {
+  DWORD lStructSize;
+  HWND hwndOwner;
+  COLORREF rgbResult;
+  COLORREF *lpCustColors;
+  DWORD Flags;
+} CHOOSECOLORA, CHOOSECOLOR, *LPCHOOSECOLOR;
+
+inline BOOL ChooseColorA(CHOOSECOLOR *) { return FALSE; }
+inline BOOL ChooseColor(CHOOSECOLOR *c) { return ChooseColorA(c); }
+
+#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
+#define FORMAT_MESSAGE_IGNORE_INSERTS 0x00000200
+#define FORMAT_MESSAGE_FROM_SYSTEM 0x00001000
+#define LANG_NEUTRAL 0x00
+#define SUBLANG_DEFAULT 0x01
+#ifndef MAKELANGID
+#define MAKELANGID(p, s) ((WORD)((((WORD)(s)) << 10) | (WORD)(p)))
+#endif
+
+inline DWORD FormatMessageA(DWORD, LPCVOID, DWORD, DWORD, LPSTR, DWORD, va_list *) {
+  return 0;
+}
+inline DWORD FormatMessage(DWORD f, LPCVOID s, DWORD m, DWORD l, LPSTR b, DWORD n,
+                           va_list *a) {
+  return FormatMessageA(f, s, m, l, b, n, a);
+}
+inline HLOCAL LocalFree(HLOCAL) { return nullptr; }
 
 #define MB_APPLMODAL 0x00000000L
 #define MB_YESNO 0x00000004L

@@ -159,6 +159,8 @@ char *FlashIn(char *format, ...) {
 	return g_flash_buf[g_flash_sel];
 }
 
+// Roundtrip harness: log only. Live ErrorDialog in SystemCover.cpp is fatal
+// (stderr + DestroyWindow + ExitProcess). Sample.rs2 must not tear down here.
 void ErrorDialog(char *format, ...) {
 	char buf[2048];
 	va_list vl;
