@@ -21,6 +21,13 @@ bool bytes_eq(const void *got, unsigned n, const char *want, unsigned want_n) {
 int self_test() {
 	rs2_ime_reset();
 
+	// Win32 <imm.h>: GCS_COMPSTR=0x0008, GCS_RESULTSTR=0x0800.
+	// 0x1000 is GCS_RESULTCLAUSE, not result text.
+	if (!expect(RS2_IME_GCS_COMPSTR == 0x0008 &&
+	                RS2_IME_GCS_RESULTSTR == 0x0800,
+	            "Win32 GCS_COMPSTR / GCS_RESULTSTR numbers"))
+		return 1;
+
 	// Empty composition / result after reset.
 	if (!expect(std::strcmp(rs2_ime_composition_utf8(), "") == 0,
 	            "empty composition utf8"))
@@ -116,6 +123,9 @@ int self_test() {
 
 	if (!expect(rs2_ime_get_composition_string_a(0xFFFF, nullptr, 0) == 0,
 	            "unknown index"))
+		return 1;
+	if (!expect(rs2_ime_get_composition_string_a(0x1000, nullptr, 0) == 0,
+	            "GCS_RESULTCLAUSE is not RESULTSTR"))
 		return 1;
 
 	return 0;

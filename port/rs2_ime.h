@@ -12,7 +12,7 @@
 // Same numbers as <imm.h>; stub/imm.h does not define these yet.
 enum {
 	RS2_IME_GCS_COMPSTR = 0x0008,
-	RS2_IME_GCS_RESULTSTR = 0x1000
+	RS2_IME_GCS_RESULTSTR = 0x0800
 };
 
 // --- thin backend (stub here; SDL_TEXTINPUT later) ---

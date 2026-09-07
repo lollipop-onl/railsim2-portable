@@ -189,7 +189,7 @@ The twelve live `_mbsicmp` calls in the [closed compare set](#closed-_mbsicmp-se
 - **Entry**: `rs2_ime_composition_utf8` / `rs2_ime_result_utf8` / `rs2_ime_get_composition_string_a` in `port/rs2_ime.h`
 - **Backend hooks**: `rs2_ime_backend_*` (stub in `port/rs2_ime.cpp`; SDL2 later replaces composition + TEXTINPUT commit)
 
-Check preset records UTF-8 composition (`SDL_TEXTEDITING`) and result (`SDL_TEXTINPUT`) only. There is no Imm COM, no SDL2, and no `lib/editbox.cpp` / `lib/window.cpp` allowlist. `rs2_ime_get_composition_string_a` is the `ImmGetCompositionStringA` stand-in: `RS2_IME_GCS_COMPSTR` / `RS2_IME_GCS_RESULTSTR` (same numbers as Win32 `GCS_COMPSTR` / `GCS_RESULTSTR`) return CP932 via `rs2_utf8_to_cp932`. In-process getters stay UTF-8 ([charset-internal.md](charset-internal.md)).
+Check preset records UTF-8 composition (`SDL_TEXTEDITING`) and result (`SDL_TEXTINPUT`) only. There is no Imm COM, no SDL2, and no `lib/editbox.cpp` / `lib/window.cpp` allowlist. `rs2_ime_get_composition_string_a` is the `ImmGetCompositionStringA` stand-in: `RS2_IME_GCS_COMPSTR` (`0x0008`, Win32 `GCS_COMPSTR`) / `RS2_IME_GCS_RESULTSTR` (`0x0800`, Win32 `GCS_RESULTSTR`; not `0x1000` `GCS_RESULTCLAUSE`) return CP932 via `rs2_utf8_to_cp932`. In-process getters stay UTF-8 ([charset-internal.md](charset-internal.md)).
 
 | Imm* / `CEditBox` | `port/rs2_ime` | Later SDL2 |
 |-------------------|----------------|------------|
