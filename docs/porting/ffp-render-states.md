@@ -280,13 +280,13 @@ ctest: `rs2_ffp_glsl_self_test` (`port/ffp_glsl_test.cpp --self-test`).
 | `rs2_ffp_program_vs` / `rs2_ffp_program_fs` | Interned NUL-terminated sources; must match `#88` for that key. |
 | `IDirect3DDevice8::DrawPrimitiveUP` | Calls `rs2_ffp_draw_primitive_up`. The UP record stores `shader_key` and the interned handle. Draw stays a CPU record. |
 
-`lib/graphic.cpp` / `lib/vertex.cpp` stay off the allowlist. SDL2 stays off the check preset. GL program link is `#111` (`port/ffp_gl.*`). VBO upload / draw is the next `#5` slice.
+`lib/graphic.cpp` / `lib/vertex.cpp` stay off the allowlist. SDL2 stays off the check preset. GL program link is `#111` (`port/ffp_gl.*`). VBO upload / draw is `#114`.
 
 ctest: `rs2_ffp_program_self_test` (`port/ffp_program_test.cpp --self-test`).
 
 ## GL program link (port, #111)
 
-Interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) can be linked to a GL program in `port/ffp_gl.*`. There is still no VBO, draw, or SDL window.
+Interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) can be linked to a GL program in `port/ffp_gl.*`. VBO upload / `glDrawArrays` is `#114`. There is still no SDL window.
 
 | API | Role |
 |-----|------|
@@ -296,8 +296,20 @@ Interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) can be linked to a GL progra
 
 ctest: `rs2_ffp_gl_self_test` (`port/ffp_gl_test.cpp --self-test`). Verifies link failure without GL.
 
+## GL UP draw / dynamic VBO (port, #114)
+
+A CPU `Rs2FfpUpRecord` can be uploaded through a 16-slot streaming VBO+VAO ring and issued as `glDrawArrays`. Client arrays (`glVertexAttribPointer` with a client pointer) are not used; the pointer argument is a VBO offset.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_gl_draw(record)` | Validate the record, then draw. `RS2_HAVE_OPENGL` off (`check` / CI) always fails. When on: `rs2_ffp_gl_link(record->program)`, `glBufferData` (`GL_STREAM_DRAW`), bind FVF attributes at the `#88` locations (0 position ... 5 tex1; diffuse is `GL_BGRA` / `UNSIGNED_BYTE` / normalized), `glDrawArrays`. Caller must already have a current GL context. |
+
+`IDirect3DDevice8::DrawPrimitiveUP` stays a CPU record. This slice does not create an SDL window, bind textures, or Present / SwapBuffers. `check` still compiles `port/ffp_gl.cpp` with the GL calls `#if`'d out.
+
+ctest: `rs2_ffp_gl_self_test` also verifies draw failure without GL (no SDL window).
+
 ## What #5 should implement next
 
-1. **M3 required tier (GL)** -- Upload `Rs2FfpUpRecord` through a dynamic VBO, bind the program from `rs2_ffp_gl_link`, and pick the variant from `Rs2FfpUpRecord.program` / `shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), and GL program link (#111) are already in `port/`. SDL2 stays off the check preset.
+1. **M3 required tier (window / sample)** -- Create an SDL window + GL context, set FFP uniforms, bind textures, and Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), and UP VBO draw (#114) are already in `port/`. SDL2 stays off the check preset.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).
