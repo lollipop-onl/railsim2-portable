@@ -342,7 +342,7 @@ This is the portable stand-in for the [mmio* contract](#closed-mmio-set-wav-pars
 
 `CWave::Load` already yields `Rs2WavPcm` (#86). This slice interns that payload as an opaque buffer handle. Same format + bytes return the same handle. Non-PCM tag, empty payload, zero channels/rate, or 8/16-bit mismatch fail. Play records the handle on `rs2_audio_stub_last()`; stop / volume (hundredths of a dB) / 3D position (meters) overwrite that record. Listener pos / dir / distance factor live on `rs2_audio_stub_listener()`.
 
-The check preset links the stub only. There is no OpenAL, no DirectSound COM, and no `lib/sound.cpp` allowlist. `CreateBuffer` / `CWave::Play` still talk to the dsound stub until the next `#7` slice maps `CWave` onto these handles.
+The check preset links the stub only. There is no OpenAL, no DirectSound COM, and no `lib/sound.cpp` allowlist. `#96` maps `CWave::CreateBuffer` / `Play` / `Stop` / volume / 3D onto these handles.
 
 | DirectSound / `CWave` | `port/rs2_audio` | Later OpenAL |
 |-----------------------|------------------|--------------|
@@ -353,3 +353,15 @@ The check preset links the stub only. There is no OpenAL, no DirectSound COM, an
 | `SetListenerPos` / `Dir` / `Sens` | `rs2_audio_set_listener_*` | `alListener` + distance factor |
 
 ctest: `rs2_audio_self_test` (`port/rs2_audio_test.cpp --self-test`). Do not link OpenAL in the `check` preset.
+
+## CWave play path uses port/rs2_audio (#96)
+
+- **Issue**: [#96](https://github.com/lollipop-onl/railsim2-portable/issues/96) (parent [#7](https://github.com/lollipop-onl/railsim2-portable/issues/7))
+- **Entry**: `CWave::CreateBuffer` intern `m_pcm` via `rs2_audio_intern`; `Play` / `Stop` / `SetVolume` / `SetPos` call `rs2_audio_*` (signatures unchanged)
+- **Allowlist**: `lib/wave.cpp` is already in `port/native_sources.txt`
+
+`CreateBuffer` builds `Rs2WavPcm` from the WAVEFORMATEX + `m_pcm` payload and interns it. Intern failure (empty payload, non-PCM tag, broken fields) returns `FALSE`. DirectSound `CreateSoundBuffer` + `Lock` / `Unlock` still run when `svs.pDS` is set; they are not required for the portable play path. Without a DS device, intern success is enough for `Load` to return `TRUE`.
+
+`CWave::m_audio` holds the opaque handle. `Play(ms)` records it on `rs2_audio_stub_last()`; `Stop` / `SetVolume` (hundredths of a dB) / `SetPos` (meters) overwrite that record. Do not allowlist `lib/sound.cpp`, rewrite `CWaveStream` / `CSoundEffector` / `CWaveArray`, or link OpenAL in the `check` preset.
+
+ctest: `rs2_wave_load_self_test` (`port/wave_load_test.cpp --self-test`) checks that `CWave::Play` records the interned handle.

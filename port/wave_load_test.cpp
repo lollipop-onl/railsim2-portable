@@ -1,5 +1,6 @@
 #define RS2_PATH_NO_FOPEN_WRAP 1
-// CWave::Load field mapping vs the #81 PCM table. No OpenAL / no sound.cpp.
+// CWave::Load field mapping vs the #81 PCM table. Play records intern handle (#96).
+// No OpenAL / no sound.cpp.
 
 #include "headers.h"
 #include "debug.h"
@@ -7,6 +8,7 @@
 #include "sound.h"
 #include "wave.h"
 #include "wav_pcm.h"
+#include "rs2_audio.h"
 
 #include <cstdio>
 #include <cstring>
@@ -33,6 +35,14 @@ const unsigned char kMinWav[] = {
     'd',  'a',  't',  'a',  0x04, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80,
 };
 
+// PCM fmt + empty data payload: parse maps fields, intern fails (#96).
+const unsigned char kEmptyDataWav[] = {
+    'R',  'I',  'F',  'F',  0x24, 0x00, 0x00, 0x00, 'W',  'A',  'V',  'E',
+    'f',  'm',  't',  ' ',  0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+    0x22, 0x56, 0x00, 0x00, 0x22, 0x56, 0x00, 0x00, 0x01, 0x00, 0x08, 0x00,
+    'd',  'a',  't',  'a',  0x00, 0x00, 0x00, 0x00,
+};
+
 bool write_temp(const char *path, const unsigned char *b, std::size_t n) {
 	std::ofstream out(path, std::ios::binary);
 	if (!out) return false;
@@ -47,11 +57,12 @@ int self_test() {
 		return 1;
 	}
 
+	rs2_audio_backend_reset();
 	svs.pDS = NULL;
 	CWave w;
-	// No device: CreateBuffer fails, but Load must still map parser fields.
-	if (w.Load(const_cast<char *>(path))) {
-		std::fprintf(stderr, "wave_load: Load succeeded without pDS\n");
+	// No device: intern is enough for Load / Play (#96).
+	if (!w.Load(const_cast<char *>(path))) {
+		std::fprintf(stderr, "wave_load: Load intern failed\n");
 		std::remove(path);
 		return 1;
 	}
@@ -79,13 +90,37 @@ int self_test() {
 		return 1;
 	}
 
+	w.Play(100);
+	const Rs2AudioPlayRecord *rec = rs2_audio_stub_last();
+	if (!rec || rec->buffer == nullptr || rec->buffer != w.m_audio ||
+	    rec->playing != 1 || rec->ms != 100) {
+		std::fprintf(stderr, "wave_load: Play did not record interned handle\n");
+		std::remove(path);
+		return 1;
+	}
+
 	CWave bad;
 	if (bad.Load(const_cast<char *>("rs2_wave_load_missing.wav")) ||
-	    !bad.m_pcm.empty()) {
+	    !bad.m_pcm.empty() || bad.m_audio != nullptr) {
 		std::fprintf(stderr, "wave_load: missing file should fail unmapped\n");
 		std::remove(path);
 		return 1;
 	}
+
+	const char *empty_path = "rs2_wave_load_empty.wav";
+	if (!write_temp(empty_path, kEmptyDataWav, sizeof(kEmptyDataWav))) {
+		std::fprintf(stderr, "wave_load: cannot write %s\n", empty_path);
+		std::remove(path);
+		return 1;
+	}
+	CWave empty;
+	if (empty.Load(const_cast<char *>(empty_path)) || empty.m_audio != nullptr) {
+		std::fprintf(stderr, "wave_load: empty PCM intern should fail\n");
+		std::remove(empty_path);
+		std::remove(path);
+		return 1;
+	}
+	std::remove(empty_path);
 
 	std::remove(path);
 	std::printf("wave_load: self-test ok\n");
@@ -103,8 +138,8 @@ int distribution_test(const char *root) {
 
 	svs.pDS = NULL;
 	CWave w;
-	if (w.Load(const_cast<char *>(path.c_str()))) {
-		std::fprintf(stderr, "wave_load: Load succeeded without pDS\n");
+	if (!w.Load(const_cast<char *>(path.c_str()))) {
+		std::fprintf(stderr, "wave_load: Error.wav intern failed\n");
 		return 1;
 	}
 	// Inventory: Error.wav is 1 ch / 22050 Hz / 8-bit, data cksize 3307.
