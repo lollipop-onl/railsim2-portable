@@ -158,6 +158,19 @@ int self_test() {
 	if (!expect(rs2_ime_is_open() == 0, "set open off"))
 		return 1;
 
+	// WM_IME_SETCONTEXT hide: UI only. Leaves open + buffers alone.
+	rs2_ime_set_open(1);
+	rs2_ime_stub_set_composition("ab");
+	rs2_ime_hide();
+	if (!expect(rs2_ime_is_open() != 0, "hide does not clear open"))
+		return 1;
+	if (!expect(std::strcmp(rs2_ime_composition_utf8(), "ab") == 0,
+	            "hide does not clear composition"))
+		return 1;
+	if (!expect(std::strcmp(rs2_ime_result_utf8(), "") == 0,
+	            "hide does not invent a result"))
+		return 1;
+
 	return 0;
 }
 

@@ -8,6 +8,7 @@
 #include "graphic.h"	//	sv3.fWindowes
 #include "window.h"
 #include "input.h"
+#include "rs2_ime.h"
 
 #if defined(__BORLANDC__)	//	for BC++
 	#define IDI_ICON1 1001
@@ -151,7 +152,7 @@ LRESULT WINAPI MessageProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam){
 	//	IMEウインドウが起動した
 	case WM_IME_SETCONTEXT:
 		//	FEP(IME等)のウインドウを強制的に閉じる
-		SendMessage(ImmGetDefaultIMEWnd(hWnd), WM_CLOSE, 0, 0);
+		rs2_ime_hide();
 		break;
 
 	//	文字キーが押された
