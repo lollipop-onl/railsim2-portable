@@ -39,6 +39,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_state.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
+  "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
@@ -263,7 +264,7 @@ target_link_libraries(rs2_text_test PRIVATE Iconv::Iconv)
 
 add_test(NAME rs2_text_self_test COMMAND rs2_text_test --self-test)
 
-# PCM-only RIFF WAVE parser (#81). Does not swap CWave::Load or link OpenAL.
+# PCM-only RIFF WAVE parser (#81). CWave::Load calls it (#86). No OpenAL.
 add_executable(rs2_wav_pcm_test port/wav_pcm_test.cpp port/wav_pcm.cpp)
 target_include_directories(rs2_wav_pcm_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
 target_compile_features(rs2_wav_pcm_test PRIVATE cxx_std_17)
@@ -273,6 +274,27 @@ add_test(NAME rs2_wav_pcm_self_test COMMAND rs2_wav_pcm_test --self-test)
 add_test(NAME rs2_wav_pcm_distribution COMMAND rs2_wav_pcm_test
   "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_wav_pcm_distribution PROPERTIES SKIP_RETURN_CODE 77)
+
+# CWave::Load maps Rs2WavPcm onto CWave fields (#86). No OpenAL / sound.cpp.
+add_executable(rs2_wave_load_test port/wave_load_test.cpp lib/wave.cpp port/wav_pcm.cpp
+  port/path.cpp)
+target_include_directories(rs2_wave_load_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_wave_load_test PRIVATE
+  "${CMAKE_SOURCE_DIR}"
+  "${CMAKE_SOURCE_DIR}/lib"
+  "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_wave_load_test PRIVATE cxx_std_17)
+target_compile_options(rs2_wave_load_test PRIVATE
+  -Wall
+  -Wextra
+  -Wno-invalid-source-encoding)
+target_compile_definitions(rs2_wave_load_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_wave_load_self_test COMMAND rs2_wave_load_test --self-test)
+add_test(NAME rs2_wave_load_distribution COMMAND rs2_wave_load_test
+  "${CMAKE_SOURCE_DIR}/Distribution")
+set_tests_properties(rs2_wave_load_distribution PROPERTIES SKIP_RETURN_CODE 77)
 
 # Stub keyboard/mouse/joy poll + ScanInputDevice merge (#82). No SDL.
 add_executable(rs2_input_test port/rs2_input_test.cpp port/rs2_input.cpp)

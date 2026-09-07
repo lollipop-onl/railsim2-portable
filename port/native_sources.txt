@@ -68,3 +68,4 @@ CTrainPlugin.cpp
 CStationPlugin.cpp
 Capture.cpp
 lib/input.cpp
+lib/wave.cpp
