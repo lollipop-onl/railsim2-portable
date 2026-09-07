@@ -308,8 +308,22 @@ A CPU `Rs2FfpUpRecord` can be uploaded through a 16-slot streaming VBO+VAO ring 
 
 ctest: `rs2_ffp_gl_self_test` also verifies draw failure without GL (no SDL window).
 
+## SDL window / GL context (port, #116)
+
+`rs2_ffp_gl_link` / `rs2_ffp_gl_draw` need a current GL context. `port/ffp_window.*` creates an SDL window and a GL 3.3 core context and makes it current. `check` / CI still do not search or link SDL2 / OpenGL.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_window_create(w, h, title, &window)` | `RS2_HAVE_SDL2` off or `RS2_HAVE_OPENGL` off: fail and write null. Both on: SDL window + GL 3.3 core (`SDL_GL_CONTEXT_PROFILE_CORE`), make current. |
+| `rs2_ffp_window_present(window)` | `SDL_GL_SwapWindow`. Fails without SDL/GL or a valid handle. |
+| `rs2_ffp_window_destroy(window)` | Delete context + window. Fails without SDL/GL or a null handle. |
+
+`IDirect3DDevice8::Present` stays a no-op. This slice does not call SwapBuffers from Present, bind textures, poll SDL events into `rs2_input`, or draw Sample.rs2. `check` still compiles `port/ffp_window.cpp` with the SDL calls `#if`'d out. `runtime` passes `RS2_HAVE_SDL2` and links `SDL2::SDL2` only when SDL2 was found.
+
+ctest: `rs2_ffp_window_self_test` (`port/ffp_window_test.cpp --self-test`). Verifies create / present / destroy failure without SDL/GL (no window).
+
 ## What #5 should implement next
 
-1. **M3 required tier (window / sample)** -- Create an SDL window + GL context, set FFP uniforms, bind textures, and Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), and UP VBO draw (#114) are already in `port/`. SDL2 stays off the check preset.
+1. **M3 required tier (sample)** -- Set FFP uniforms, bind textures, and Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), UP VBO draw (#114), and the SDL window + GL 3.3 context (#116) are already in `port/`. SDL2 stays off the check preset. Do not auto-wire `DrawPrimitiveUP` to `rs2_ffp_gl_draw` or `Present` to `rs2_ffp_window_present` until a later slice.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).

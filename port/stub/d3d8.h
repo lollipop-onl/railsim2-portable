@@ -255,6 +255,7 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetVertexShader(DWORD) { return S_OK; }
   HRESULT BeginScene() { return S_OK; }
   HRESULT EndScene() { return S_OK; }
+  // No GL/SDL swap. rs2_ffp_window_present is a separate port API (#116).
   HRESULT Present(const RECT*, const RECT*, HWND, void*) { return S_OK; }
   HRESULT GetViewport(D3DVIEWPORT8*) { return S_OK; }
   HRESULT SetViewport(const D3DVIEWPORT8*) { return S_OK; }
