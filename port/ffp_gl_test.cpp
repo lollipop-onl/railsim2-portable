@@ -1,5 +1,5 @@
-// No-GL FFP program link / UP draw self-test (#111 / #114).
-// Does not create an SDL window.
+// No-GL FFP program link / UP draw / uniform apply self-test
+// (#111 / #114 / #118). Does not create an SDL window.
 
 #include "ffp_fvf.h"
 #include "ffp_gl.h"
@@ -78,9 +78,24 @@ bool no_gl_draw_fails() {
 	return true;
 }
 
+bool no_gl_apply_bind_fails() {
+	rs2_ffp_state_reset();
+	if (!expect(!rs2_ffp_gl_apply_uniforms(0), "apply 0")) return false;
+	if (!expect(!rs2_ffp_gl_apply_uniforms(1), "apply no-GL")) return false;
+
+	const unsigned char px[4] = {255, 0, 0, 255};
+	if (!expect(!rs2_ffp_gl_tex_bind(0, 1, 1, px), "bind no-GL")) return false;
+	if (!expect(!rs2_ffp_gl_tex_bind(1, 1, 1, px), "bind1 no-GL")) return false;
+	if (!expect(!rs2_ffp_gl_tex_bind(0, 1, 1, nullptr), "bind null")) return false;
+	if (!expect(!rs2_ffp_gl_tex_bind(2, 1, 1, px), "bind stage")) return false;
+	if (!expect(!rs2_ffp_gl_tex_bind(0, 0, 1, px), "bind size")) return false;
+	return true;
+}
+
 int self_test() {
 	if (!no_gl_link_fails()) return 1;
 	if (!no_gl_draw_fails()) return 1;
+	if (!no_gl_apply_bind_fails()) return 1;
 	return 0;
 }
 

@@ -116,6 +116,7 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DTTFF_DISABLE 0
 #define D3DTTFF_COUNT2 2
 #define D3DTS_TEXTURE0 16
+#define D3DTS_TEXTURE1 17
 
 #define D3DTSS_TEXCOORDINDEX 11
 #define D3DTSS_TCI_PASSTHRU 0x00000000
@@ -222,6 +223,9 @@ HRESULT rs2_ffp_set_render_state(D3DRENDERSTATETYPE type, DWORD value);
 HRESULT rs2_ffp_get_render_state(D3DRENDERSTATETYPE type, DWORD* value);
 HRESULT rs2_ffp_set_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE type,
                                         DWORD value);
+HRESULT rs2_ffp_set_transform(D3DTRANSFORMSTATETYPE type, const void* matrix);
+HRESULT rs2_ffp_set_viewport(const D3DVIEWPORT8* viewport);
+HRESULT rs2_ffp_set_material(const void* material);
 
 // CPU UP ring + program intern (#74 / #92). Bodies in port/ffp_fvf.cpp.
 HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *data,
@@ -237,8 +241,10 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value) {
     return rs2_ffp_set_texture_stage_state(stage, type, value);
   }
-  HRESULT SetTransform(D3DTRANSFORMSTATETYPE, const void*) { return S_OK; }
-  HRESULT SetMaterial(const void*) { return S_OK; }
+  HRESULT SetTransform(D3DTRANSFORMSTATETYPE type, const void* matrix) {
+    return rs2_ffp_set_transform(type, matrix);
+  }
+  HRESULT SetMaterial(const void* material) { return rs2_ffp_set_material(material); }
   HRESULT SetLight(DWORD, const void*) { return S_OK; }
   HRESULT LightEnable(DWORD, BOOL) { return S_OK; }
   HRESULT Clear(DWORD, const void*, DWORD, D3DCOLOR, float, DWORD) { return S_OK; }
@@ -258,7 +264,9 @@ struct IDirect3DDevice8 : IUnknown {
   // No GL/SDL swap. rs2_ffp_window_present is a separate port API (#116).
   HRESULT Present(const RECT*, const RECT*, HWND, void*) { return S_OK; }
   HRESULT GetViewport(D3DVIEWPORT8*) { return S_OK; }
-  HRESULT SetViewport(const D3DVIEWPORT8*) { return S_OK; }
+  HRESULT SetViewport(const D3DVIEWPORT8* viewport) {
+    return rs2_ffp_set_viewport(viewport);
+  }
   HRESULT CreateTexture(UINT, UINT, UINT, DWORD, D3DFORMAT, DWORD, IDirect3DTexture8**) { return S_OK; }
   HRESULT CopyRects(IDirect3DSurface8*, const RECT*, UINT, IDirect3DSurface8*, const POINT*) { return S_OK; }
   HRESULT GetDeviceCaps(void*) { return S_OK; }

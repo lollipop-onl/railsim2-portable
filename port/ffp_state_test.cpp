@@ -3,9 +3,14 @@
 #include "ffp_fvf.h"
 #include "ffp_state.h"
 
+#include <d3dx8.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+
+static_assert(sizeof(Rs2FfpMaterial) == sizeof(D3DMATERIAL8),
+              "Rs2FfpMaterial matches D3DMATERIAL8");
 
 namespace {
 
@@ -201,12 +206,121 @@ bool up_snapshot_ok() {
 	return true;
 }
 
+bool identity16(const float *m) {
+	for (int i = 0; i < 16; ++i) {
+		const float want = (i % 5 == 0) ? 1.0f : 0.0f;
+		if (m[i] != want) return false;
+	}
+	return true;
+}
+
+bool transform_shadow_ok() {
+	rs2_ffp_state_reset();
+	const Rs2FfpSnapshot *s = rs2_ffp_state_get();
+	if (!expect(s != nullptr, "snapshot xform")) return false;
+	if (!expect(identity16(s->world) && identity16(s->view) && identity16(s->proj) &&
+	                identity16(s->tex0) && identity16(s->tex1),
+	            "identity matrices"))
+		return false;
+	if (!expect(s->viewport.Width == 0 && s->viewport.MaxZ == 1.0f,
+	            "default viewport"))
+		return false;
+	if (!expect(s->material.diffuse[0] == 1.0f && s->material.ambient[3] == 1.0f,
+	            "default material"))
+		return false;
+
+	float world[16] = {};
+	world[0] = 2.0f;
+	world[5] = 3.0f;
+	world[10] = 4.0f;
+	world[15] = 1.0f;
+	world[12] = 9.0f;
+	if (!expect(rs2_ffp_set_transform(D3DTS_WORLD, world) == S_OK, "set world"))
+		return false;
+	if (!expect(s->world[0] == 2.0f && s->world[5] == 3.0f && s->world[12] == 9.0f &&
+	                s->world[15] == 1.0f,
+	            "world shadow"))
+		return false;
+	if (!expect(identity16(s->view), "view untouched")) return false;
+
+	IDirect3DDevice8 dev;
+	float view[16] = {};
+	view[0] = view[5] = view[10] = view[15] = 1.0f;
+	view[13] = 7.0f;
+	if (!expect(dev.SetTransform(D3DTS_VIEW, view) == S_OK, "hook view")) return false;
+	if (!expect(s->view[13] == 7.0f, "view shadow")) return false;
+
+	float proj[16] = {};
+	proj[0] = proj[5] = proj[10] = proj[15] = 1.0f;
+	proj[11] = -1.0f;
+	if (!expect(dev.SetTransform(D3DTS_PROJECTION, proj) == S_OK, "hook proj"))
+		return false;
+	if (!expect(s->proj[11] == -1.0f, "proj shadow")) return false;
+
+	float tex0[16] = {};
+	tex0[0] = tex0[5] = tex0[10] = tex0[15] = 1.0f;
+	tex0[12] = 0.25f;
+	if (!expect(dev.SetTransform(D3DTS_TEXTURE0, tex0) == S_OK, "hook tex0"))
+		return false;
+	float tex1[16] = {};
+	tex1[0] = tex1[5] = tex1[10] = tex1[15] = 1.0f;
+	tex1[13] = 0.5f;
+	if (!expect(dev.SetTransform(D3DTS_TEXTURE1, tex1) == S_OK, "hook tex1"))
+		return false;
+	if (!expect(s->tex0[12] == 0.25f && s->tex1[13] == 0.5f, "tex shadow"))
+		return false;
+
+	if (!expect(rs2_ffp_set_transform(static_cast<D3DTRANSFORMSTATETYPE>(99),
+	                                  world) == E_FAIL,
+	            "unknown D3DTS"))
+		return false;
+	if (!expect(rs2_ffp_set_transform(D3DTS_WORLD, nullptr) == E_FAIL, "null matrix"))
+		return false;
+	if (!expect(s->world[12] == 9.0f, "unknown leaves world")) return false;
+
+	D3DVIEWPORT8 vp{};
+	vp.X = 10;
+	vp.Y = 20;
+	vp.Width = 320;
+	vp.Height = 240;
+	vp.MinZ = 0.0f;
+	vp.MaxZ = 1.0f;
+	if (!expect(dev.SetViewport(&vp) == S_OK, "hook viewport")) return false;
+	if (!expect(s->viewport.X == 10 && s->viewport.Y == 20 && s->viewport.Width == 320 &&
+	                s->viewport.Height == 240,
+	            "viewport shadow"))
+		return false;
+	if (!expect(rs2_ffp_set_viewport(nullptr) == E_FAIL, "null viewport")) return false;
+
+	Rs2FfpMaterial mat{};
+	mat.diffuse[0] = 0.1f;
+	mat.diffuse[1] = 0.2f;
+	mat.diffuse[2] = 0.3f;
+	mat.diffuse[3] = 1.0f;
+	mat.ambient[0] = 0.4f;
+	mat.power = 16.0f;
+	if (!expect(dev.SetMaterial(&mat) == S_OK, "hook material")) return false;
+	if (!expect(s->material.diffuse[1] == 0.2f && s->material.ambient[0] == 0.4f &&
+	                s->material.power == 16.0f,
+	            "material shadow"))
+		return false;
+	if (!expect(rs2_ffp_set_material(nullptr) == E_FAIL, "null material")) return false;
+
+	rs2_ffp_state_reset();
+	if (!expect(identity16(s->world) && s->viewport.Width == 0 &&
+	                s->material.diffuse[0] == 1.0f,
+	            "reset xform"))
+		return false;
+	return true;
+}
+
 int self_test() {
 	if (!defaults_ok()) return 1;
 	if (!hook_and_unknown_ok()) return 1;
 	if (!key_toggles_ok()) return 1;
 	if (!fvf_keys_ok()) return 1;
 	if (!up_snapshot_ok()) return 1;
+	if (!transform_shadow_ok()) return 1;
 	return 0;
 }
 

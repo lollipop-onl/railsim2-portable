@@ -1,7 +1,9 @@
-// Link interned FFP VS/FS and draw UP records. GL entry points are
-// runtime-only.
+// Link interned FFP VS/FS, draw UP records, apply uniforms. GL entry
+// points are runtime-only.
 
 #include "ffp_gl.h"
+
+#include "ffp_state.h"
 
 #include <cstdint>
 
@@ -115,6 +117,65 @@ bool ensure_slot(VboSlot *slot) {
 	if (slot->vbo == 0) glGenBuffers(1, &slot->vbo);
 	return slot->vao != 0 && slot->vbo != 0;
 }
+
+void d3dcolor_rgba(DWORD c, float out[4]) {
+	out[0] = static_cast<float>((c >> 16) & 0xffu) / 255.0f;
+	out[1] = static_cast<float>((c >> 8) & 0xffu) / 255.0f;
+	out[2] = static_cast<float>(c & 0xffu) / 255.0f;
+	out[3] = static_cast<float>((c >> 24) & 0xffu) / 255.0f;
+}
+
+void set_mat4(GLuint prog, const char *name, const float *m) {
+	const GLint loc = glGetUniformLocation(prog, name);
+	if (loc < 0) return;
+	// D3D row-major last-row translation becomes a GL last-column
+	// translation when the 16 floats are read as column-major.
+	glUniformMatrix4fv(loc, 1, GL_FALSE, m);
+}
+
+void set_vec4(GLuint prog, const char *name, const float *v) {
+	const GLint loc = glGetUniformLocation(prog, name);
+	if (loc >= 0) glUniform4fv(loc, 1, v);
+}
+
+void set_vec3(GLuint prog, const char *name, float x, float y, float z) {
+	const GLint loc = glGetUniformLocation(prog, name);
+	if (loc >= 0) glUniform3f(loc, x, y, z);
+}
+
+void set_float(GLuint prog, const char *name, float v) {
+	const GLint loc = glGetUniformLocation(prog, name);
+	if (loc >= 0) glUniform1f(loc, v);
+}
+
+void set_int(GLuint prog, const char *name, int v) {
+	const GLint loc = glGetUniformLocation(prog, name);
+	if (loc >= 0) glUniform1i(loc, v);
+}
+
+GLuint g_tex[2] = {0, 0};
+GLuint g_white = 0;
+
+GLuint ensure_white() {
+	if (g_white != 0) return g_white;
+	glGenTextures(1, &g_white);
+	if (g_white == 0) return 0;
+	const unsigned char px[4] = {255, 255, 255, 255};
+	glBindTexture(GL_TEXTURE_2D, g_white);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+	return g_white;
+}
+
+void bind_stage(unsigned stage, GLuint white) {
+	const GLuint name = (g_tex[stage] != 0) ? g_tex[stage] : white;
+	glActiveTexture(GL_TEXTURE0 + stage);
+	glBindTexture(GL_TEXTURE_2D, name);
+}
 #endif
 
 }  // namespace
@@ -214,6 +275,78 @@ bool rs2_ffp_gl_draw(const Rs2FfpUpRecord *record) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glUseProgram(0);
+	return true;
+#endif
+}
+
+bool rs2_ffp_gl_apply_uniforms(unsigned program) {
+#if !RS2_HAVE_OPENGL
+	(void)program;
+	return false;
+#else
+	if (program == 0) return false;
+	const Rs2FfpSnapshot *snap = rs2_ffp_state_get();
+	if (!snap) return false;
+
+	const GLuint prog = static_cast<GLuint>(program);
+	glUseProgram(prog);
+
+	set_mat4(prog, "u_world", snap->world);
+	set_mat4(prog, "u_view", snap->view);
+	set_mat4(prog, "u_proj", snap->proj);
+	set_mat4(prog, "u_tex0_xform", snap->tex0);
+	set_mat4(prog, "u_tex1_xform", snap->tex1);
+
+	const float vp[4] = {
+	    static_cast<float>(snap->viewport.X),
+	    static_cast<float>(snap->viewport.Y),
+	    static_cast<float>(snap->viewport.Width),
+	    static_cast<float>(snap->viewport.Height),
+	};
+	set_vec4(prog, "u_viewport", vp);
+
+	float ambient[4];
+	d3dcolor_rgba(snap->rs.ambient, ambient);
+	set_vec4(prog, "u_ambient", ambient);
+
+	float fog[4];
+	d3dcolor_rgba(snap->rs.fogcolor, fog);
+	set_vec4(prog, "u_fog_color", fog);
+
+	set_vec4(prog, "u_material_diffuse", snap->material.diffuse);
+	set_vec4(prog, "u_material_ambient", snap->material.ambient);
+	set_vec3(prog, "u_light_dir", 0.0f, 1.0f, 0.0f);
+	set_vec3(prog, "u_light_color", 1.0f, 1.0f, 1.0f);
+	set_float(prog, "u_alpharef", static_cast<float>(snap->rs.alpharef) / 255.0f);
+
+	const GLuint white = ensure_white();
+	if (white == 0) return false;
+	bind_stage(0, white);
+	bind_stage(1, white);
+	set_int(prog, "u_tex0", 0);
+	set_int(prog, "u_tex1", 1);
+	return true;
+#endif
+}
+
+bool rs2_ffp_gl_tex_bind(unsigned stage, unsigned width, unsigned height,
+                         const unsigned char *rgba) {
+	if (stage > 1 || width == 0 || height == 0 || !rgba) return false;
+#if !RS2_HAVE_OPENGL
+	return false;
+#else
+	if (g_tex[stage] == 0) {
+		glGenTextures(1, &g_tex[stage]);
+		if (g_tex[stage] == 0) return false;
+	}
+	glBindTexture(GL_TEXTURE_2D, g_tex[stage]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLsizei>(width),
+	             static_cast<GLsizei>(height), 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
 	return true;
 #endif
 }
