@@ -223,3 +223,15 @@ ctest: `rs2_ime_self_test` also covers open-status on/off and zero-size COMPATTR
 `lib/window.cpp` stays off the allowlist. A check compile of that TU fails on leftover Win32 window / GDI symbols, not on Imm*. Follow-up (not this slice): `<windowsx.h>` (`GetWindowStyle` / `GetWindowExStyle`), `WNDCLASSEX` / `RegisterClassEx` / `CreateWindow`, `LoadIcon` / `LoadCursor` / `GetStockObject`, `AdjustWindowRectEx` / `SetWindowPos` / `GetDesktopWindow` / `GetWindowRect` / `GetMenu`, `BeginPaint` / `EndPaint` / `PAINTSTRUCT`, `SetWindowText` / `SendMessage`, `WM_IME_SETCONTEXT` / `WM_DISPLAYCHANGE` / `WM_SYSCOMMAND` / `SC_SCREENSAVE`, and A/W macros (`PeekMessage` / `DispatchMessage` / `DefWindowProc`). Do not grow those stubs in a charset slice. Do not add SDL2 to `check`. Do not allowlist `lib/editbox.cpp`. Game sources stay CP932.
 
 ctest: `rs2_ime_self_test` also covers hide leaving open status and composition intact.
+
+## CEditBox clipboard / `wsprintf` stubs so `lib/editbox.cpp` allowlists (`#108`)
+
+- **Issue**: [#108](https://github.com/lollipop-onl/railsim2-portable/issues/108) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#102](https://github.com/lollipop-onl/railsim2-portable/issues/102))
+- **Entry**: `GMEM_MOVEABLE` / `GMEM_DDESHARE` / `CF_TEXT` / `lstrcpy` / `wsprintf` in `port/stub/windows.h`
+- **Allowlist**: `lib/editbox.cpp` is in `port/native_sources.txt`
+
+`CEditBox::ClipCopy` / `ClipPaste` compile against no-op `GlobalAlloc` / `OpenClipboard` / `GetClipboardData` (already stubbed). This slice only names the leftover Win32 constants and `lstrcpy`. `SelectFile` in the same TU uses `wsprintf` to build the `OPENFILENAME` filter; `GetOpenFileName` / `GetSaveFileName` stay FALSE. `lib/editbox.cpp` does not include `stdafx.h`, so `#include "rs2_float.h"` is inserted before `SystemCover.h` for `RS2_FLOAT_FMT` in `V3Save`. Game logic and IME (`rs2_ime_*`) are unchanged.
+
+Clipboard bytes are not stored. A later `#16` slice may replace the no-op with an SDL clipboard backend. Do not add SDL2 to `check`. Do not rewrite `CEditCtrl` / list / tree rename. Game sources stay CP932.
+
+`lib/window.cpp` stays off the allowlist (Win32 window / GDI leftovers from `#104`).

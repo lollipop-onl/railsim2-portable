@@ -15,6 +15,7 @@
 #include "object.h"
 #include "editbox.h"
 #include "rs2_ime.h"
+#include "rs2_float.h"
 #include "../Const.h"
 #include "../Macro.h"
 #include "../SystemCover.h"

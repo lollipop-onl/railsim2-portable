@@ -72,4 +72,5 @@ CFileMode.cpp
 CTreeElement.cpp
 lib/input.cpp
 lib/wave.cpp
+lib/editbox.cpp
 SystemCover.cpp

@@ -325,6 +325,16 @@ inline BOOL GetClientRect(HWND, LPRECT) { return TRUE; }
 inline BOOL MoveWindow(HWND, int, int, int, int, BOOL) { return TRUE; }
 inline BOOL DestroyWindow(HWND) { return TRUE; }
 inline void PostQuitMessage(int) {}
+#ifndef GMEM_MOVEABLE
+#define GMEM_MOVEABLE 0x0002
+#endif
+#ifndef GMEM_DDESHARE
+#define GMEM_DDESHARE 0x2000
+#endif
+#ifndef CF_TEXT
+#define CF_TEXT 1
+#endif
+
 inline HGLOBAL GlobalAlloc(UINT, SIZE_T) { return nullptr; }
 inline LPVOID GlobalLock(HGLOBAL) { return nullptr; }
 inline BOOL GlobalUnlock(HGLOBAL) { return TRUE; }
@@ -334,6 +344,31 @@ inline BOOL CloseClipboard() { return TRUE; }
 inline HANDLE SetClipboardData(UINT, HANDLE) { return nullptr; }
 inline HANDLE GetClipboardData(UINT) { return nullptr; }
 inline BOOL EmptyClipboard() { return TRUE; }
+inline LPSTR lstrcpyA(LPSTR dest, LPCSTR src) {
+  if (!dest) return dest;
+  if (!src) {
+    dest[0] = '\0';
+    return dest;
+  }
+  return std::strcpy(dest, src);
+}
+inline LPSTR lstrcpy(LPSTR dest, LPCSTR src) { return lstrcpyA(dest, src); }
+inline int wsprintfA(LPSTR dest, LPCSTR fmt, ...) {
+  if (!dest || !fmt) return 0;
+  va_list ap;
+  va_start(ap, fmt);
+  int n = std::vsprintf(dest, fmt, ap);
+  va_end(ap);
+  return n;
+}
+inline int wsprintf(LPSTR dest, LPCSTR fmt, ...) {
+  if (!dest || !fmt) return 0;
+  va_list ap;
+  va_start(ap, fmt);
+  int n = std::vsprintf(dest, fmt, ap);
+  va_end(ap);
+  return n;
+}
 inline LPSTR CharNextA(LPCSTR p) { return (LPSTR)(p + 1); }
 inline LPSTR CharPrevA(LPCSTR start, LPCSTR p) { return (p > start) ? (LPSTR)(p - 1) : (LPSTR)start; }
 inline LPSTR CharNext(LPCSTR p) { return CharNextA(p); }
