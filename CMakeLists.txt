@@ -43,6 +43,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_program.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
   "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
@@ -348,3 +349,11 @@ target_compile_options(rs2_input_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_input_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_input_self_test COMMAND rs2_input_test --self-test)
+
+# Stub PCM buffer intern + play/stop/volume/3D/listener (#93). No OpenAL.
+add_executable(rs2_audio_test port/rs2_audio_test.cpp port/rs2_audio.cpp port/wav_pcm.cpp)
+target_include_directories(rs2_audio_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_audio_test PRIVATE cxx_std_17)
+target_compile_options(rs2_audio_test PRIVATE -Wall -Wextra)
+
+add_test(NAME rs2_audio_self_test COMMAND rs2_audio_test --self-test)
