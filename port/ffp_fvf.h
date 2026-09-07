@@ -7,6 +7,8 @@
 
 #include <d3d8.h>
 
+#include "ffp_program.h"
+
 #ifndef RS2_FFP_ABSENT
 #define RS2_FFP_ABSENT (~0u)
 #endif
@@ -71,6 +73,7 @@ struct Rs2FfpUpRecord {
 	UINT bytes;
 	const void *vertices;
 	std::uint64_t shader_key;
+	Rs2FfpProgramHandle program;
 };
 
 void rs2_ffp_up_reset();
