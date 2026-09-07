@@ -340,9 +340,10 @@ target_compile_definitions(rs2_ffp_program_test PRIVATE RS2_PORTABLE_COMPILE_FIR
 
 add_test(NAME rs2_ffp_program_self_test COMMAND rs2_ffp_program_test --self-test)
 
-# Link interned FFP GLSL (#111). check/CI: RS2_HAVE_OPENGL off, no SDL window.
-# The test TU always compiles with RS2_HAVE_OPENGL=0 so ctest verifies no-GL
-# failure even when the runtime preset found OpenGL for railsim2_native.
+# Link interned FFP GLSL (#111) and draw UP records through a VBO (#114).
+# check/CI: RS2_HAVE_OPENGL off, no SDL window. The test TU always compiles
+# with RS2_HAVE_OPENGL=0 so ctest verifies no-GL link/draw failure even when
+# the runtime preset found OpenGL for railsim2_native.
 add_executable(rs2_ffp_gl_test
   port/ffp_gl_test.cpp
   port/ffp_gl.cpp

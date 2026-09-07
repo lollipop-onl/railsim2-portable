@@ -245,7 +245,7 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetTexture(DWORD, IDirect3DTexture8*) { return S_OK; }
   HRESULT GetTexture(DWORD, IDirect3DBaseTexture8**) { return S_OK; }
   HRESULT DrawPrimitive(D3DPRIMITIVETYPE, UINT, UINT) { return S_OK; }
-  // CPU record + interned program handle. No GL link / VBO.
+  // CPU record + interned program handle. No auto GL draw (no window).
   HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE type, UINT count, const void *data,
                           UINT stride) {
     return rs2_ffp_draw_primitive_up(type, count, data, stride);
