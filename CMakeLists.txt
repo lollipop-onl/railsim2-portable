@@ -78,6 +78,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_glsl.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_program.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_gl.cpp"
+  "${CMAKE_SOURCE_DIR}/port/ffp_window.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
@@ -104,10 +105,14 @@ target_compile_definitions(railsim2_native PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
   NOMINMAX
   RS2_HAVE_OPENGL=$<BOOL:${RS2_HAVE_OPENGL}>
+  RS2_HAVE_SDL2=$<BOOL:${RS2_HAVE_SDL2}>
 )
 target_link_libraries(railsim2_native PRIVATE Iconv::Iconv)
 if(RS2_HAVE_OPENGL)
   target_link_libraries(railsim2_native PRIVATE OpenGL::GL)
+endif()
+if(RS2_HAVE_SDL2)
+  target_link_libraries(railsim2_native PRIVATE SDL2::SDL2)
 endif()
 
 # Link skeleton: POSIX main only. Allowlisted game objects compile into
@@ -362,6 +367,24 @@ target_compile_definitions(rs2_ffp_gl_test PRIVATE
   RS2_HAVE_OPENGL=0)
 
 add_test(NAME rs2_ffp_gl_self_test COMMAND rs2_ffp_gl_test --self-test)
+
+# SDL window + GL 3.3 core context (#116). check/CI: both feature flags
+# off, no SDL window. The test TU always compiles with RS2_HAVE_SDL2=0
+# and RS2_HAVE_OPENGL=0 so ctest verifies create/present/destroy failure
+# even when the runtime preset found SDL2/GL for railsim2_native.
+add_executable(rs2_ffp_window_test
+  port/ffp_window_test.cpp
+  port/ffp_window.cpp)
+target_include_directories(rs2_ffp_window_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ffp_window_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ffp_window_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_ffp_window_test PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+  RS2_HAVE_SDL2=0
+  RS2_HAVE_OPENGL=0)
+
+add_test(NAME rs2_ffp_window_self_test COMMAND rs2_ffp_window_test --self-test)
 
 # CP932 <-> UTF-8 and closed _mbsicmp replacement (#75). No SDL.
 add_executable(rs2_text_test port/rs2_text_test.cpp port/rs2_text.cpp)
