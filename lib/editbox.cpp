@@ -14,6 +14,7 @@
 #include "mesh.h"
 #include "object.h"
 #include "editbox.h"
+#include "rs2_ime.h"
 #include "../Const.h"
 #include "../Macro.h"
 #include "../SystemCover.h"
@@ -60,8 +61,8 @@ CEditBox::~CEditBox(){
 void CEditBox::Create(int x, int y, int w, int max, string pre, int imm){
 	Release(imm);
 	ms_Active = true;
-	m_hImc = ImmGetContext(svw.hWnd);
-	if(imm) ImmSetOpenStatus(m_hImc, imm>0);
+	m_hImc = (HIMC)1;
+	if(imm) rs2_ime_set_open(imm>0);
 	m_comp = "";
 	pre = EliminateTabAndCRLF(pre);
 	m_x = x;
@@ -83,10 +84,17 @@ void CEditBox::Create(int x, int y, int w, int max, string pre, int imm){
 void CEditBox::Release(int imm){
 	ms_Active = false;
 	if(m_hImc){
-		if(imm) ImmSetOpenStatus(m_hImc, imm>0);
-		ImmReleaseContext(svw.hWnd, m_hImc);
+		if(imm) rs2_ime_set_open(imm>0);
 		m_hImc = 0;
 	}
+}
+
+BOOL CEditBox::IsFEPOpen(){
+	return rs2_ime_is_open();
+}
+
+int CEditBox::GetFEPCursorPos(){
+	return rs2_ime_get_composition_string_a(RS2_IME_GCS_CURSORPOS, NULL, 0);
 }
 
 /*
@@ -97,10 +105,10 @@ int CEditBox::ScanInput(){
 	if(CheckKeyDown()<0) return EDIT_PROC;
 
 	BOOL is_comp = FALSE;
-	if(ImmGetCompositionString(m_hImc, GCS_COMPCLAUSE, NULL, 0)>0){
+	if(rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPCLAUSE, NULL, 0)>0){
 		char attr = -1;
-		ImmGetCompositionString(m_hImc, GCS_COMPATTR, &attr, 1);
-		if(attr!=ATTR_INPUT) is_comp = TRUE;
+		rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPATTR, &attr, 1);
+		if(attr!=RS2_IME_ATTR_INPUT) is_comp = TRUE;
 	}
 	BOOL comp_end = m_old_iscomp && !is_comp;
 	m_old_iscomp = is_comp;
@@ -181,12 +189,12 @@ void CEditBox::Render(){
 	m_show = m_str;
 	if(IsComp()){
 		//	ïœä∑íÜÇ»ÇÁ
-		int size = ImmGetCompositionString(m_hImc, GCS_COMPCLAUSE, NULL, 0);
+		int size = rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPCLAUSE, NULL, 0);
 		int n = size/sizeof(int), *pClause = new int[n];
-		ImmGetCompositionString(m_hImc, GCS_COMPCLAUSE, pClause, size);
-		size = ImmGetCompositionString(m_hImc, GCS_COMPATTR, NULL, 0);
+		rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPCLAUSE, pClause, size);
+		size = rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPATTR, NULL, 0);
 		char *pAttr = new char[size];
-		ImmGetCompositionString(m_hImc, GCS_COMPATTR, pAttr, size);
+		rs2_ime_get_composition_string_a(RS2_IME_GCS_COMPATTR, pAttr, size);
 
 		string tmpstr(&m_str[0], &m_str[m_pos]);
 		m_show.insert(m_pos, m_comp);
@@ -200,7 +208,7 @@ void CEditBox::Render(){
 
 		for(i = 0; i<n-1; i++){
 			D3DCOLOR col = g_Skin->m_EditCtrlData.
-				m_ConvertClauseColor[pAttr[pClause[i]]==ATTR_TARGET_CONVERTED];
+				m_ConvertClauseColor[pAttr[pClause[i]]==RS2_IME_ATTR_TARGET_CONVERTED];
 			int tx = m_x+((m_pos+pClause[i])*svf.size/2)+1, ty = m_y+svf.size-2;
 			int tx2 = m_x+((m_pos+pClause[i+1])*svf.size/2)-1;
 			Draw2DLine(tx, ty, tx2, ty, col);
@@ -460,12 +468,7 @@ void CEditBox::Clip(){
  *	str	: ï∂éöóÒÇÃäiî[êÊ
  */
 void CEditBox::GetCompStr(string &str){
-	LONG size = ImmGetCompositionString(m_hImc, GCS_COMPSTR, NULL, 0);
-	char *pBuf = new char[size+1];
-	ImmGetCompositionString(m_hImc, GCS_COMPSTR, pBuf, size);
-	pBuf[size] = 0;
-	str = pBuf;
-	delete pBuf;
+	str = rs2_ime_composition_utf8();
 }
 
 /*
@@ -474,12 +477,7 @@ void CEditBox::GetCompStr(string &str){
  *	str	: ï∂éöóÒÇÃäiî[êÊ
  */
 void CEditBox::GetResultStr(string &str){
-	LONG size = ImmGetCompositionString(m_hImc, GCS_RESULTSTR, NULL, 0);
-	char *pBuf = new char[size+1];
-	ImmGetCompositionString(m_hImc, GCS_RESULTSTR, pBuf, size);
-	pBuf[size] = 0;
-	str = pBuf;
-	delete pBuf;
+	str = rs2_ime_result_utf8();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
