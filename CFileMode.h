@@ -25,7 +25,7 @@ private:
 public:
 	CLayoutInfo(char *fname){ m_FileName = fname; }
 	bool PreLoadSF(FILE *file);
-	bool operator<(const CLayoutInfo &rhs){ return m_FileName<rhs.m_FileName; }
+	bool operator<(const CLayoutInfo &rhs) const{ return m_FileName<rhs.m_FileName; }
 };
 
 //	”½•œŽq
