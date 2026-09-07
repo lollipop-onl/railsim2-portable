@@ -67,5 +67,8 @@ CStructPlugin.cpp
 CTrainPlugin.cpp
 CStationPlugin.cpp
 Capture.cpp
+CPlugin.cpp
+CFileMode.cpp
+CTreeElement.cpp
 lib/input.cpp
 lib/wave.cpp

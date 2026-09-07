@@ -6,6 +6,9 @@ const int TREE_ICON_MARGIN = 2;	//	文字余白
 
 class CPlugin;
 class CPluginListView;
+class CTreeDirElement;
+class CTreeFileElement;
+class CPluginTree;
 
 /*
  *	ツリー要素

@@ -55,6 +55,7 @@ int self_test() {
 		return 1;
 	if (!expect(rs2_text_icmp("a.rs2", "b.rs2") < 0, "ascii icmp order")) return 1;
 	if (!expect(rs2_text_icmp("Foo", "Foo") == 0, "ascii icmp same")) return 1;
+	if (!expect(rs2_text_icmp(nullptr, "") == 0, "null vs empty")) return 1;
 
 	// Trail-byte trap: ƒA (0x8341) vs ƒa (0x8361). strcasecmp would fold 0x41/0x61.
 	const char kA[] = {'\x83', '\x41', 0};

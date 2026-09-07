@@ -4,6 +4,7 @@
 #include "CTreeElement.h"
 
 class CPluginMode;
+class CPluginTree;
 
 /*
  *	ツリーディレクトリ要素

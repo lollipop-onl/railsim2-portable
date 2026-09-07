@@ -172,3 +172,13 @@ rg -n --glob '!build/**' --glob '!.git/**' --glob '!Distribution/**' --glob '!po
 Expect: Imm* in `lib/editbox.cpp` / `lib/editbox.h`, `lib/window.cpp`, and `lib/headers.h`'s `#include <imm.h>`. Live `_mbsicmp` is gone (stub + comments only).
 
 `./scripts/check.sh` must stay green.
+
+## Closed `_mbsicmp` replaced (`#87`)
+
+- **Issue**: [#87](https://github.com/lollipop-onl/railsim2-portable/issues/87) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#75](https://github.com/lollipop-onl/railsim2-portable/issues/75))
+- **Entry**: `rs2_text_icmp` in `port/rs2_text.h` (added by #75)
+- **Allowlist**: `CPlugin.cpp`, `CFileMode.cpp`, `CTreeElement.cpp` are in `port/native_sources.txt`
+
+The twelve live `_mbsicmp` calls in the [closed compare set](#closed-_mbsicmp-set-compare) are gone. Those five files call `rs2_text_icmp` (CP932 decode, then ASCII A-Z fold). On-disk `.rs2` / plugin txt bytes stay CP932. IME (`Imm*`) is unchanged.
+
+`lib/texture.cpp` and `lib/mesh.cpp` still use `rs2_text_icmp` but stay off the allowlist: they fail on D3D/GDI / `rmxfguid.h`, not on `_mbsicmp`. Do not grow those drawing stubs in a charset slice. `rs2_text_self_test` keeps the #75 icmp cases (ASCII fold, trail-byte trap, layout name).
