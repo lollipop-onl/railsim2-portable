@@ -333,12 +333,30 @@ GLSL uniforms declared in #88 (`u_world` / `u_view` / `u_proj` / `u_viewport` / 
 | `rs2_ffp_gl_apply_uniforms(program)` | `RS2_HAVE_OPENGL` off: false. When on: `glUniform*` the snapshot (matrices, viewport xywh, ambient, alpharef / 255, material) and bind `u_tex0` / `u_tex1`. Unbound stages use a 1x1 white texel. |
 | `rs2_ffp_gl_tex_bind(stage, w, h, rgba)` | CPU RGBA8 to `GL_TEXTURE_2D` for stage 0/1. Off / bad stage / zero size / null pixels: false. Not a file loader. |
 
-`DrawPrimitiveUP` still does not call `rs2_ffp_gl_draw`. `Present` still does not swap. `port/ffp_gl.cpp` still compiles on `check` (GL calls `#if`'d out).
+`DrawPrimitiveUP` still does not call `rs2_ffp_gl_draw` from the CPU helper. Device `DrawPrimitiveUP` tries GL after the CPU record (#120). `Present` still does not swap from this slice. `port/ffp_gl.cpp` still compiles on `check` (GL calls `#if`'d out).
 
 ctest: `rs2_ffp_state_self_test` covers transform / viewport / material shadow without GL. `rs2_ffp_gl_self_test` covers apply/bind failure without GL (no SDL window).
 
+## Device wire (port, #120)
+
+`IDirect3DDevice8` now calls the port APIs that earlier slices left unwired. `check` / CI still do not search or link SDL2 / OpenGL. GL and SDL failures are ignored; the D3D HRESULT stays the CPU result (`S_OK` for a successful UP record, and always `S_OK` for Present / Clear).
+
+| API | Role |
+|-----|------|
+| `DrawPrimitiveUP` | `rs2_ffp_draw_primitive_up` first. On `S_OK`, try `rs2_ffp_gl_apply_uniforms` + `rs2_ffp_gl_draw` (link the interned handle so uniforms have a GL program). No current GL context, or `RS2_HAVE_OPENGL` off: skip. |
+| `SetVertexShader(DWORD fvf)` | `rs2_ffp_set_fvf`. Closed FVF only; `FVF_S` / unknown still `E_FAIL`. |
+| `Present` | If `rs2_ffp_window_current()` is a live handle from `rs2_ffp_window_create`, `rs2_ffp_window_present`. Otherwise `S_OK` no-op. **Never auto-creates a window.** |
+| `Clear` | `glClear` of `TARGET` / `Z` when `RS2_HAVE_OPENGL` and `SDL_GL_GetCurrentContext` is non-null. Otherwise `S_OK` no-op. Stencil is not cleared. |
+| `rs2_ffp_window_current` | Last successful create that has not been destroyed. Null on `check`. |
+
+`rs2_ffp_window_create` remembers the handle. Destroy of that handle clears it. ctest does not create an SDL window.
+
+`rs2_ffp_smoke` is a runtime-only executable (solid `FVF_TL` UP triangle: create / Clear / DrawPrimitiveUP / Present / destroy). It is built only when `RS2_RUNTIME` and both `RS2_HAVE_SDL2` and `RS2_HAVE_OPENGL` are on. It is **not** a ctest and is not on CI.
+
+ctest: `rs2_ffp_device_self_test` (`port/ffp_device_test.cpp --self-test`). UP still records on the CPU. Present without a window is `S_OK` and does not create one.
+
 ## What #5 should implement next
 
-1. **M3 required tier (sample)** -- Wire uniforms + CPU textures through a windowed Present until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), the program intern + stub draw hook (#92), GL program link (#111), UP VBO draw (#114), the SDL window + GL 3.3 context (#116), and FFP uniforms / 1x1 bind (#118) are already in `port/`. SDL2 stays off the check preset. Do not auto-wire `DrawPrimitiveUP` to `rs2_ffp_gl_draw` or `Present` to `rs2_ffp_window_present` until a later slice.
+1. **M3 required tier (sample)** -- Drive the wired device path until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. Allowlist `lib/graphic.cpp` / `lib/vertex.cpp` / `lib/texture.cpp` / `lib/draw.cpp` in later slices. File textures / DXT stay later. SDL2 stays off the check preset.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).

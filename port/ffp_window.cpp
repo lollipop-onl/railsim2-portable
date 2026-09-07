@@ -20,8 +20,10 @@ struct Rs2FfpWindow {
 #endif
 };
 
-#if RS2_HAVE_SDL2 && RS2_HAVE_OPENGL
 namespace {
+Rs2FfpWindowHandle g_current = nullptr;
+
+#if RS2_HAVE_SDL2 && RS2_HAVE_OPENGL
 int g_sdl_video_refs = 0;
 
 void teardown_video() {
@@ -32,8 +34,8 @@ void teardown_video() {
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	}
 }
-}  // namespace
 #endif
+}  // namespace
 
 bool rs2_ffp_window_create(int width, int height, const char *title,
                            Rs2FfpWindowHandle *out_window) {
@@ -82,9 +84,16 @@ bool rs2_ffp_window_create(int width, int height, const char *title,
 	auto *handle = new Rs2FfpWindow;
 	handle->window = win;
 	handle->context = ctx;
+	g_current = handle;
 	*out_window = handle;
 	return true;
 #endif
+}
+
+Rs2FfpWindowHandle rs2_ffp_window_current() { return g_current; }
+
+void rs2_ffp_window_try_present() {
+	if (g_current) (void)rs2_ffp_window_present(g_current);
 }
 
 bool rs2_ffp_window_present(Rs2FfpWindowHandle window) {
@@ -105,6 +114,7 @@ bool rs2_ffp_window_destroy(Rs2FfpWindowHandle window) {
 	return false;
 #else
 	if (!window) return false;
+	if (g_current == window) g_current = nullptr;
 	if (window->context) {
 		SDL_GL_DeleteContext(window->context);
 		window->context = nullptr;

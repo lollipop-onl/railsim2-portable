@@ -16,13 +16,17 @@ using Rs2FfpWindowHandle = Rs2FfpWindow *;
 // width/height must be > 0. Null title becomes "RailSim2". Null out_window
 // fails.
 //
-// IDirect3DDevice8::Present stays a no-op. This API does not call it, and
-// Present does not call this API.
+// A successful create is remembered as the current handle so
+// IDirect3DDevice8::Present can swap it. Present never calls create.
 bool rs2_ffp_window_create(int width, int height, const char *title,
                            Rs2FfpWindowHandle *out_window);
+
+// Last successful create that has not been destroyed. Null if none.
+Rs2FfpWindowHandle rs2_ffp_window_current();
 
 // SDL_GL_SwapWindow. Fails if handle is null or SDL/GL is off.
 bool rs2_ffp_window_present(Rs2FfpWindowHandle window);
 
 // Destroy context + window. Null handle or SDL/GL off fails (false).
+// Clears the current handle when it matches.
 bool rs2_ffp_window_destroy(Rs2FfpWindowHandle window);

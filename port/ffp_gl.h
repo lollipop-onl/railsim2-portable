@@ -23,8 +23,9 @@ bool rs2_ffp_gl_link(Rs2FfpProgramHandle handle, unsigned *out_program);
 // #88 locations, glDrawArrays. Caller must already have a current GL
 // context. This API does not create a window or call Present.
 //
-// IDirect3DDevice8::DrawPrimitiveUP stays a CPU record; it does not call
-// this function.
+// IDirect3DDevice8::DrawPrimitiveUP records on the CPU, then tries
+// rs2_ffp_gl_apply_uniforms + this function. GL false is ignored so
+// check/CI stay green without a context.
 bool rs2_ffp_gl_draw(const Rs2FfpUpRecord *record);
 
 // Upload the CPU FFP snapshot (matrices, viewport, ambient, alpharef,

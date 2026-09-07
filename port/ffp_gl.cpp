@@ -10,6 +10,13 @@
 #ifndef RS2_HAVE_OPENGL
 #define RS2_HAVE_OPENGL 0
 #endif
+#ifndef RS2_HAVE_SDL2
+#define RS2_HAVE_SDL2 0
+#endif
+
+#if RS2_HAVE_SDL2 && RS2_HAVE_OPENGL
+#include <SDL.h>
+#endif
 
 #if RS2_HAVE_OPENGL
 #if defined(__APPLE__)
@@ -177,6 +184,14 @@ void bind_stage(unsigned stage, GLuint white) {
 	glBindTexture(GL_TEXTURE_2D, name);
 }
 #endif
+
+bool has_current_gl_context() {
+#if RS2_HAVE_SDL2 && RS2_HAVE_OPENGL
+	return SDL_GL_GetCurrentContext() != nullptr;
+#else
+	return false;
+#endif
+}
 
 }  // namespace
 
@@ -348,5 +363,39 @@ bool rs2_ffp_gl_tex_bind(unsigned stage, unsigned width, unsigned height,
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLsizei>(width),
 	             static_cast<GLsizei>(height), 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
 	return true;
+#endif
+}
+
+void rs2_ffp_gl_try_after_up() {
+	if (!has_current_gl_context()) return;
+	const Rs2FfpUpRecord *rec = rs2_ffp_up_last();
+	if (!rec) return;
+	unsigned prog = 0;
+	if (rs2_ffp_gl_link(rec->program, &prog) && prog != 0) {
+		(void)rs2_ffp_gl_apply_uniforms(prog);
+	}
+	(void)rs2_ffp_gl_draw(rec);
+}
+
+void rs2_ffp_gl_try_clear(DWORD flags, D3DCOLOR color, float z) {
+#if !RS2_HAVE_OPENGL
+	(void)flags;
+	(void)color;
+	(void)z;
+#else
+	if (!has_current_gl_context()) return;
+	GLbitfield mask = 0;
+	if (flags & D3DCLEAR_TARGET) {
+		glClearColor(static_cast<float>((color >> 16) & 0xffu) / 255.0f,
+		             static_cast<float>((color >> 8) & 0xffu) / 255.0f,
+		             static_cast<float>(color & 0xffu) / 255.0f,
+		             static_cast<float>((color >> 24) & 0xffu) / 255.0f);
+		mask |= GL_COLOR_BUFFER_BIT;
+	}
+	if (flags & D3DCLEAR_ZBUFFER) {
+		glClearDepth(static_cast<double>(z));
+		mask |= GL_DEPTH_BUFFER_BIT;
+	}
+	if (mask != 0) glClear(mask);
 #endif
 }
