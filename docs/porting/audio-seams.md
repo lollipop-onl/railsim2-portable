@@ -333,3 +333,23 @@ This is the portable stand-in for the [mmio* contract](#closed-mmio-set-wav-pars
 - **Allowlist**: `lib/wave.cpp` is in `port/native_sources.txt`
 
 `mmioOpen` / `mmioDescend` / `mmioRead` / `mmioAscend` / `mmioClose` are gone from `Load` and `CreateBuffer`. Non-PCM, broken RIFF, missing `fmt ` / `data`, or a file that cannot be opened still return `FALSE`. On a successful parse, `Rs2WavPcm` maps to `m_BytesPerSec` (`nAvgBytesPerSec`), `m_nChannels`, `m_wBitsPerSample`, and `m_pcm` (raw `data` payload). `CreateBuffer` still fills the DirectSound secondary buffer with `Lock` / `Unlock` from that payload; `lib/sound.cpp` and `port/stub/dsound.h` COM are unchanged. `rs2_wave_load_self_test` / `rs2_wave_load_distribution` check the mapping against the #81 field table. Do not link OpenAL in the `check` preset.
+
+## Port audio stub backend (`port/rs2_audio`)
+
+- **Issue**: [#93](https://github.com/lollipop-onl/railsim2-portable/issues/93) (parent [#7](https://github.com/lollipop-onl/railsim2-portable/issues/7))
+- **Entry**: `rs2_audio_intern` / `rs2_audio_play` / `rs2_audio_stop` / `rs2_audio_set_volume` / `rs2_audio_set_pos` / `rs2_audio_set_listener_*` in `port/rs2_audio.h`
+- **Backend hooks**: `rs2_audio_backend_*` (stub in `port/rs2_audio.cpp`; OpenAL later replaces intern upload + play/stop/volume/3D/listener)
+
+`CWave::Load` already yields `Rs2WavPcm` (#86). This slice interns that payload as an opaque buffer handle. Same format + bytes return the same handle. Non-PCM tag, empty payload, zero channels/rate, or 8/16-bit mismatch fail. Play records the handle on `rs2_audio_stub_last()`; stop / volume (hundredths of a dB) / 3D position (meters) overwrite that record. Listener pos / dir / distance factor live on `rs2_audio_stub_listener()`.
+
+The check preset links the stub only. There is no OpenAL, no DirectSound COM, and no `lib/sound.cpp` allowlist. `CreateBuffer` / `CWave::Play` still talk to the dsound stub until the next `#7` slice maps `CWave` onto these handles.
+
+| DirectSound / `CWave` | `port/rs2_audio` | Later OpenAL |
+|-----------------------|------------------|--------------|
+| `CreateSoundBuffer` + `Lock` PCM | `rs2_audio_intern` | `alBuffer` from interned PCM |
+| `Play(ms)` / `Stop` | `rs2_audio_play` / `rs2_audio_stop` | `alSource` play/stop + offset |
+| `SetVolume` | `rs2_audio_set_volume` | `AL_GAIN` from hundredths of a dB |
+| `SetPos` | `rs2_audio_set_pos` | `AL_POSITION` |
+| `SetListenerPos` / `Dir` / `Sens` | `rs2_audio_set_listener_*` | `alListener` + distance factor |
+
+ctest: `rs2_audio_self_test` (`port/rs2_audio_test.cpp --self-test`). Do not link OpenAL in the `check` preset.
