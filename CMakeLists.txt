@@ -38,6 +38,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_state.cpp"
+  "${CMAKE_SOURCE_DIR}/port/ffp_glsl.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
@@ -254,6 +255,21 @@ target_compile_options(rs2_ffp_state_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_ffp_state_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_ffp_state_self_test COMMAND rs2_ffp_state_test --self-test)
+
+# M3 core FVF x state key -> GLSL 330 core (#88). No GL context / draw.
+add_executable(rs2_ffp_glsl_test
+  port/ffp_glsl_test.cpp
+  port/ffp_glsl.cpp
+  port/ffp_state.cpp
+  port/ffp_fvf.cpp)
+target_include_directories(rs2_ffp_glsl_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_ffp_glsl_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_ffp_glsl_test PRIVATE cxx_std_17)
+target_compile_options(rs2_ffp_glsl_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_ffp_glsl_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_ffp_glsl_self_test COMMAND rs2_ffp_glsl_test --self-test)
 
 # CP932 <-> UTF-8 and closed _mbsicmp replacement (#75). No SDL.
 add_executable(rs2_text_test port/rs2_text_test.cpp port/rs2_text.cpp)

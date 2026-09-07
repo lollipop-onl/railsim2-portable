@@ -240,7 +240,7 @@ Stride, attribute offsets, CPU vertex buffers, and `DrawPrimitiveUP` ring record
 
 ## State shadow / shader key (port, #80)
 
-M3 required `D3DRS_*` / stage-0 / stage-1-env live in `port/ffp_state.*`. There is no GLSL and no GL link.
+M3 required `D3DRS_*` / stage-0 / stage-1-env live in `port/ffp_state.*`. GLSL source is #88 (`port/ffp_glsl.*`). There is no GL link.
 
 | API | Role |
 |-----|------|
@@ -255,8 +255,22 @@ Stub `D3DRS_LIGHTING` / `D3DRS_AMBIENT` / `D3DRS_FOGVERTEXMODE` / `D3DRS_FOGTABL
 
 ctest: `rs2_ffp_state_self_test` (`port/ffp_state_test.cpp --self-test`).
 
+## GLSL source (port, #88)
+
+M3 required FVF x core-state keys become GLSL 330 core VS/FS strings in `port/ffp_glsl.*`. No GL context, VBO, or draw.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_glsl_for_key(key, vs, vs_cap, fs, fs_cap)` | Decode `rs2_ffp_shader_key` bits and write `#version 330 core` sources. `key == 0` (unknown / `FVF_S`) or FVF index `> 7` fails. |
+
+Each variant bakes `#define RS2_FFP_*` for the FVF index, lighting, alpha test + func, env-map TCI (`RS2_FFP_TCI_CAMERASPACE`), blend enable + src/dest, and stage 0/1 color ops. Ambient / alpharef / fog distances stay uniforms (not key bits). Stencil / `FVF_S` are not generated.
+
+Attribute locations are fixed across the 8 closed FVFs: `0` position, `1` rhw, `2` normal, `3` diffuse, `4` tex0, `5` tex1. Unused locations are omitted.
+
+ctest: `rs2_ffp_glsl_self_test` (`port/ffp_glsl_test.cpp --self-test`).
+
 ## What #5 should implement next
 
-1. **M3 required tier (GL)** -- Wire `IDirect3DDevice8` draw to a dynamic VBO and pick a shader variant from `rs2_ffp_shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74) and the state shadow (#80) are already in `port/`.
+1. **M3 required tier (GL)** -- Link `rs2_ffp_glsl_for_key` strings to a GL program, wire `IDirect3DDevice8` draw to a dynamic VBO, and pick the variant from `rs2_ffp_shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), and GLSL source (#88) are already in `port/`. SDL2 stays off the check preset.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).
