@@ -185,6 +185,9 @@ HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *
 	UINT nvert = 0;
 	if (!vertex_count(prim_type, prim_count, &nvert)) return E_FAIL;
 	const UINT bytes = nvert * stride;
+	const std::uint64_t key = rs2_ffp_shader_key(g_fvf);
+	Rs2FfpProgramHandle program = nullptr;
+	if (!rs2_ffp_program_for_key(key, &program)) return E_FAIL;
 
 	UpSlot &slot = g_ring[g_head];
 	const auto *src = static_cast<const unsigned char *>(data);
@@ -195,7 +198,8 @@ HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *
 	slot.rec.stride = stride;
 	slot.rec.bytes = bytes;
 	slot.rec.vertices = slot.bytes.data();
-	slot.rec.shader_key = rs2_ffp_shader_key(g_fvf);
+	slot.rec.shader_key = key;
+	slot.rec.program = program;
 
 	g_head = (g_head + 1u) % kUpRing;
 	if (g_count < kUpRing) ++g_count;

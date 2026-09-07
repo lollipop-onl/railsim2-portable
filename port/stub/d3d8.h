@@ -223,6 +223,10 @@ HRESULT rs2_ffp_get_render_state(D3DRENDERSTATETYPE type, DWORD* value);
 HRESULT rs2_ffp_set_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE type,
                                         DWORD value);
 
+// CPU UP ring + program intern (#74 / #92). Bodies in port/ffp_fvf.cpp.
+HRESULT rs2_ffp_draw_primitive_up(DWORD prim_type, UINT prim_count, const void *data,
+                                  UINT stride);
+
 struct IDirect3DDevice8 : IUnknown {
   HRESULT SetRenderState(D3DRENDERSTATETYPE type, DWORD value) {
     return rs2_ffp_set_render_state(type, value);
@@ -241,8 +245,11 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetTexture(DWORD, IDirect3DTexture8*) { return S_OK; }
   HRESULT GetTexture(DWORD, IDirect3DBaseTexture8**) { return S_OK; }
   HRESULT DrawPrimitive(D3DPRIMITIVETYPE, UINT, UINT) { return S_OK; }
-  // CPU record: port/ffp_fvf.h (rs2_ffp_draw_primitive_up). Draw stays no-op.
-  HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE, UINT, const void*, UINT) { return S_OK; }
+  // CPU record + interned program handle. No GL link / VBO.
+  HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE type, UINT count, const void *data,
+                          UINT stride) {
+    return rs2_ffp_draw_primitive_up(type, count, data, stride);
+  }
   HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE, UINT, UINT, UINT, UINT, const void*) { return S_OK; }
   HRESULT SetStreamSource(UINT, IDirect3DVertexBuffer8*, UINT) { return S_OK; }
   HRESULT SetVertexShader(DWORD) { return S_OK; }

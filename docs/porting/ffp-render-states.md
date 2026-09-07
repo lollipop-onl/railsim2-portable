@@ -248,8 +248,9 @@ M3 required `D3DRS_*` / stage-0 / stage-1-env live in `port/ffp_state.*`. GLSL s
 | `rs2_ffp_set_render_state` / `rs2_ffp_set_texture_stage_state` | Shadow the closed core set. Unknown type, stage `> 1`, and deferrable stencil return `E_FAIL` (debug log). |
 | `rs2_ffp_shader_key(fvf)` | Pack closed FVF index + core toggles (lighting, alpha test, env-map TCI, blends) into `uint64_t`. Ambient / alpharef / fog distances stay on the snapshot as uniforms. Unknown / `FVF_S` returns `0`. |
 | `Rs2FfpUpRecord.shader_key` | Copied from `rs2_ffp_shader_key` at each `rs2_ffp_draw_primitive_up`. Later GL selects a variant from this field. |
+| `Rs2FfpUpRecord.program` | Interned handle from `rs2_ffp_program_for_key` (#92). Same key, same handle. |
 
-`IDirect3DDevice8::SetRenderState` / `GetRenderState` / `SetTextureStageState` in `port/stub/d3d8.h` call the shadow. `DrawPrimitiveUP` stays a no-op (record via `rs2_ffp_draw_primitive_up` only).
+`IDirect3DDevice8::SetRenderState` / `GetRenderState` / `SetTextureStageState` in `port/stub/d3d8.h` call the shadow. `DrawPrimitiveUP` calls `rs2_ffp_draw_primitive_up` and records `shader_key` plus the interned program handle.
 
 Stub `D3DRS_LIGHTING` / `D3DRS_AMBIENT` / `D3DRS_FOGVERTEXMODE` / `D3DRS_FOGTABLEMODE` use the real D3D8 numbers so the shadow can switch on type (the previous stub reused `7` / `27` / `36`).
 
@@ -269,8 +270,22 @@ Attribute locations are fixed across the 8 closed FVFs: `0` position, `1` rhw, `
 
 ctest: `rs2_ffp_glsl_self_test` (`port/ffp_glsl_test.cpp --self-test`).
 
+## Program cache / stub draw (port, #92)
+
+`rs2_ffp_glsl_for_key` strings are interned as an opaque program handle in `port/ffp_program.*`. There is still no GL context, program link, or VBO.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_program_for_key(key, &handle)` | Intern VS/FS for a packed `rs2_ffp_shader_key`. Same key returns the same handle. `key == 0` / unknown FVF / `FVF_S` fails. |
+| `rs2_ffp_program_vs` / `rs2_ffp_program_fs` | Interned NUL-terminated sources; must match `#88` for that key. |
+| `IDirect3DDevice8::DrawPrimitiveUP` | Calls `rs2_ffp_draw_primitive_up`. The UP record stores `shader_key` and the interned handle. Draw stays a CPU record. |
+
+`lib/graphic.cpp` / `lib/vertex.cpp` stay off the allowlist. SDL2 stays off the check preset. Real GL program link + VBO upload is the next `#5` slice.
+
+ctest: `rs2_ffp_program_self_test` (`port/ffp_program_test.cpp --self-test`).
+
 ## What #5 should implement next
 
-1. **M3 required tier (GL)** -- Link `rs2_ffp_glsl_for_key` strings to a GL program, wire `IDirect3DDevice8` draw to a dynamic VBO, and pick the variant from `rs2_ffp_shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), and GLSL source (#88) are already in `port/`. SDL2 stays off the check preset.
+1. **M3 required tier (GL)** -- Link interned `#88` VS/FS (`rs2_ffp_program_vs` / `_fs`) to a real GL program, upload `Rs2FfpUpRecord` through a dynamic VBO, and pick the variant from `Rs2FfpUpRecord.program` / `shader_key` until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. FVF tables (#74), the state shadow (#80), GLSL source (#88), and the program intern + stub draw hook (#92) are already in `port/`. SDL2 stays off the check preset.
 2. **Deferrable tier** -- Add stencil shadow pass, additive flare/particle blends, and `FVF_S` as separate slices after core parity.
 3. **Do not expand** -- No new render states in game code without updating this document; unknown FVF/state combos should fail in the shadow ([adr-backend.md](adr-backend.md)).
