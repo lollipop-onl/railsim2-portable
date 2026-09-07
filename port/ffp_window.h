@@ -24,6 +24,11 @@ bool rs2_ffp_window_create(int width, int height, const char *title,
 // Last successful create that has not been destroyed. Null if none.
 Rs2FfpWindowHandle rs2_ffp_window_current();
 
+// Native SDL_Window* of the current FFP handle, or null. Typed as void* so
+// check TUs do not include SDL.h. Null when there is no current window or
+// when SDL/GL is off (check/CI).
+void *rs2_ffp_window_sdl_native();
+
 // SDL_GL_SwapWindow. Fails if handle is null or SDL/GL is off.
 bool rs2_ffp_window_present(Rs2FfpWindowHandle window);
 

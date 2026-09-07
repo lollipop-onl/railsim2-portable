@@ -80,6 +80,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_gl.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_window.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_input_sdl.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp"
@@ -483,6 +484,7 @@ add_test(NAME rs2_wave_load_distribution COMMAND rs2_wave_load_test
 set_tests_properties(rs2_wave_load_distribution PROPERTIES SKIP_RETURN_CODE 77)
 
 # Stub keyboard/mouse/joy poll + ScanInputDevice merge (#82). No SDL.
+# SDL poll lives in rs2_input_sdl.cpp on railsim2_native when RS2_HAVE_SDL2.
 add_executable(rs2_input_test port/rs2_input_test.cpp port/rs2_input.cpp)
 target_include_directories(rs2_input_test SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub")

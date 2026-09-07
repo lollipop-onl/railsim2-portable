@@ -92,6 +92,15 @@ bool rs2_ffp_window_create(int width, int height, const char *title,
 
 Rs2FfpWindowHandle rs2_ffp_window_current() { return g_current; }
 
+void *rs2_ffp_window_sdl_native() {
+#if RS2_HAVE_SDL2 && RS2_HAVE_OPENGL
+	if (!g_current) return nullptr;
+	return g_current->window;
+#else
+	return nullptr;
+#endif
+}
+
 void rs2_ffp_window_try_present() {
 	if (g_current) (void)rs2_ffp_window_present(g_current);
 }

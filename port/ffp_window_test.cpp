@@ -50,6 +50,8 @@ bool no_sdl_gl_present_destroy_fail() {
 		return false;
 	if (!expect(rs2_ffp_window_current() == nullptr, "current stays null"))
 		return false;
+	if (!expect(rs2_ffp_window_sdl_native() == nullptr, "native sdl null"))
+		return false;
 
 	return true;
 }
