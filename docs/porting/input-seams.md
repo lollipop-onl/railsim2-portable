@@ -227,4 +227,16 @@ Replace **`lib/input.cpp`** implementation (and grow **`port/stub/dinput.h`** as
 4. **Win32 cursor warp + center-relative delta** behavior used by `CCursor` / `CCamera` / `MouseLook`.
 5. **`MsgBox` / `MsgYesNo`** signatures until `#12`.
 
-After `#8`, a reader should be able to answer: Ågswap these functions and stub symbols, and M3 camera + editor input still compile and behave.Åh
+After `#8`, a reader should be able to answer: swap these functions and stub symbols, and M3 camera + editor input still compile and behave.
+
+## Port input backend (`port/rs2_input`)
+
+- **Issue**: [#82](https://github.com/lollipop-onl/railsim2-portable/issues/82) (parent [#8](https://github.com/lollipop-onl/railsim2-portable/issues/8))
+- **Entry**: `rs2_input_poll_once` / `rs2_input_scan_*` / `rs2_input_edge` in `port/rs2_input.h`
+- **Backend hooks**: `rs2_input_backend_*` (stub in `port/rs2_input.cpp`; SDL2 later replaces these five poll/cursor functions)
+
+`lib/input.cpp` no longer calls DirectInput COM. `ScanInputDevice` still merges poll buffers, then `ScanKeyboard` / `ScanMouse` / `ScanJoyStick`. Cursor position is client coordinates from the backend (Win32 `GetCursorPos` + `ScreenToClient` later; injected in the stub). `GetKey` / `GetButton` / `GetJoy` keep `S_FREE`..`S_HOLD` via `rs2_input_edge`. `port/stub/dinput.h` now defines the inventory-missing `DIK_*` tokens (`DIK_5`..`DIK_8`, `DIK_A`/`W`/`X`/`C`/`V`/`B`, `DIK_F3`/`F5`/`F6`).
+
+The check preset links the stub only and does **not** start the original `CCrtThread` poll loop (`_beginthreadex` in `port/stub/process.h` would run it inline). `ScanInputDevice` already calls `InputPollOnce` when `g_InputPollCount==0`. Do not add SDL2 to the `check` preset. `MsgBox` / `MsgYesNo` stay sync `MessageBox` until [#12](https://github.com/lollipop-onl/railsim2-portable/issues/12).
+
+`rs2_input_self_test` covers `GetKey` edge/hold, `GetWheel` accumulation, client cursor + inside, joystick axis thresholds, and the stub-missing `DIK_*` constants.

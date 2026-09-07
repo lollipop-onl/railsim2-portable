@@ -38,6 +38,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_state.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
@@ -272,3 +273,14 @@ add_test(NAME rs2_wav_pcm_self_test COMMAND rs2_wav_pcm_test --self-test)
 add_test(NAME rs2_wav_pcm_distribution COMMAND rs2_wav_pcm_test
   "${CMAKE_SOURCE_DIR}/Distribution")
 set_tests_properties(rs2_wav_pcm_distribution PROPERTIES SKIP_RETURN_CODE 77)
+
+# Stub keyboard/mouse/joy poll + ScanInputDevice merge (#82). No SDL.
+add_executable(rs2_input_test port/rs2_input_test.cpp port/rs2_input.cpp)
+target_include_directories(rs2_input_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_input_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_input_test PRIVATE cxx_std_17)
+target_compile_options(rs2_input_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_input_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_input_self_test COMMAND rs2_input_test --self-test)
