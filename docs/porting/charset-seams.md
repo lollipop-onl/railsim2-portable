@@ -234,4 +234,14 @@ ctest: `rs2_ime_self_test` also covers hide leaving open status and composition 
 
 Clipboard bytes are not stored. A later `#16` slice may replace the no-op with an SDL clipboard backend. Do not add SDL2 to `check`. Do not rewrite `CEditCtrl` / list / tree rename. Game sources stay CP932.
 
-`lib/window.cpp` stays off the allowlist (Win32 window / GDI leftovers from `#104`).
+`lib/window.cpp` stays off the allowlist (Win32 window / GDI leftovers from `#104`). Follow-up is `#110`.
+
+## Window `windowsx` / Win32 stubs so `lib/window.cpp` allowlists (`#110`)
+
+- **Issue**: [#110](https://github.com/lollipop-onl/railsim2-portable/issues/110) (parent [#9](https://github.com/lollipop-onl/railsim2-portable/issues/9); depends on [#104](https://github.com/lollipop-onl/railsim2-portable/issues/104))
+- **Entry**: `GetWindowStyle` / `GetWindowExStyle` in `port/stub/windowsx.h`; `WNDCLASSEX` / `RegisterClassEx` / `CreateWindow` / `PAINTSTRUCT` / A/W macros in `port/stub/windows.h`
+- **Allowlist**: `lib/window.cpp` is in `port/native_sources.txt`
+
+`CreateMainWindow` / `AdjustWindow` / `PeekAllMessage` / `MessageProc` compile against no-op window and GDI symbols. `GetWindowStyle` / `GetWindowExStyle` wrap stub `GetWindowLong` (style bits are 0). `BeginPaint` / `EndPaint` / `GetStockObject` / `LoadIcon` / `LoadCursor` return empty handles. `WM_IME_SETCONTEXT` still calls `rs2_ime_hide` (#104); this slice does not touch IME.
+
+CreateWindow / PeekMessage / DefWindowProc are ANSI macros over the existing `*A` stubs. There is no OS window and no real GDI blit; `#16` owns that. Do not add SDL2 to `check`. Do not rewrite IME UI. Game sources stay CP932.

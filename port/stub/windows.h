@@ -49,6 +49,10 @@ typedef void* HBITMAP;
 typedef void* HFONT;
 typedef void* HIMC;
 typedef void* HMMIO;
+typedef void* HICON;
+typedef void* HCURSOR;
+typedef void* HMENU;
+typedef void* HGDIOBJ;
 typedef void* LPVOID;
 typedef const void* LPCVOID;
 typedef char* LPSTR;
@@ -186,6 +190,15 @@ typedef struct tagLOGFONTA {
 #define STDCALL __stdcall
 #endif
 
+typedef LRESULT(CALLBACK *WNDPROC)(HWND, UINT, WPARAM, LPARAM);
+
+#ifndef MAKEINTRESOURCEA
+#define MAKEINTRESOURCEA(i) ((LPSTR)((ULONG_PTR)((WORD)(i))))
+#endif
+#ifndef MAKEINTRESOURCE
+#define MAKEINTRESOURCE MAKEINTRESOURCEA
+#endif
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -230,11 +243,30 @@ typedef long HRESULT;
 
 #define WM_APP 0x8000
 #define WM_CLOSE 0x0010
+#define WM_QUIT 0x0012
 #define WM_CHAR 0x0102
 #define WM_PAINT 0x000F
 #define WM_SIZE 0x0005
 #define WM_MOVE 0x0003
 #define WM_ACTIVATEAPP 0x001C
+#define WM_SYSCOMMAND 0x0112
+#define WM_SYSKEYDOWN 0x0104
+#define WM_DISPLAYCHANGE 0x007E
+#define WM_IME_SETCONTEXT 0x0281
+#define SC_SCREENSAVE 0xF140
+#define SC_MONITORPOWER 0xF170
+#define PM_REMOVE 0x0001
+#define WS_CAPTION 0x00C00000L
+#define WS_SYSMENU 0x00080000L
+#define WS_MINIMIZEBOX 0x00020000L
+#define SWP_NOZORDER 0x0004
+#define SWP_NOACTIVATE 0x0010
+#define GWL_STYLE (-16)
+#define GWL_EXSTYLE (-20)
+#define BLACK_BRUSH 4
+#ifndef IDC_ARROW
+#define IDC_ARROW MAKEINTRESOURCE(32512)
+#endif
 
 #define INVALID_HANDLE_VALUE ((HANDLE)(LONG_PTR)-1)
 
@@ -317,6 +349,22 @@ inline LONG DispatchMessageA(const MSG*) { return 0; }
 inline LRESULT DefWindowProcA(HWND, UINT, WPARAM, LPARAM) { return 0; }
 inline ATOM RegisterClassA(void*) { return 1; }
 inline HWND CreateWindowExA(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HANDLE, HINSTANCE, LPVOID) { return (HWND)1; }
+#ifndef PeekMessage
+#define PeekMessage PeekMessageA
+#endif
+#ifndef DispatchMessage
+#define DispatchMessage DispatchMessageA
+#endif
+#ifndef DefWindowProc
+#define DefWindowProc DefWindowProcA
+#endif
+#ifndef CreateWindowEx
+#define CreateWindowEx CreateWindowExA
+#endif
+#ifndef CreateWindow
+#define CreateWindow(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam) \
+  CreateWindowExA(0L, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
+#endif
 inline BOOL ShowWindow(HWND, int) { return TRUE; }
 inline BOOL UpdateWindow(HWND) { return TRUE; }
 inline HDC GetDC(HWND) { return nullptr; }
@@ -382,6 +430,62 @@ typedef int (*FARPROC)();
 typedef void* HBRUSH;
 typedef void* HPEN;
 typedef void* HRGN;
+
+typedef struct tagWNDCLASSEXA {
+  UINT cbSize;
+  UINT style;
+  WNDPROC lpfnWndProc;
+  int cbClsExtra;
+  int cbWndExtra;
+  HINSTANCE hInstance;
+  HICON hIcon;
+  HCURSOR hCursor;
+  HBRUSH hbrBackground;
+  LPCSTR lpszMenuName;
+  LPCSTR lpszClassName;
+  HICON hIconSm;
+} WNDCLASSEXA, WNDCLASSEX, *PWNDCLASSEXA, *LPWNDCLASSEX;
+
+typedef struct tagPAINTSTRUCT {
+  HDC hdc;
+  BOOL fErase;
+  RECT rcPaint;
+  BOOL fRestore;
+  BOOL fIncUpdate;
+  BYTE rgbReserved[32];
+} PAINTSTRUCT, *PPAINTSTRUCT, *LPPAINTSTRUCT;
+
+inline ATOM RegisterClassExA(const WNDCLASSEXA *) { return 1; }
+inline ATOM RegisterClassEx(const WNDCLASSEX *wc) { return RegisterClassExA(wc); }
+inline HICON LoadIconA(HINSTANCE, LPCSTR) { return nullptr; }
+inline HICON LoadIcon(HINSTANCE i, LPCSTR n) { return LoadIconA(i, n); }
+inline HCURSOR LoadCursorA(HINSTANCE, LPCSTR) { return nullptr; }
+inline HCURSOR LoadCursor(HINSTANCE i, LPCSTR n) { return LoadCursorA(i, n); }
+inline HGDIOBJ GetStockObject(int) { return nullptr; }
+inline HWND GetDesktopWindow() { return (HWND)1; }
+inline BOOL GetWindowRect(HWND, LPRECT rc) {
+  if (rc) {
+    rc->left = 0;
+    rc->top = 0;
+    rc->right = 0;
+    rc->bottom = 0;
+  }
+  return TRUE;
+}
+inline HMENU GetMenu(HWND) { return nullptr; }
+inline BOOL AdjustWindowRectEx(LPRECT, DWORD, BOOL, DWORD) { return TRUE; }
+inline BOOL SetWindowPos(HWND, HWND, int, int, int, int, UINT) { return TRUE; }
+inline LONG GetWindowLongA(HWND, int) { return 0; }
+inline LONG GetWindowLong(HWND h, int i) { return GetWindowLongA(h, i); }
+inline HDC BeginPaint(HWND, LPPAINTSTRUCT ps) {
+  if (ps) std::memset(ps, 0, sizeof(*ps));
+  return nullptr;
+}
+inline BOOL EndPaint(HWND, const PAINTSTRUCT *) { return TRUE; }
+inline BOOL SetWindowTextA(HWND, LPCSTR) { return TRUE; }
+inline BOOL SetWindowText(HWND h, LPCSTR s) { return SetWindowTextA(h, s); }
+inline LRESULT SendMessageA(HWND, UINT, WPARAM, LPARAM) { return 0; }
+inline LRESULT SendMessage(HWND h, UINT m, WPARAM w, LPARAM l) { return SendMessageA(h, m, w, l); }
 
 typedef struct tagBITMAPINFOHEADER {
   DWORD biSize;
