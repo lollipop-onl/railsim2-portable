@@ -141,3 +141,4 @@ CShadowVolume.cpp
 lib/offscreen.cpp
 lib/graphic.cpp
 lib/object.cpp
+lib/height_field.cpp

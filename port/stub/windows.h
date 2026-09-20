@@ -21,12 +21,48 @@
 #include <set>
 #include <cctype>
 #include <algorithm>
+#include <type_traits>
 
-// Win32 min/max macros break libstdc++ <limits> (`numeric_limits::min()`).
-// Portable builds always compile with NOMINMAX; use std::min / std::max.
+// Win32 min/max macros break libstdc++ <limits> (`numeric_limits::min()`), so
+// portable builds always compile with NOMINMAX and never define them here.
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+
+// These stand in for the windef.h min/max that NOMINMAX suppresses, and they
+// are deliberately templates rather than macros. Do not remove them.
+//
+// Not redundant with std::min / std::max: the game calls them on mixed types
+// (CHeightField::GetHeight clamps with min(int, max(int, float))), which
+// std::min rejects because it deduces one parameter type from both arguments.
+// MSVC's macros expanded to a conditional operator, so common_type<A, B>
+// reproduces both the value and the result type the game was written against.
+//
+// Do not "fix" the comparison direction to match std::min, which tests b < a.
+// These test a < b (and max tests a > b) because that is the order the windef.h
+// macros used, and the order is observable once a comparison is unordered:
+// MSVC's min(NaN, x) yields x, std::min(NaN, x) yields NaN. Matching the macros
+// is the point here, and only mixed-type calls reach these overloads, so the
+// divergence from std::min is confined to the calls the macros used to serve.
+//
+// Not restorable as macros either, which is why NOMINMAX stays: windows.h
+// includes standard headers above, libstdc++'s bits/c++config.h has already
+// run its own `#undef min` / `#undef max` by then, and a TU reaching <limits>
+// afterwards parses numeric_limits::min() as a function-like macro invocation.
+// That is what commit 59c3b3e removed the macros for; putting them back here
+// measures as 149 of the 152 game TUs failing on Linux while macOS / libc++
+// stays green, so one host alone will not show the breakage.
+template <class A, class B>
+constexpr typename std::common_type<A, B>::type min(const A& a, const B& b) {
+  typedef typename std::common_type<A, B>::type R;
+  return static_cast<R>(a) < static_cast<R>(b) ? static_cast<R>(a) : static_cast<R>(b);
+}
+
+template <class A, class B>
+constexpr typename std::common_type<A, B>::type max(const A& a, const B& b) {
+  typedef typename std::common_type<A, B>::type R;
+  return static_cast<R>(a) > static_cast<R>(b) ? static_cast<R>(a) : static_cast<R>(b);
+}
 
 typedef int BOOL;
 typedef unsigned char BYTE;
