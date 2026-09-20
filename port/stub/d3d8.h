@@ -251,6 +251,10 @@ struct D3DSURFACE_DESC {
 
 // Truncated to the members tracked sources read; field order follows upstream
 // d3d8types.h so later additions land at their real position.
+struct D3DINDEXBUFFER_DESC {
+  UINT Size;
+};
+
 struct D3DADAPTER_IDENTIFIER8 {
   char Description[512];
 };
@@ -293,6 +297,7 @@ struct IDirect3DBaseTexture8;
 typedef IDirect3DBaseTexture8* LPDIRECT3DBASETEXTURE8;
 struct IDirect3DSurface8;
 struct IDirect3DVertexBuffer8;
+struct IDirect3DIndexBuffer8;
 struct IDirect3DSwapChain8;
 
 typedef IDirect3D8* LPDIRECT3D8;
@@ -300,6 +305,7 @@ typedef IDirect3DDevice8* LPDIRECT3DDEVICE8;
 typedef IDirect3DTexture8* LPDIRECT3DTEXTURE8;
 typedef IDirect3DSurface8* LPDIRECT3DSURFACE8;
 typedef IDirect3DVertexBuffer8* LPDIRECT3DVERTEXBUFFER8;
+typedef IDirect3DIndexBuffer8* LPDIRECT3DINDEXBUFFER8;
 
 // M3 core FFP shadow (#80). Bodies in port/ffp_state.cpp.
 HRESULT rs2_ffp_set_render_state(D3DRENDERSTATETYPE type, DWORD value);
@@ -396,6 +402,12 @@ struct IDirect3DSurface8 : IUnknown {
 struct IDirect3DVertexBuffer8 : IUnknown {
   HRESULT Lock(UINT, UINT, BYTE**, DWORD) { return S_OK; }
   HRESULT Unlock() { return S_OK; }
+};
+
+struct IDirect3DIndexBuffer8 : IUnknown {
+  HRESULT Lock(UINT, UINT, BYTE**, DWORD) { return S_OK; }
+  HRESULT Unlock() { return S_OK; }
+  HRESULT GetDesc(D3DINDEXBUFFER_DESC*) { return S_OK; }
 };
 
 struct IDirect3D8 : IUnknown {
