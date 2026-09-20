@@ -275,6 +275,8 @@ struct ID3DXMesh : IUnknown {
   HRESULT UnlockIndexBuffer() { return S_OK; }
   HRESULT LockAttributeBuffer(DWORD, DWORD**) { return S_OK; }
   HRESULT UnlockAttributeBuffer() { return S_OK; }
+  HRESULT GetVertexBuffer(LPDIRECT3DVERTEXBUFFER8*) { return S_OK; }
+  HRESULT GetIndexBuffer(LPDIRECT3DINDEXBUFFER8*) { return S_OK; }
   DWORD GetNumFaces() { return 0; }
   DWORD GetNumVertices() { return 0; }
   DWORD GetFVF() { return 0; }
