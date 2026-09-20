@@ -95,6 +95,28 @@ reported 4 errors naming two identifiers, and adding `OSVERSIONINFO` alone
 exposed a third one, `GetVersionEx`, that the `unknown type name` diagnostic on
 `ver` had been suppressing.
 
+When a stub struct grows, put the new member at its upstream SDK position
+rather than at the end -- `d3d8types.h` for most of `port/stub/d3d8.h`, but
+`d3d8caps.h` for `D3DCAPS8` and `d3d8.h` itself for `D3DADAPTER_IDENTIFIER8`.
+Which members are kept is decided by what the tracked sources read; the order
+they are kept in is the part of the layout the tree can get wrong without
+anyone noticing, because nothing takes `offsetof`, nothing initializes one of
+these with a positional aggregate initializer, and `check` passes either way.
+`D3DSURFACE_DESC` held `MultiSampleType` after `Width` and `Height` from the
+first stub commit (`#15`) until `#140`.
+
+"Reordering is invisible" holds for the `d3d8.h` structs, not for stub structs
+in general. `D3DMATERIAL8` in `port/stub/d3dx8.h` is copied by layout:
+`rs2_ffp_set_material` in `port/ffp_state.cpp` memcpys the game's
+`D3DMATERIAL8` into `Rs2FfpMaterial` (`port/ffp_state.h`), a field-for-field
+twin declared in terms of `float`, and the `static_assert` in
+`port/ffp_state_test.cpp` compares the two sizes only. Reordering
+`D3DMATERIAL8` would leave `check` green and hand the FFP the wrong colours.
+The tree takes `sizeof` of a stub struct in three places: that one,
+`ZeroMemory(&sv3.d3dpp, ...)` in `lib/graphic.cpp` and
+`ZeroMemory(&svl.dir, sizeof(D3DLIGHT8))` in `lib/light.cpp`. Only the memcpy
+depends on the order of the members.
+
 ### The stubs already in the tree have nothing left to offer
 
 `lib/movie.cpp` was the last game TU that compiled as-is, and the allowlist has
