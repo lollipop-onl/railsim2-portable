@@ -220,6 +220,19 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 
 enum D3DRESOURCETYPE { D3DRTYPE_SURFACE = 1, D3DRTYPE_TEXTURE = 3 };
 
+// The structs below hold the members tracked sources read, in upstream SDK
+// order -- d3d8types.h, except d3d8caps.h for D3DCAPS8 and d3d8.h for
+// D3DADAPTER_IDENTIFIER8 -- so later additions land at their real position.
+// Compiling cannot tell that the order is wrong: nothing takes offsetof of one
+// of these, nothing initializes one with a positional aggregate initializer,
+// and the one sizeof reaching any of them, the ZeroMemory in
+// SetPresentParam (lib/graphic.cpp), spans a whole struct. That is a property
+// of these structs, not of the stubs at large: D3DMATERIAL8 over in d3dx8.h is
+// copied by layout, so reordering it would go just as unnoticed and break the
+// FFP material. A member out of place here stays invisible until a backend
+// starts filling one of these in. D3DLOCKED_RECT, D3DCLIPSTATUS8 and
+// D3DVIEWPORT8 are whole because upstream has no further members, not because
+// the rule stops at them.
 struct D3DPRESENT_PARAMETERS {
   UINT BackBufferWidth;
   UINT BackBufferHeight;
@@ -244,13 +257,11 @@ struct D3DSURFACE_DESC {
   D3DFORMAT Format;
   D3DRESOURCETYPE Type;
   DWORD Usage;
+  UINT MultiSampleType;
   UINT Width;
   UINT Height;
-  UINT MultiSampleType;
 };
 
-// Truncated to the members tracked sources read; field order follows upstream
-// d3d8types.h so later additions land at their real position.
 struct D3DINDEXBUFFER_DESC {
   UINT Size;
 };
