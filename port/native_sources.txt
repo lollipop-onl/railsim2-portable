@@ -136,3 +136,6 @@ CLensFlare.cpp
 CRailwayPluginSet.cpp
 GraphicCover.cpp
 lib/light.cpp
+lib/effect.cpp
+CShadowVolume.cpp
+lib/offscreen.cpp
