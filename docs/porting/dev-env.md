@@ -47,7 +47,7 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 
 | Blocker | Examples |
 |---------|----------|
-| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/graphic.cpp` (`D3DCAPS8`, `D3DFMT_*`, `D3DMULTISAMPLE_NONE`, `EnumAdapterModes`), `lib/object.cpp` (`LPDIRECT3DINDEXBUFFER8`), `lib/height_field.cpp` (`IDirect3DTexture8::GetLevelDesc`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
+| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/object.cpp` (`LPDIRECT3DINDEXBUFFER8`, `D3DINDEXBUFFER_DESC`, `ID3DXMesh::GetVertexBuffer`), `lib/height_field.cpp` / `lib/texture.cpp` (`IDirect3DTexture8::GetLevelDesc`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/debug.cpp` (`OSVERSIONINFO`), `lib/sprite.cpp` (`::SetRect` not in stub) |
 | Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
 | Type mismatch, nothing missing | `lib/height_field.cpp` (`min` / `max` over mixed `int` and `float` -- the game assumes MSVC's `windef.h` macros, which `NOMINMAX` removes), `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
@@ -56,10 +56,12 @@ A TU can sit in more than one row, so the rows are not a partition and the table
 alone does not tell you what a stub addition buys. `lib/height_field.cpp` appears
 under both a missing type and a type mismatch; `D3DLOCKED_RECT` is now in the
 stub and `GetLevelDesc` would be the next addition, yet the TU still fails on
-`min` / `max`. Before allowlisting a group, compile its TUs with
+`min` / `max`. `lib/texture.cpp` wants `GetLevelDesc` too, and still has GDI
+errors under it. Before allowlisting a group, compile its TUs with
 `-ferror-limit=0` against the flags in `build/check/compile_commands.json` and
 check that the list of errors goes to zero, not just that the first one
-disappears.
+disappears. Count with `grep -E 'error:'`: `': error:'` misses `fatal error:`,
+and CP932 sources need `grep -a` or they are skipped as binary.
 
 ### Both hosts, always
 

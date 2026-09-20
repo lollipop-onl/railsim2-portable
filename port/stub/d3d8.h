@@ -21,9 +21,24 @@ typedef DWORD D3DTEXTUREADDRESS;
 typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 
 #define D3DFMT_UNKNOWN 0
+#define D3DFMT_R8G8B8 20
 #define D3DFMT_A8R8G8B8 21
 #define D3DFMT_X8R8G8B8 22
 #define D3DFMT_R5G6B5 23
+#define D3DFMT_X1R5G5B5 24
+#define D3DFMT_A1R5G5B5 25
+#define D3DFMT_A4R4G4B4 26
+#define D3DFMT_R3G3B2 27
+#define D3DFMT_A8 28
+#define D3DFMT_A8R3G3B2 29
+#define D3DFMT_X4R4G4B4 30
+#define D3DFMT_D16_LOCKABLE 70
+#define D3DFMT_D32 71
+#define D3DFMT_D15S1 73
+#define D3DFMT_D24S8 75
+#define D3DFMT_D24X8 77
+#define D3DFMT_D24X4S4 79
+#define D3DFMT_D16 80
 
 #define D3DCLEAR_TARGET 0x00000001L
 #define D3DCLEAR_ZBUFFER 0x00000002L
@@ -172,6 +187,36 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DTA_CURRENT 1
 
 #define D3DUSAGE_RENDERTARGET 0x00000001L
+#define D3DUSAGE_DEPTHSTENCIL 0x00000002L
+
+#define D3DCS_LEFT 0x00000001L
+#define D3DCS_RIGHT 0x00000002L
+#define D3DCS_TOP 0x00000004L
+#define D3DCS_BOTTOM 0x00000008L
+#define D3DCS_FRONT 0x00000010L
+#define D3DCS_BACK 0x00000020L
+#define D3DCS_PLANE0 0x00000040L
+#define D3DCS_PLANE1 0x00000080L
+#define D3DCS_PLANE2 0x00000100L
+#define D3DCS_PLANE3 0x00000200L
+#define D3DCS_PLANE4 0x00000400L
+#define D3DCS_PLANE5 0x00000800L
+#define D3DCS_ALL (D3DCS_LEFT|D3DCS_RIGHT|D3DCS_TOP|D3DCS_BOTTOM|D3DCS_FRONT|D3DCS_BACK| \
+                   D3DCS_PLANE0|D3DCS_PLANE1|D3DCS_PLANE2|D3DCS_PLANE3|D3DCS_PLANE4|D3DCS_PLANE5)
+
+#define D3DPRASTERCAPS_FOGVERTEX 0x00000080L
+#define D3DPRASTERCAPS_FOGTABLE 0x00000100L
+#define D3DPRASTERCAPS_FOGRANGE 0x00010000L
+#define D3DPTEXTURECAPS_ALPHA 0x00000004L
+#define D3DPTEXTURECAPS_MIPMAP 0x00004000L
+#define D3DTEXOPCAPS_BUMPENVMAP 0x00200000L
+
+#define D3DMULTISAMPLE_NONE 0
+#define D3DSWAPEFFECT_DISCARD 1
+#define D3DADAPTER_DEFAULT 0
+
+#define D3DERR_DEVICELOST ((HRESULT)0x88760868L)
+#define D3DERR_DEVICENOTRESET ((HRESULT)0x88760869L)
 
 enum D3DRESOURCETYPE { D3DRTYPE_SURFACE = 1, D3DRTYPE_TEXTURE = 3 };
 
@@ -181,6 +226,8 @@ struct D3DPRESENT_PARAMETERS {
   D3DFORMAT BackBufferFormat;
   UINT BackBufferCount;
   UINT MultiSampleType;
+  UINT SwapEffect;
+  HWND hDeviceWindow;
   BOOL Windowed;
   BOOL EnableAutoDepthStencil;
   D3DFORMAT AutoDepthStencilFormat;
@@ -200,6 +247,34 @@ struct D3DSURFACE_DESC {
   UINT Width;
   UINT Height;
   UINT MultiSampleType;
+};
+
+// Truncated to the members tracked sources read; field order follows upstream
+// d3d8types.h so later additions land at their real position.
+struct D3DADAPTER_IDENTIFIER8 {
+  char Description[512];
+};
+
+struct D3DDISPLAYMODE {
+  UINT Width;
+  UINT Height;
+  D3DFORMAT Format;
+};
+
+struct D3DCAPS8 {
+  DWORD RasterCaps;
+  DWORD TextureCaps;
+  DWORD MaxTextureWidth;
+  DWORD MaxTextureHeight;
+  DWORD TextureOpCaps;
+  DWORD MaxSimultaneousTextures;
+  DWORD MaxActiveLights;
+  DWORD MaxPrimitiveCount;
+};
+
+struct D3DCLIPSTATUS8 {
+  DWORD ClipUnion;
+  DWORD ClipIntersection;
 };
 
 struct D3DVIEWPORT8 {
@@ -324,9 +399,14 @@ struct IDirect3DVertexBuffer8 : IUnknown {
 };
 
 struct IDirect3D8 : IUnknown {
-  HRESULT CreateDevice(UINT, void*, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8**) { return S_OK; }
+  HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8**) { return S_OK; }
   HRESULT GetAdapterCount() { return 1; }
+  HRESULT GetAdapterIdentifier(UINT, DWORD, D3DADAPTER_IDENTIFIER8*) { return S_OK; }
+  HRESULT GetAdapterDisplayMode(UINT, D3DDISPLAYMODE*) { return S_OK; }
+  UINT GetAdapterModeCount(UINT) { return 0; }
+  HRESULT EnumAdapterModes(UINT, UINT, D3DDISPLAYMODE*) { return S_OK; }
   HRESULT CheckDeviceFormat(UINT, DWORD, D3DFORMAT, DWORD, D3DRESOURCETYPE, D3DFORMAT) { return S_OK; }
+  HRESULT CheckDepthStencilMatch(UINT, DWORD, D3DFORMAT, D3DFORMAT, D3DFORMAT) { return S_OK; }
 };
 
 #define D3D_SDK_VERSION 220
