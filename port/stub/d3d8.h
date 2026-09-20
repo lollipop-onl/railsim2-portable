@@ -155,6 +155,8 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DLOCK_READONLY 0x00000010L
 #define D3DSTENCILOP_KEEP 1
 #define D3DSTENCILOP_REPLACE 3
+#define D3DSTENCILOP_INCR 7
+#define D3DSTENCILOP_DECR 8
 #define D3DCLEAR_STENCIL 0x00000004L
 #define D3DRS_ALPHAFUNC 16
 #define D3DRS_ALPHAREF 17
@@ -178,11 +180,17 @@ struct D3DPRESENT_PARAMETERS {
   UINT BackBufferHeight;
   D3DFORMAT BackBufferFormat;
   UINT BackBufferCount;
+  UINT MultiSampleType;
   BOOL Windowed;
   BOOL EnableAutoDepthStencil;
   D3DFORMAT AutoDepthStencilFormat;
   UINT FullScreen_RefreshRateInHz;
   UINT FullScreen_PresentationInterval;
+};
+
+struct D3DLOCKED_RECT {
+  INT Pitch;
+  void* pBits;
 };
 
 struct D3DSURFACE_DESC {
