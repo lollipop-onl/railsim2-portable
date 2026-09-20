@@ -100,6 +100,8 @@ target_compile_options(railsim2_native PRIVATE
   -Wextra
   -Wno-invalid-source-encoding
   -Wno-address-of-temporary
+  -Wnonportable-include-path
+  -Werror=nonportable-include-path
 )
 
 target_compile_definitions(railsim2_native PRIVATE
