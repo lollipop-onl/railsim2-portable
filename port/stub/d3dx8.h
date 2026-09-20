@@ -45,6 +45,14 @@ struct D3DXVECTOR3 {
   float x, y, z;
   D3DXVECTOR3() : x(0), y(0), z(0) {}
   D3DXVECTOR3(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
+  // Upstream D3DX8 derives D3DXVECTOR3 from D3DVECTOR and additionally declares
+  // this converting constructor. Only the constructor is reproduced: D3DLIGHT8's
+  // Position and Direction are the tree's only D3DVECTOR objects and nothing
+  // passes a D3DXVECTOR3 where a D3DVECTOR is wanted, so the derived-to-base
+  // conversion a base class would also bring has no user. Copying the members is
+  // what the game already does to Direction through a VEC3 * (CScene.cpp:152,
+  // CProfilePlugin.cpp:527, lib/light.cpp:21).
+  D3DXVECTOR3(const D3DVECTOR& v) : x(v.x), y(v.y), z(v.z) {}
   D3DXVECTOR3& operator+=(const D3DXVECTOR3& o) {
     x += o.x;
     y += o.y;
@@ -99,6 +107,8 @@ struct D3DMATERIAL8 {
   D3DCOLORVALUE Emissive;
   float Power;
 };
+
+#define D3DLIGHT_DIRECTIONAL 3
 
 struct D3DLIGHT8 {
   DWORD Type;
