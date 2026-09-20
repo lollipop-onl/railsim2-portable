@@ -46,8 +46,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(RS2_NATIVE_TOTAL 254 CACHE STRING "Root-level game sources tracked for compile progress")
-
 function(rs2_read_native_sources out_var)
   file(READ "${CMAKE_SOURCE_DIR}/port/native_sources.txt" _raw)
   string(REPLACE "\r\n" "\n" _raw "${_raw}")

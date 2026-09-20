@@ -2,7 +2,7 @@
 
 This document freezes the **portable ABI** that game code already depends on.
 
-If a later backend implements this surface, the 254 root-level game sources can stay unchanged and still compile. That is the M1 #1 exit condition.
+If a later backend implements this surface, the root-level game sources can stay unchanged and still compile. That is the M1 #1 exit condition.
 
 Counts below are from the tree at this document's commit. Re-run the commands in [Verification](#verification) if the tree moves.
 
@@ -231,9 +231,9 @@ M0 `port/stub/` already sketches types and a silent `IDirect3DDevice8`. To move 
 
 1. Expand stubs until allowlisted TUs that include `stdafx.h` compile (math operators, missing D3D methods, Win32 leftovers).
 2. Add a native executable *target* (link errors remaining are acceptable if the objects exist).
-3. Do **not** wait for 254/254 before landing the skeleton. Growing `port/native_sources.txt` is monotonic progress; keep `./scripts/check.sh` green.
+3. Do **not** wait for a full allowlist before landing the skeleton. Growing `port/native_sources.txt` is monotonic progress; keep `./scripts/check.sh` green.
 
-Full-source compile-through remains the issue #3 written exit. Treat it as the allowlist approaching 254, not as a requirement to ship a running binary in M1.
+Full-source compile-through remains the issue #3 written exit. Treat it as the allowlist approaching every game TU (see [dev-env.md](dev-env.md)), not as a requirement to ship a running binary in M1.
 
 ## Verification
 

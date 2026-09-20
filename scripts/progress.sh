@@ -4,8 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-TOTAL="${RS2_NATIVE_TOTAL:-254}"
 ALLOWLIST="${ROOT}/port/native_sources.txt"
+
+# The Linux leg of #124 measures a `git archive` extraction inside a container,
+# where a bind mount would leak the macOS host's case-insensitivity. That tree
+# has no `.git`, so the denominator cannot come from `git ls-files`.
+total="$(find . lib -maxdepth 1 -type f -name '*.cpp' | wc -l | tr -d '[:space:]')"
 
 enabled=0
 while IFS= read -r line || [[ -n "${line}" ]]; do
@@ -18,10 +22,10 @@ done < "${ALLOWLIST}"
 python3 - <<PY
 import json
 print(json.dumps({
-  "total": ${TOTAL},
+  "total": ${total},
   "enabled": ${enabled},
   "compiled": ${enabled},
-  "ratio": "${enabled}/${TOTAL}",
-  "message": f"${enabled}/${TOTAL} files compile natively"
+  "ratio": "${enabled}/${total}",
+  "message": "${enabled}/${total} game translation units compile natively"
 }, ensure_ascii=False))
 PY
