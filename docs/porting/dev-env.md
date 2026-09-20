@@ -47,22 +47,72 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 
 | Blocker | Examples |
 |---------|----------|
-| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/height_field.cpp` / `lib/texture.cpp` (`IDirect3DTexture8::GetLevelDesc`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
+| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/debug.cpp` (`OSVERSIONINFO`), `lib/sprite.cpp` (`::SetRect` not in stub) |
 | Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
-| Type mismatch, nothing missing | `lib/height_field.cpp` (`min` / `max` over mixed `int` and `float` -- the game assumes MSVC's `windef.h` macros, which `NOMINMAX` removes), `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
+| Type mismatch, nothing missing | `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
 
 A TU can sit in more than one row, so the rows are not a partition and the table
-alone does not tell you what a stub addition buys. `lib/height_field.cpp` appears
-under both a missing type and a type mismatch; `D3DLOCKED_RECT` is now in the
-stub and `GetLevelDesc` would be the next addition, yet the TU still fails on
-`min` / `max` (3 errors, of which 2 survive `GetLevelDesc`). `lib/texture.cpp`
-wants `GetLevelDesc` too, and 18 of its 21 errors sit under the GDI gap.
+alone does not tell you what a stub addition buys. `lib/height_field.cpp` used to
+appear under both a missing type and a type mismatch: `IDirect3DTexture8::GetLevelDesc`
+closed only 1 of its 3 errors, and the other 2 needed the `min` / `max` seam below.
+`lib/texture.cpp` wants `GetLevelDesc` too, yet is still blocked: it went 21 errors
+to 18, all of them under the GDI gap.
 Before allowlisting a group, compile its TUs with
 `-ferror-limit=0` against the flags in `build/check/compile_commands.json` and
 check that the list of errors goes to zero, not just that the first one
 disappears. Count with `grep -E 'error:'`: `': error:'` misses `fatal error:`,
 and CP932 sources need `grep -a` or they are skipped as binary.
+
+### `min` / `max` under `NOMINMAX`
+
+`port/stub/windows.h` defines `NOMINMAX` **and** declares global `min` / `max`
+function templates. That is not a contradiction: `NOMINMAX` suppresses the Win32
+*macros*, and the templates give back the call-site semantics the game was
+written against without reintroducing macro text.
+
+The game calls `min` / `max` on mixed types -- `min(m_width-1, max(0, x/m_scale+m_width/2))`
+in `CHeightField::GetHeight` mixes `int` and `float`. `std::min` deduces one
+parameter type from both arguments and rejects that, while the MSVC `windef.h`
+macros expanded to a conditional operator and applied the usual arithmetic
+conversions. The stub templates return `std::common_type<A, B>::type`, which is
+the conditional operator's result type, so both the value and the type match what
+the game saw on MSVC.
+
+The comparison direction is the macros' (`a < b ? a : b`), not `std::min`'s
+(`b < a ? b : a`). It matters once a comparison is unordered: MSVC's
+`min(NaN, x)` is `x`, `std::min(NaN, x)` is `NaN`. Checking both templates
+bit-for-bit against the macro expansion over NaN, infinity and signed-zero
+arguments, the macro direction agrees on all of them and `std::min`'s disagrees
+on 12 of 32.
+
+Do not turn them back into macros. Commit `59c3b3e` removed the macro versions
+because Linux CI could not compile libstdc++ `<limits>`: `windows.h` includes
+standard headers first, libstdc++'s `bits/c++config.h` has already run its own
+`#undef min` / `#undef max` by then, and a TU that reaches `<limits>` afterwards
+parses `numeric_limits::min()` as a function-like macro invocation. Measured on
+`ubuntu:24.04` / clang 18.1.3, a macro version fails **149 of the 152 game TUs**
+(18072 errors, mostly `limits:1658: too few arguments provided to function-like
+macro invocation`). macOS / libc++ compiles the same macro version with no
+regression at all, so this is one of the cases where a single host proves
+nothing.
+
+Do not delete them as redundant with `std::min` / `std::max` either -- see above.
+`using namespace std;` leaks in from several game headers, but there is no
+ambiguity: for same-type arguments `std::min<T>(const T&, const T&)` wins by
+partial ordering, and for mixed types only `::min` is viable.
+
+One blind spot comes with them. The macros compared at the call site, so
+`min(some_int, some_unsigned)` used to raise `-Wsign-compare` there; the
+templates compare inside `port/stub/windows.h` after casting both operands to
+`common_type`, so the same call is now silent. Two separate things hide it: the
+casts make the comparison same-signedness, and `-isystem port/stub` would
+suppress a diagnostic in the template body anyway (a cast-free version of the
+same template warns under `-I` and is silent under `-isystem`). Today the only
+mixed-type calls in the tree are the two `int` / `float` ones in
+`CHeightField::GetHeight`, so nothing is being hidden yet -- but a sign-mixed
+comparison can now enter game code without any diagnostic, where before it was
+a hard error.
 
 ### Both hosts, always
 

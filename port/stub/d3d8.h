@@ -388,6 +388,7 @@ struct IDirect3DDevice8 : IUnknown {
 
 struct IDirect3DBaseTexture8 : IUnknown {};
 struct IDirect3DTexture8 : IDirect3DBaseTexture8 {
+  HRESULT GetLevelDesc(UINT, D3DSURFACE_DESC*) { return S_OK; }
   HRESULT GetSurfaceLevel(UINT, IDirect3DSurface8**) { return S_OK; }
   HRESULT LockRect(UINT, void*, void*, DWORD) { return S_OK; }
   HRESULT UnlockRect(UINT) { return S_OK; }
