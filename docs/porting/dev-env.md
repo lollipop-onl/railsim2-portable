@@ -54,10 +54,18 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 
 ### Both hosts, always
 
-CI (`.github/workflows/check.yml`) is a matrix of `macos-15` **and** `ubuntu-24.04`. A TU that compiles on the host you happen to be sitting at is not allowlistable; it has to pass on both, and four TUs currently prove why:
+CI (`.github/workflows/check.yml`) is a matrix of `macos-15` **and** `ubuntu-24.04`. A TU that compiles on the host you happen to be sitting at is not allowlistable; it has to pass on both.
 
-- `CGameMode.cpp` and `RailSim2.cpp` spell the include `"RSPV.h"` while the tracked file is `RSPV.H`. macOS resolves this on a case-insensitive filesystem (with `-Wnonportable-include-path`); Linux gives `fatal error: 'RSPV.h' file not found`. Note that a Docker bind mount from a macOS host leaks that case-insensitivity into the container, so verification has to unpack `git archive HEAD` inside the container instead.
-- `CLensFlare.cpp` and `CRailwayPluginSet.cpp` fail the other way round: only under libc++, where the `std::list::sort` call cannot find an `operator<`.
+`CLensFlare.cpp` and `CRailwayPluginSet.cpp` still prove it: they fail only under libc++, where the `std::list::sort` call cannot find an `operator<`.
+
+#### Include path case (resolved, but keep the trap in mind)
+
+`CGameMode.cpp` and `RailSim2.cpp` spelled the include `"RSPV.h"` while the tracked file was `RSPV.H` -- the only `.H` in a tree of 130-plus `.h` headers. macOS resolved it on its case-insensitive filesystem and emitted only `-Wnonportable-include-path`; Linux gave `fatal error: 'RSPV.h' file not found`. The file is now tracked as `RSPV.h` and both TUs are allowlisted.
+
+Two things outlive the fix:
+
+- The `check` preset compiles `railsim2_native` with `-Werror=nonportable-include-path`, so a new case mismatch fails on macOS too instead of waiting for Linux CI. A sweep of every game TU (124 root `*.cpp` plus 28 under `lib/`) is clean under it, allowlisted or not.
+- A Docker **bind mount** from a macOS host leaks that case-insensitivity into the container, so a mismatch passes there and the verification proves nothing. Unpack `git archive HEAD` inside the container (overlayfs) and confirm with `ls RSPV.h` / `ls RSPV.H` that the container filesystem really is case-sensitive before measuring.
 
 Win32 `.rc` is skipped on native. Icons stay as files until a later loader. Sources stay CP932 (M0 encoding-guard). `stdafx.h` already uses `lib/udx.h` with forward slashes.
 

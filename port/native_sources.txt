@@ -130,3 +130,5 @@ lib/vertex.cpp
 lib/view.cpp
 lib/view_ctrl.cpp
 lib/water_mesh.cpp
+CGameMode.cpp
+RailSim2.cpp

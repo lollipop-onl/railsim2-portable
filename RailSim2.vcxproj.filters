@@ -976,7 +976,7 @@
     <ClInclude Include="RailMap.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
-    <ClInclude Include="RSPV.H">
+    <ClInclude Include="RSPV.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
     <ClInclude Include="Script.h">
