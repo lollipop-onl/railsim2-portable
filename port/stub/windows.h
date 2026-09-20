@@ -160,6 +160,11 @@ typedef struct _GUID {
   unsigned char Data4[8];
 } GUID;
 
+inline bool operator==(const GUID& a, const GUID& b) {
+  return a.Data1 == b.Data1 && a.Data2 == b.Data2 && a.Data3 == b.Data3 &&
+         std::memcmp(a.Data4, b.Data4, sizeof(a.Data4)) == 0;
+}
+
 typedef struct _LARGE_INTEGER {
   LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
