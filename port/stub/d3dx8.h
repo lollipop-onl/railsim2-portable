@@ -262,8 +262,17 @@ inline D3DXMATRIX* D3DXMatrixRotationZ(D3DXMATRIX* out, float) {
 
 #define D3DX_DEFAULT ((UINT)-1)
 
+#define D3DXMESH_VB_SYSTEMMEM 0x010L
+#define D3DXMESH_IB_SYSTEMMEM 0x100L
+#define D3DXMESH_SYSTEMMEM (D3DXMESH_VB_SYSTEMMEM | D3DXMESH_IB_SYSTEMMEM)
+
+#define D3DXMESHOPT_COMPACT 0x01000000L
+#define D3DXMESHOPT_ATTRSORT 0x02000000L
+#define D3DXMESHOPT_VERTEXCACHE 0x04000000L
+
 struct ID3DXMesh;
 struct ID3DXSprite;
+struct ID3DXBuffer;
 typedef ID3DXMesh* LPD3DXMESH;
 typedef ID3DXSprite* LPD3DXSPRITE;
 
@@ -280,6 +289,7 @@ struct ID3DXMesh : IUnknown {
   DWORD GetNumFaces() { return 0; }
   DWORD GetNumVertices() { return 0; }
   DWORD GetFVF() { return 0; }
+  HRESULT Optimize(DWORD, const DWORD*, DWORD*, DWORD*, ID3DXBuffer**, ID3DXMesh**) { return E_NOTIMPL; }
 };
 
 struct ID3DXSprite : IUnknown {
@@ -372,14 +382,14 @@ inline HRESULT D3DXLoadMeshFromX(LPCSTR, DWORD, IDirect3DDevice8*, LPD3DXBUFFER*
                                  LPD3DXMESH*) {
   return E_NOTIMPL;
 }
-inline HRESULT D3DXLoadMeshFromXof(void*, DWORD, IDirect3DDevice8*, LPD3DXBUFFER*, LPD3DXBUFFER*, DWORD*, LPD3DXBUFFER*,
+inline HRESULT D3DXLoadMeshFromXof(void*, DWORD, IDirect3DDevice8*, LPD3DXBUFFER*, LPD3DXBUFFER*, DWORD*,
                                    LPD3DXMESH*) {
   return E_NOTIMPL;
 }
 inline HRESULT D3DXCreateBox(IDirect3DDevice8*, FLOAT, FLOAT, FLOAT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateSphere(IDirect3DDevice8*, FLOAT, UINT, UINT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateTeapot(IDirect3DDevice8*, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
-inline HRESULT D3DXComputeBoundingBox(D3DXVECTOR3*, DWORD, DWORD, D3DXVECTOR3*, D3DXVECTOR3*) { return S_OK; }
+inline HRESULT D3DXComputeBoundingBox(const void*, DWORD, DWORD, D3DXVECTOR3*, D3DXVECTOR3*) { return S_OK; }
 inline HRESULT D3DXComputeBoundingSphere(D3DXVECTOR3*, DWORD, DWORD, D3DXVECTOR3*, FLOAT*) { return S_OK; }
 inline BOOL D3DXBoxBoundProbe(const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
   return FALSE;

@@ -69,7 +69,7 @@ a literal in `CMakeLists.txt`.
 
 | Blocker | Examples |
 |---------|----------|
-| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
+| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/sprite.cpp` (`::SetRect` not in stub) |
 | Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
 | Type mismatch, nothing missing | `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
@@ -81,15 +81,24 @@ closed only 1 of its 3 errors, and the other 2 needed the `min` / `max` seam bel
 `lib/texture.cpp` wants `GetLevelDesc` too, yet is still blocked: it went 21 errors
 to 18, all of them under the GDI gap.
 
-The row a TU sits in is a guess until it is measured, and two of them were wrong.
+The row a TU sits in is a guess until it is measured, and three of them were wrong.
 `lib/debug.cpp` sat under GDI because of `OSVERSIONINFO`, but that type and the
 `GetVersionEx` / `OutputDebugString` beside it are OS-information and debug-output
 seams with no GDI in them; it needed one struct and two inline seams, not #16.
 `lib/main.cpp` was never in this table, but #124 listed it beside `lib/comm.cpp` /
 `lib/music.cpp` / `lib/sound.cpp` as needing a real backend. It needed `CoInitialize` and
 `CoUninitialize`, 2 errors against their 70 / 41 / 14, and no COM runtime at all:
-a portable build has nothing to initialize, so both are no-ops. Read "needs a real
-backend" as a claim to re-measure rather than a verdict.
+a portable build has nothing to initialize, so both are no-ops. `lib/mesh.cpp` was
+in the right row but its cost was guessed too high: `#124` read "no `rmxfguid.h`"
+as a choice between transcribing the SDK's GUIDs and template table or replacing
+the `.x` reader outright, and it was neither. The TU needs the two headers to
+*parse*, and the only identifiers it takes from them -- `TID_D3DRMMesh`,
+`D3DRM_XTEMPLATES`, `D3DRM_XTEMPLATE_BYTES` -- are read on the `CMesh::Load(fRes=TRUE)`
+path alone, which has no caller: all 16 `fRes` arguments in the tree are `FALSE`
+(15 `CMeshList::Get` calls and `lib/anim.cpp`'s direct `CMesh::Load`), and the
+`FALSE` branch already goes through `port/xfile.cpp` (`#45`). Placeholders with
+the reason written on them were enough. Read "needs a real backend" -- and any
+estimate of what a row costs -- as a claim to re-measure rather than a verdict.
 
 `OutputDebugString` is the one seam here that is not a bare no-op. It writes to
 `stderr`, because `lib/debug.cpp` only reaches it when `g_debugDest` is empty --
@@ -105,7 +114,13 @@ and CP932 sources need `grep -a` or they are skipped as binary.
 Measure in stages: an error can hide a second one behind it. `lib/debug.cpp`
 reported 4 errors naming two identifiers, and adding `OSVERSIONINFO` alone
 exposed a third one, `GetVersionEx`, that the `unknown type name` diagnostic on
-`ver` had been suppressing.
+`ver` had been suppressing. A `fatal error` hides everything after it, so a TU
+that stops on a missing header has to be measured at least twice: `lib/mesh.cpp`
+reported 1, then 18 with the two headers present but empty, then 16 once they
+declared their three identifiers -- and the three that went away were replaced by
+one that had been unreachable, `invalid operands to binary expression ('const
+GUID' and 'const GUID')`, which only exists once `TID_D3DRMMesh` is something to
+compare against.
 
 When a stub struct grows, put the new member at its upstream SDK position
 rather than at the end -- `d3d8types.h` for most of `port/stub/d3d8.h`, but
@@ -129,17 +144,30 @@ The tree takes `sizeof` of a stub struct in three places: that one,
 `ZeroMemory(&svl.dir, sizeof(D3DLIGHT8))` in `lib/light.cpp`. Only the memcpy
 depends on the order of the members.
 
-### The stubs already in the tree have nothing left to offer
+The same rule applies to the shape of a stub function: the version the game was
+written against is **DX8**, and a signature copied from DX9 compiles until the
+first call site arrives. Three in `port/stub/` were DX9-shaped and only found
+out when `lib/mesh.cpp` -- their sole caller anywhere in the tree -- was
+measured at `#150`: `DirectXFileCreate` took `(GUID*, IDirectXFile**)` where DX8
+takes the out-parameter alone, and `D3DXLoadMeshFromXof` and
+`D3DXComputeBoundingBox` carried DX9's extra `ppEffectInstances` and DX9's
+`D3DXVECTOR3*` first parameter in place of DX8's `const void* pPointsFVF`.
+`D3DXLoadMeshFromX` beside them is still DX9-shaped and was left alone, because
+its only call site sits in the `#else` of `RS2_PORTABLE_COMPILE_FIREWALL` in
+`lib/mesh.cpp` and never compiles here -- there is no measurement that could
+confirm a change to it.
 
-`lib/movie.cpp` was the last game TU that compiled as-is, and the allowlist has
-caught up with it. Measuring every game `*.cpp` outside the allowlist under
-`railsim2_native`'s own flags leaves twelve, and **none of them is at zero
-errors on either host** (macOS / Linux):
+### No game TU compiles as-is any more -- but the stubs are far from spent
+
+`lib/movie.cpp` was the last game TU that compiled with the stubs exactly as
+they stood, and the allowlist has caught up with it. Measuring every game
+`*.cpp` outside the allowlist under `railsim2_native`'s own flags left twelve at
+`#145`, and **none of them was at zero errors on either host** (macOS / Linux):
 
 | TU | macOS | Linux | Gap |
 |----|------:|------:|-----|
 | `CWaveArray.cpp` | 1 | 1 | MSVC array-new bound expression |
-| `lib/mesh.cpp` | 1 | 1 | `fatal error`, no `rmxfguid.h` anywhere in the tree |
+| `lib/mesh.cpp` | 1 | 1 | `fatal error`, no `rmxfguid.h` anywhere in the tree (closed by `#150`) |
 | `CPixelbitStamp.cpp` | 3 | 3 | GDI |
 | `lib/sprite.cpp` | 6 | 4 | GDI (`::SetRect`) |
 | `lib/font.cpp` | 9 | 9 | GDI |
@@ -167,11 +195,29 @@ site. A few lines away in the same `lib/music.cpp`, Linux offers `_CS_PATH` for
 `MAX_PATH` and AppleClang offers nothing. Count the identifiers a TU is
 missing, not the diagnostics.
 
-So there is no cheap sweep left to find. Every further allowlist line now costs
-game-code edits, a stub header that does not exist yet, the GDI replacement
-(`#16`), or a real backend (`#5` / `#7` / `#11`). Re-measuring is still worth
-doing after any stub grows -- that is how `#126` found 52 TUs at once -- but a
-re-measurement today moves nothing.
+This table said in `#145` that "the stubs already in the tree have nothing left
+to offer", and that is the claim to keep; the heading it sat under overshot it
+into "the stubs have nothing left to offer", which is not the same sentence and
+is not true. `#150` took `lib/mesh.cpp` off this table with two new stub headers
+and six declarations, and no game-source diff at all.
+
+What the rows are really made of, measured rather than inferred from the Gap
+column: **ten of the twelve are missing declarations** -- an absent header, an
+undeclared identifier, an unknown type name, a member a stub struct does not
+carry -- and only two are the compiler refusing code it has fully understood.
+`CWaveArray.cpp` fails to parse (`new (CWave[m_Number = n])`, an assignment in an
+array-new bound, is MSVC-only) and `lib/draw.cpp` narrows `int` into a `float`
+initializer list fourteen times. **Those two are the only rows that cannot be
+answered from `port/stub/`**, and they are the only ones that need agreement on
+editing game code first. Everything else is a question of how much stub, not of
+whether a stub can do it -- the GDI rows (`#16`) and the DirectSound /
+DirectMusic / DirectPlay8 rows are large, not categorically different, and
+`#124` records that a TU can be allowlisted as soon as the stub satisfies its
+types, without waiting for `#5` / `#7` / `#11` to have a backend.
+
+So what is gone is the free sweep, not the headroom. Re-measuring after a stub
+grows is still worth doing -- that is how `#126` found 52 TUs at once -- but it
+no longer finds a TU that someone else's stub happened to finish.
 
 ### `min` / `max` under `NOMINMAX`
 

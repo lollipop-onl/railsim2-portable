@@ -145,3 +145,4 @@ lib/height_field.cpp
 lib/debug.cpp
 lib/main.cpp
 lib/movie.cpp
+lib/mesh.cpp
