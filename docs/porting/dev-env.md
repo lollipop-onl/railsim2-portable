@@ -47,10 +47,18 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 
 | Blocker | Examples |
 |---------|----------|
-| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/graphic.cpp` (`D3DCAPS8`, `D3DFMT_*`, `EnumAdapterModes`), `lib/object.cpp` (`LPDIRECT3DINDEXBUFFER8`), `lib/effect.cpp` / `lib/height_field.cpp` (`D3DLOCKED_RECT`), `CShadowVolume.cpp` (`D3DSTENCILOP_INCR`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
+| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/graphic.cpp` (`D3DCAPS8`, `D3DFMT_*`, `EnumAdapterModes`), `lib/object.cpp` (`LPDIRECT3DINDEXBUFFER8`), `lib/effect.cpp` (`D3DLOCKED_RECT`), `lib/height_field.cpp` (`D3DLOCKED_RECT` and `IDirect3DTexture8::GetLevelDesc`), `CShadowVolume.cpp` (`D3DSTENCILOP_INCR`), `lib/offscreen.cpp` (`D3DPRESENT_PARAMETERS::MultiSampleType`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/debug.cpp` (`OSVERSIONINFO`), `lib/sprite.cpp` (`::SetRect` not in stub) |
 | Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
-| Type mismatch, nothing missing | `GraphicCover.cpp` (`D3DVECTOR` to `D3DXVECTOR3`), `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
+| Type mismatch, nothing missing | `lib/height_field.cpp` (`min` / `max` over mixed `int` and `float` -- the game assumes MSVC's `windef.h` macros, which `NOMINMAX` removes), `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
+
+A TU can sit in more than one row, so the rows are not a partition and the table
+alone does not tell you what a stub addition buys. `lib/height_field.cpp` appears
+under both a missing type and a type mismatch; defining `D3DLOCKED_RECT` and
+`GetLevelDesc` still leaves it failing on `min` / `max`. Before allowlisting a
+group, compile its TUs with `-ferror-limit=0` against the flags in
+`build/check/compile_commands.json` and check that the list of errors goes to
+zero, not just that the first one disappears.
 
 ### Both hosts, always
 
