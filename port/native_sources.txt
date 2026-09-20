@@ -1,7 +1,10 @@
 # Native compile allowlist. One entry per line; # comments allowed.
 # Progress denominator is 254 root-level *.cpp + *.h files.
-# Remaining TUs fail on game include-order (CTrain / CDragInterface) or
-# extra qualification — not on missing D3D8 stubs. See docs/porting/dev-env.md.
+# An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
+# case-sensitive filesystem), not just the one it was measured on.
+# Remaining TUs are blocked mainly on stub growth (D3D8 device/surface, GDI) or
+# on a real backend (DirectPlay8, DirectMusic, DirectSound).
+# See docs/porting/dev-env.md.
 CCheckBox.cpp
 CCursor.cpp
 CCustomizer.cpp
@@ -75,3 +78,55 @@ lib/wave.cpp
 lib/editbox.cpp
 lib/window.cpp
 SystemCover.cpp
+CNeutralMode.cpp
+CExitMode.cpp
+CConfigMode.cpp
+CVideoMode.cpp
+CInterfaceMode.cpp
+CSimulationMode.cpp
+CRailwayMode.cpp
+CSceneryMode.cpp
+CTrainSetMode.cpp
+CTrainViewMode.cpp
+CTrainEditMode.cpp
+CDiaEditMode.cpp
+CEnvEditMode.cpp
+CSceneEditMode.cpp
+CRailEditMode.cpp
+CRailBuildMode.cpp
+CStationBuildMode.cpp
+CStructBuildMode.cpp
+C3DPluginMode.cpp
+CRailSelectMode.cpp
+CTieSelectMode.cpp
+CGirderSelectMode.cpp
+CPierSelectMode.cpp
+CPoleSelectMode.cpp
+CLineSelectMode.cpp
+CStationSelectMode.cpp
+CStructSelectMode.cpp
+CSkinSelectMode.cpp
+CRailBuilder.cpp
+CTrainGroupTemplate.cpp
+CDiaDialog.cpp
+CCustomizerMisc.cpp
+CDragContainer.cpp
+CListView.cpp
+CToggleIcon.cpp
+CWindowCtrl.cpp
+CWindowDivInfo.cpp
+CPluginTree.cpp
+CTreeDirElement.cpp
+CTreeFileElement.cpp
+CModelPlugin.cpp
+CSkinPlugin.cpp
+CEffector.cpp
+CSoundEffector.cpp
+Network.cpp
+RailMap.cpp
+lib/anim.cpp
+lib/particle.cpp
+lib/vertex.cpp
+lib/view.cpp
+lib/view_ctrl.cpp
+lib/water_mesh.cpp

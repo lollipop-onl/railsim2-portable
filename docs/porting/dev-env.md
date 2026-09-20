@@ -43,7 +43,21 @@ Native targets are listed in `port/native_sources.txt`. CMake compiles those int
 
 Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a line to the allowlist is monotonic progress.
 
-`stdafx.h` already parses through the stubs. Remaining root `.cpp` files fail mainly on **game header include-order** (`CTrain`, `CDragInterface`) and MSVC-only extra qualification -- not on missing D3D types. Do not rewrite those headers in M1.
+`stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. Remaining TUs split into four groups:
+
+| Blocker | Examples |
+|---------|----------|
+| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/graphic.cpp` (`D3DCAPS8`, `D3DFMT_*`, `EnumAdapterModes`), `lib/object.cpp` (`LPDIRECT3DINDEXBUFFER8`), `lib/effect.cpp` / `lib/height_field.cpp` (`D3DLOCKED_RECT`), `CShadowVolume.cpp` (`D3DSTENCILOP_INCR`), `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
+| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/debug.cpp` (`OSVERSIONINFO`), `lib/sprite.cpp` (`::SetRect` not in stub) |
+| Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
+| Type mismatch, nothing missing | `GraphicCover.cpp` (`D3DVECTOR` to `D3DXVECTOR3`), `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
+
+### Both hosts, always
+
+CI (`.github/workflows/check.yml`) is a matrix of `macos-15` **and** `ubuntu-24.04`. A TU that compiles on the host you happen to be sitting at is not allowlistable; it has to pass on both, and four TUs currently prove why:
+
+- `CGameMode.cpp` and `RailSim2.cpp` spell the include `"RSPV.h"` while the tracked file is `RSPV.H`. macOS resolves this on a case-insensitive filesystem (with `-Wnonportable-include-path`); Linux gives `fatal error: 'RSPV.h' file not found`. Note that a Docker bind mount from a macOS host leaks that case-insensitivity into the container, so verification has to unpack `git archive HEAD` inside the container instead.
+- `CLensFlare.cpp` and `CRailwayPluginSet.cpp` fail the other way round: only under libc++, where the `std::list::sort` call cannot find an `operator<`.
 
 Win32 `.rc` is skipped on native. Icons stay as files until a later loader. Sources stay CP932 (M0 encoding-guard). `stdafx.h` already uses `lib/udx.h` with forward slashes.
 
