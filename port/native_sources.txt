@@ -139,3 +139,4 @@ lib/light.cpp
 lib/effect.cpp
 CShadowVolume.cpp
 lib/offscreen.cpp
+lib/graphic.cpp
