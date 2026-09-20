@@ -43,6 +43,16 @@ Native targets are listed in `port/native_sources.txt`. CMake compiles those int
 
 Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a line to the allowlist is monotonic progress.
 
+`port/native_sources.txt` is the only place a game source belongs. `CMakeLists.txt`
+also names sources on `railsim2_native` directly, but those are `port/` backing
+code, outside the denominator. A game source named in both places compiles once
+and correctly -- CMake accepts a duplicate without a warning and the generator
+collapses it by object name -- yet `scripts/progress.sh` counts allowlist lines
+and nothing else, so the file goes missing from the numerator. `lib/movie.cpp`
+sat that way from `dfd45ed` (`#76`) until `#145`, because the allowlist held only
+root-level entries back then and `lib/` had nowhere else to go. It is no longer
+a literal in `CMakeLists.txt`.
+
 `stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. Remaining TUs split into four groups:
 
 | Blocker | Examples |
@@ -84,6 +94,50 @@ Measure in stages: an error can hide a second one behind it. `lib/debug.cpp`
 reported 4 errors naming two identifiers, and adding `OSVERSIONINFO` alone
 exposed a third one, `GetVersionEx`, that the `unknown type name` diagnostic on
 `ver` had been suppressing.
+
+### The stubs already in the tree have nothing left to offer
+
+`lib/movie.cpp` was the last game TU that compiled as-is, and the allowlist has
+caught up with it. Measuring every game `*.cpp` outside the allowlist under
+`railsim2_native`'s own flags leaves twelve, and **none of them is at zero
+errors on either host** (macOS / Linux):
+
+| TU | macOS | Linux | Gap |
+|----|------:|------:|-----|
+| `CWaveArray.cpp` | 1 | 1 | MSVC array-new bound expression |
+| `lib/mesh.cpp` | 1 | 1 | `fatal error`, no `rmxfguid.h` anywhere in the tree |
+| `CPixelbitStamp.cpp` | 3 | 3 | GDI |
+| `lib/sprite.cpp` | 6 | 4 | GDI (`::SetRect`) |
+| `lib/font.cpp` | 9 | 9 | GDI |
+| `lib/draw.cpp` | 14 | 14 | initializer-list narrowing |
+| `lib/sound.cpp` | 14 | 14 | DirectSound |
+| `lib/wave_stream.cpp` | 16 | 16 | DirectSound |
+| `lib/texture.cpp` | 18 | 18 | GDI |
+| `CPixelbit.cpp` | 40 | 40 | GDI |
+| `lib/music.cpp` | 41 | 40 | DirectMusic |
+| `lib/comm.cpp` | 70 | 68 | DirectPlay8 |
+
+No TU is blocked on one host and clear on the other. The three rows whose
+counts differ do so because of clang's typo correction, not because the gap
+itself differs. Where the compiler guesses a nearby name it keeps parsing, and
+the recovery raises errors of its own: AppleClang reads `::SetRect` as "did you
+mean simply `SetRect`", which turns each of the two call sites in
+`lib/sprite.h` into a second, bogus arity error; it reads `IID_IDirectSound` as
+`InitDirectSound` in `lib/music.cpp` and drags in a `const GUID` binding error;
+and it reads `PDPNMSG_RECEIVE` as `PFN_RECEIVE` in `lib/comm.cpp`, producing
+two "not a structure or union". **At those three sites** Linux clang 18.1.3
+finds no candidate and stops at the undeclared name.
+
+Neither compiler is the one that corrects -- the candidate sets differ site by
+site. A few lines away in the same `lib/music.cpp`, Linux offers `_CS_PATH` for
+`MAX_PATH` and AppleClang offers nothing. Count the identifiers a TU is
+missing, not the diagnostics.
+
+So there is no cheap sweep left to find. Every further allowlist line now costs
+game-code edits, a stub header that does not exist yet, the GDI replacement
+(`#16`), or a real backend (`#5` / `#7` / `#11`). Re-measuring is still worth
+doing after any stub grows -- that is how `#126` found 52 TUs at once -- but a
+re-measurement today moves nothing.
 
 ### `min` / `max` under `NOMINMAX`
 

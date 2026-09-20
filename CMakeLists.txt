@@ -70,6 +70,11 @@ if(RS2_NATIVE_SOURCES STREQUAL "")
   message(FATAL_ERROR "port/native_sources.txt has no compile targets")
 endif()
 
+# Only port/ backing code belongs in this literal list. A game source named
+# here as well as in port/native_sources.txt still builds -- CMake keeps the
+# duplicate in the SOURCES property and de-duplicates only in the generator,
+# by object name, with no warning -- but scripts/progress.sh counts the
+# allowlist alone, so naming one here instead leaves it out of the numerator.
 add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
@@ -83,8 +88,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/rs2_input_sdl.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
-  "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp"
-  "${CMAKE_SOURCE_DIR}/lib/movie.cpp")
+  "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
