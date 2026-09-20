@@ -49,7 +49,7 @@ public:
 	void Save(FILE *);
 	bool DeleteFromDisk();
 	bool Rename(string &);
-	bool operator<(const CRailwayPluginSet &rhs){ return m_Name<rhs.m_Name; }
+	bool operator<(const CRailwayPluginSet &rhs) const{ return m_Name<rhs.m_Name; }
 	string &GetNameRef(){ return m_Name; }
 	char *GetName(){ return (char *)m_Name.c_str(); }
 	void Apply();

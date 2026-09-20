@@ -56,9 +56,9 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 
 CI (`.github/workflows/check.yml`) is a matrix of `macos-15` **and** `ubuntu-24.04`. A TU that compiles on the host you happen to be sitting at is not allowlistable; it has to pass on both.
 
-`CLensFlare.cpp` and `CRailwayPluginSet.cpp` still prove it: they fail only under libc++, where the `std::list::sort` call cannot find an `operator<`.
+The rule is not theoretical. Two host asymmetries have been found and fixed, and they pointed in **opposite** directions -- one was fatal only on Linux, the other only on macOS. Either one, measured on the wrong host alone, would have been recorded as a pass. Both are resolved; the traps below outlive them.
 
-#### Include path case (resolved, but keep the trap in mind)
+#### Include path case -- was fatal on Linux only
 
 `CGameMode.cpp` and `RailSim2.cpp` spelled the include `"RSPV.h"` while the tracked file was `RSPV.H` -- the only `.H` in a tree of 130-plus `.h` headers. macOS resolved it on its case-insensitive filesystem and emitted only `-Wnonportable-include-path`; Linux gave `fatal error: 'RSPV.h' file not found`. The file is now tracked as `RSPV.h` and both TUs are allowlisted.
 
@@ -66,6 +66,14 @@ Two things outlive the fix:
 
 - The `check` preset compiles `railsim2_native` with `-Werror=nonportable-include-path`, so a new case mismatch fails on macOS too instead of waiting for Linux CI. A sweep of every game TU (124 root `*.cpp` plus 28 under `lib/`) is clean under it, allowlisted or not.
 - A Docker **bind mount** from a macOS host leaks that case-insensitivity into the container, so a mismatch passes there and the verification proves nothing. Unpack `git archive HEAD` inside the container (overlayfs) and confirm with `ls RSPV.h` / `ls RSPV.H` that the container filesystem really is case-sensitive before measuring.
+
+#### Comparison-operator constness -- was fatal on macOS only
+
+`CLensFlare.cpp` and `CRailwayPluginSet.cpp` called `std::list::sort` on element types whose `operator<` was not `const`-qualified. libc++ invokes the comparator through `const` references, so the operator dropped out of overload resolution (`no matching function for call to 'std::__less<void, void>'`); libstdc++ and MSVC both accepted it. Adding `const` to the two declarations fixed it, and both TUs are allowlisted.
+
+The trigger is the standard library, not the operating system. Linux clang with `libc++-dev` installed and `-stdlib=libc++` reproduces it exactly (`invalid operands to binary expression ('const CFlareElement' and 'const CFlareElement')`); macOS was the only failing leg because it is the only leg that builds against libc++ by default.
+
+What outlives the fix: every `operator<` in the game headers is now `const`-qualified (10 declarations, 12 `.sort()` call sites), so this class of failure is closed rather than merely worked around. A new comparison operator added without `const` reopens it, and no compiler warning catches that -- clang has no `-W` flag for it, and clang-tidy's `readability-make-member-function-const` is a separate tool the build does not run. The mechanical backstop is having a CI leg that builds with **libc++**, which today means the macOS leg. A `-stdlib=libc++` leg on Linux would catch it just as well.
 
 Win32 `.rc` is skipped on native. Icons stay as files until a later loader. Sources stay CP932 (M0 encoding-guard). `stdafx.h` already uses `lib/udx.h` with forward slashes.
 

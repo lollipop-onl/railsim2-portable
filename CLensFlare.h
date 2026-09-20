@@ -21,7 +21,7 @@ private:
 public:
 	char *Read(char *);
 	void LoadData();
-	bool operator<(const CFlareElement &rhs){
+	bool operator<(const CFlareElement &rhs) const{
 		return m_Distance<rhs.m_Distance;
 	}
 };
