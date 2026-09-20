@@ -180,6 +180,14 @@ typedef struct _SYSTEMTIME {
   WORD wMilliseconds;
 } SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
 
+typedef struct _OSVERSIONINFOA {
+  DWORD dwOSVersionInfoSize;
+  DWORD dwMajorVersion;
+  DWORD dwMinorVersion;
+  DWORD dwBuildNumber;
+  DWORD dwPlatformId;
+} OSVERSIONINFOA, OSVERSIONINFO, *LPOSVERSIONINFOA;
+
 typedef struct tagMSG {
   HWND hwnd;
   UINT message;
@@ -374,6 +382,22 @@ inline void GetLocalTime(LPSYSTEMTIME st) {
   st->wSecond = static_cast<WORD>(local.tm_sec);
   st->wMilliseconds = 0;
 }
+inline BOOL GetVersionExA(LPOSVERSIONINFOA vi) {
+  if (!vi) return FALSE;
+  vi->dwMajorVersion = 0;
+  vi->dwMinorVersion = 0;
+  vi->dwBuildNumber = 0;
+  vi->dwPlatformId = 0;
+  return TRUE;
+}
+inline BOOL GetVersionEx(LPOSVERSIONINFOA vi) { return GetVersionExA(vi); }
+inline void OutputDebugStringA(LPCSTR s) {
+  // Win32 hands this to an attached debugger. Nothing attaches here, so a bare
+  // no-op would drop every Debug() call that has no -dbf log file behind it --
+  // lib/debug.cpp only reaches OutputDebugString when g_debugDest is empty.
+  if (s) std::fputs(s, stderr);
+}
+inline void OutputDebugString(LPCSTR s) { OutputDebugStringA(s); }
 inline HWND GetActiveWindow() { return nullptr; }
 inline int MessageBoxA(HWND, LPCSTR, LPCSTR, UINT) { return 0; }
 inline int MessageBox(HWND h, LPCSTR t, LPCSTR c, UINT u) { return MessageBoxA(h, t, c, u); }
@@ -457,6 +481,8 @@ inline LPSTR CharNextA(LPCSTR p) { return (LPSTR)(p + 1); }
 inline LPSTR CharPrevA(LPCSTR start, LPCSTR p) { return (p > start) ? (LPSTR)(p - 1) : (LPSTR)start; }
 inline LPSTR CharNext(LPCSTR p) { return CharNextA(p); }
 inline LPSTR CharPrev(LPCSTR s, LPCSTR p) { return CharPrevA(s, p); }
+inline HRESULT CoInitialize(LPVOID) { return S_OK; }
+inline void CoUninitialize() {}
 inline HRESULT CoCreateInstance(const GUID&, LPVOID, DWORD, const GUID&, LPVOID*) { return E_NOTIMPL; }
 
 typedef BYTE* PBYTE;
