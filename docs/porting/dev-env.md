@@ -48,7 +48,7 @@ Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a l
 | Blocker | Examples |
 |---------|----------|
 | Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` (no `rmxfguid.h` stub -- fails on both hosts) |
-| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/debug.cpp` (`OSVERSIONINFO`), `lib/sprite.cpp` (`::SetRect` not in stub) |
+| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/sprite.cpp` (`::SetRect` not in stub) |
 | Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
 | Type mismatch, nothing missing | `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
 
@@ -58,11 +58,32 @@ appear under both a missing type and a type mismatch: `IDirect3DTexture8::GetLev
 closed only 1 of its 3 errors, and the other 2 needed the `min` / `max` seam below.
 `lib/texture.cpp` wants `GetLevelDesc` too, yet is still blocked: it went 21 errors
 to 18, all of them under the GDI gap.
+
+The row a TU sits in is a guess until it is measured, and two of them were wrong.
+`lib/debug.cpp` sat under GDI because of `OSVERSIONINFO`, but that type and the
+`GetVersionEx` / `OutputDebugString` beside it are OS-information and debug-output
+seams with no GDI in them; it needed one struct and two inline seams, not #16.
+`lib/main.cpp` was never in this table, but #124 listed it beside `lib/comm.cpp` /
+`lib/music.cpp` / `lib/sound.cpp` as needing a real backend. It needed `CoInitialize` and
+`CoUninitialize`, 2 errors against their 70 / 41 / 14, and no COM runtime at all:
+a portable build has nothing to initialize, so both are no-ops. Read "needs a real
+backend" as a claim to re-measure rather than a verdict.
+
+`OutputDebugString` is the one seam here that is not a bare no-op. It writes to
+`stderr`, because `lib/debug.cpp` only reaches it when `g_debugDest` is empty --
+that is, when the run has no `-dbf` log file -- so discarding it would silently
+drop the default debug output. `<cstdio>` is already included by
+`port/stub/windows.h`, so this adds no dependency to the `check` preset.
+
 Before allowlisting a group, compile its TUs with
 `-ferror-limit=0` against the flags in `build/check/compile_commands.json` and
 check that the list of errors goes to zero, not just that the first one
 disappears. Count with `grep -E 'error:'`: `': error:'` misses `fatal error:`,
 and CP932 sources need `grep -a` or they are skipped as binary.
+Measure in stages: an error can hide a second one behind it. `lib/debug.cpp`
+reported 4 errors naming two identifiers, and adding `OSVERSIONINFO` alone
+exposed a third one, `GetVersionEx`, that the `unknown type name` diagnostic on
+`ver` had been suppressing.
 
 ### `min` / `max` under `NOMINMAX`
 
