@@ -9,7 +9,7 @@ Human-facing overview: [`README.md`](README.md). Strategies: [`docs/porting/upst
 1. Prefer stubs and `lib/` backends over rewriting gameplay.
 2. No MinGW and no vendored DirectX SDK. Compile firewall is `port/stub/` via `-isystem`.
 3. Sources stay CP932 / ASCII. No mass UTF-8 conversion of game sources. `scripts/encoding-guard.sh` is law.
-4. Progress is monotonic: only add lines to `port/native_sources.txt` (denominator 254).
+4. Progress is monotonic: only add lines to `port/native_sources.txt`. The denominator is every game translation unit -- root `*.cpp` + `lib/*.cpp`, 152 today -- and `scripts/progress.sh` counts it.
 5. `./scripts/check.sh` is the local and CI gate.
 
 Scope is the active Milestone / Issue, not a frozen exclusion list.

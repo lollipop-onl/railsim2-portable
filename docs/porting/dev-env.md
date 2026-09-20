@@ -29,7 +29,7 @@ brew bundle --file Brewfile
 |---------|----------------|
 | `./scripts/check.sh` | Gate: encoding guard -> configure -> build (link) -> ctest -> progress JSON |
 | `./scripts/encoding-guard.sh` | CP932 / BOM / SJIS-0x5C literal checks |
-| `./scripts/progress.sh` | Prints `N/254` JSON from `port/native_sources.txt` |
+| `./scripts/progress.sh` | Prints `N/152` JSON from `port/native_sources.txt` |
 | `cmake --preset check` | Configure AppleClang native target |
 | `cmake --build --preset check` | Compile allowlisted sources and link `railsim2` |
 | `ctest --preset check` | Smoke + `Sample.rs2` roundtrip + text `.x` load + path join (see [rs2-roundtrip.md](rs2-roundtrip.md), [x-file-parser.md](x-file-parser.md), [path-seams.md](path-seams.md)) |
@@ -41,7 +41,19 @@ Windows/DirectX headers are stubbed under `port/stub/` and injected with `-isyst
 
 Native targets are listed in `port/native_sources.txt`. CMake compiles those into `railsim2_native.a` and links a stub `railsim2` from `port/native_entry.cpp` (`main` returns 0). Game objects are **not** linked into the executable yet; they still need udx globals from `lib/`. SDL2 is not required for the `check` preset.
 
-Progress denominator **254** = root-level `*.cpp` + `*.h` game files. Adding a line to the allowlist is monotonic progress.
+Progress denominator = every **game translation unit**: root-level `*.cpp` (124) + `lib/*.cpp` (28) = **152**.
+`scripts/progress.sh` counts the tree rather than carrying the number, so the definition
+cannot drift from the docs the way `254` did. Adding a line to the allowlist is monotonic progress.
+
+The denominator was **254** until #141: root-level `*.cpp` + `*.h`. Headers are not
+translation units, so 130 of those 254 -- every root `*.h` the count saw -- could
+never enter the numerator, and `254/254` was unreachable. The numerator meanwhile
+counts `lib/*.cpp` too (19 entries today), which the old denominator excluded --
+the two sides were measuring disjoint sets.
+`254` was also already stale as a count of its own definition: it was taken when
+`RSPV.H` still had an uppercase suffix and so missed a `*.h` glob, and #127 renaming it
+to `RSPV.h` made the same rule yield 255. The ratio therefore jumped from `140/254`
+(55%) to `140/152` (92%) at #141 without any TU being added.
 
 `port/native_sources.txt` is the only place a game source belongs. `CMakeLists.txt`
 also names sources on `railsim2_native` directly, but those are `port/` backing

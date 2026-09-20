@@ -35,7 +35,7 @@ Current strategies:
 1. **Game logic stays close to upstream** -- prefer stubs / `lib/` backends over rewriting gameplay.
 2. **No MinGW and no vendored DirectX SDK** -- compile firewall via `port/stub/` instead.
 3. **Sources stay CP932 / ASCII** -- encoding-guard enforces; no mass UTF-8 conversion of game sources.
-4. **Progress is monotonic** via `port/native_sources.txt` (denominator 254).
+4. **Progress is monotonic** via `port/native_sources.txt` (denominator = every game TU, root `*.cpp` + `lib/*.cpp`).
 5. **Single gate** -- `./scripts/check.sh` is the local and CI truth for M0+.
 
 There is no separate denylist of "do not touch" paths. Scope is defined by the strategies above and by the active Milestone / Issue, not by a frozen exclusion list.

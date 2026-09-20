@@ -1,5 +1,5 @@
 # Native compile allowlist. One entry per line; # comments allowed.
-# Progress denominator is 254 root-level *.cpp + *.h files.
+# Progress denominator is every game translation unit: root *.cpp + lib/*.cpp.
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
 # Remaining TUs are blocked mainly on stub growth (D3D8 device/surface, GDI) or
