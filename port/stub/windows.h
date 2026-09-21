@@ -272,7 +272,12 @@ typedef LRESULT(CALLBACK *WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 #define E_NOTIMPL ((HRESULT)0x80004001L)
 #endif
 
-typedef long HRESULT;
+// int, not long: Windows HRESULT is 32 bits, and on LP64 a 64-bit HRESULT
+// makes every 0x8....... constant positive, so FAILED() answers false for
+// E_FAIL, E_NOTIMPL and every DSERR_*. Soft-fail paths written against
+// FAILED() -- InitDirectSound here, InitDirectShow in dshow.h -- would run on
+// as if the call had succeeded.
+typedef int HRESULT;
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
 #define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
 

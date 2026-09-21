@@ -71,7 +71,7 @@ a literal in `CMakeLists.txt`.
 |---------|----------|
 | Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/sprite.cpp` (`::SetRect` not in stub) |
-| Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8), `lib/music.cpp` (DirectMusic), `lib/sound.cpp` / `lib/wave_stream.cpp` (DirectSound) |
+| Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8) -- but see `#11`: no `network-seams.md` exists yet. `lib/sound.cpp` was listed here and did not belong: `#152` closed it with stub declarations alone |
 | Type mismatch, nothing missing | `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
 
 A TU can sit in more than one row, so the rows are not a partition and the table
@@ -157,6 +157,17 @@ its only call site sits in the `#else` of `RS2_PORTABLE_COMPILE_FIREWALL` in
 `lib/mesh.cpp` and never compiles here -- there is no measurement that could
 confirm a change to it.
 
+Width counts too, and a stub type can be wrong in a way no TU will ever report.
+`HRESULT` was `long` until `#152`. On Windows it is 32 bits; on LP64 `long` is
+64, which leaves every `0x8.......` constant positive and makes `FAILED()`
+answer **false** for `E_FAIL`, `E_NOTIMPL` and every `DSERR_*`. Nothing failed
+to compile, so the only symptom was that soft-fail paths written against
+`FAILED()` -- `InitDirectSound`, and the `InitDirectShow` one `port/stub/dshow.h`
+documents -- would have run on as if the call had succeeded. `#152` made it
+`int`. When a stub constant is a bit pattern rather than a small number, check
+that the type carrying it is as wide as the SDK's, not just as wide as the
+value.
+
 ### No game TU compiles as-is any more -- but the stubs are far from spent
 
 `lib/movie.cpp` was the last game TU that compiled with the stubs exactly as
@@ -172,8 +183,8 @@ they stood, and the allowlist has caught up with it. Measuring every game
 | `lib/sprite.cpp` | 6 | 4 | GDI (`::SetRect`) |
 | `lib/font.cpp` | 9 | 9 | GDI |
 | `lib/draw.cpp` | 14 | 14 | initializer-list narrowing |
-| `lib/sound.cpp` | 14 | 14 | DirectSound |
-| `lib/wave_stream.cpp` | 16 | 16 | DirectSound |
+| `lib/sound.cpp` | 14 | 14 | DirectSound (closed by `#152`) |
+| `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify; nothing constructs `CWaveStream` |
 | `lib/texture.cpp` | 18 | 18 | GDI |
 | `CPixelbit.cpp` | 40 | 40 | GDI |
 | `lib/music.cpp` | 41 | 40 | DirectMusic |
@@ -199,7 +210,16 @@ This table said in `#145` that "the stubs already in the tree have nothing left
 to offer", and that is the claim to keep; the heading it sat under overshot it
 into "the stubs have nothing left to offer", which is not the same sentence and
 is not true. `#150` took `lib/mesh.cpp` off this table with two new stub headers
-and six declarations, and no game-source diff at all.
+and six declarations, and no game-source diff at all. `#152` then took
+`lib/sound.cpp` off it with twelve more declarations in `port/stub/dsound.h`.
+
+`#152` is also the first slice where growing a stub **broke** an allowlisted TU.
+`#86` had given `lib/wave.cpp` a local copy of the DirectSound names it needed,
+guarded by `#ifndef DSBUFFERDESC`. A guard like that can only ever protect
+macros, and `DSBUFFERDESC` is a typedef, so declaring it in `port/stub/dsound.h`
+turned the local copy into `typedef redefinition with different types`. Before
+adding a name to a stub, grep the allowlisted TUs for it: a `#ifndef` around one
+does not mean someone checked that it fires.
 
 What the rows are really made of, measured rather than inferred from the Gap
 column: **ten of the twelve are missing declarations** -- an absent header, an

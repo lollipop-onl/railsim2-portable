@@ -221,18 +221,44 @@ Help (`pi_sym_skin_sound_info.html`, `pi_sym_sound_effector.html`) warns that cl
 
 ## Stub status
 
-`port/stub/dsound.h` is a compile firewall, not a player. Missing vs this closed set (grow only when `lib/sound.cpp` / `lib/wave.cpp` are allowlisted):
+`port/stub/dsound.h` is a compile firewall, not a player. The trigger this
+section named -- grow it when `lib/sound.cpp` / `lib/wave.cpp` are allowlisted --
+fired at [#152](https://github.com/lollipop-onl/railsim2-portable/issues/152).
+Now present: `DSBUFFERDESC`, `DSSCL_PRIORITY`, `DSBCAPS_PRIMARYBUFFER` /
+`DSBCAPS_CTRL3D` / `DSBCAPS_CTRLVOLUME`, `DSBPLAY_LOOPING`, `DSBSTATUS_PLAYING` /
+`DSBSTATUS_BUFFERLOST`, `DS_OK`, `DSERR_OUTOFMEMORY` / `DSERR_BUFFERTOOSMALL` /
+`DSERR_BUFFERLOST`, `IID_IDirectSoundBuffer8` / `IID_IDirectSound3DBuffer` /
+`IID_IDirectSound3DListener`, `DirectSoundCreate8`,
+`IDirectSoundBuffer::{SetFormat,GetVolume,Restore}` and
+`IDirectSound3DListener::SetDistanceFactor`.
 
-- `DirectSoundCreate8`, `DuplicateSoundBuffer`
-- `IDirectSoundBuffer::{SetFormat,GetVolume,Restore,SetCurrentPosition,GetCurrentPosition,Lock}` already partly present; add `Restore`, `SetFormat`, `GetVolume`, `SetCurrentPosition`, `GetCurrentPosition` if still absent
-- `IDirectSound3DListener::SetDistanceFactor`
-- `IDirectSoundNotify::SetNotificationPositions` / `DSBPOSITIONNOTIFY` (only if stream is revived)
-- `DSBUFFERDESC`, `DSBCAPS_*`, `DSSCL_PRIORITY`, `DSBPLAY_LOOPING`, `DSBSTATUS_*`, `DSERR_*`, `IID_IDirectSound*`
-- `IDirectSoundBuffer8::SetFX` / `DSEFFECTDESC` (dead)
+`#86` had carried most of those names locally in `lib/wave.cpp` behind `#ifndef`
+guards. `DSBUFFERDESC` is a typedef, not a macro, so its guard never fired and
+the local copy became a redefinition the moment this header grew one; `#152`
+removed the block rather than keeping two spellings.
+
+Still absent, each because its call site is compiled out or has no caller:
+
+| Symbol | Why it can wait |
+|--------|-----------------|
+| `IDirectSoundBuffer::SetCurrentPosition` | one call site, `CWave::Play`, inside `#if !defined(RS2_PORTABLE_COMPILE_FIREWALL)` |
+| `IDirectSoundBuffer::GetCurrentPosition` | `CWaveStream::Enqueue` only |
+| `IDirectSoundNotify::SetNotificationPositions`, `DSBPOSITIONNOTIFY`, `IID_IDirectSoundNotify`, `DSBCAPS_LOCDEFER` / `CTRLPOSITIONNOTIFY` / `GETCURRENTPOSITION2` | `lib/wave_stream.cpp` only; nothing constructs `CWaveStream` |
+| `IDirectSoundBuffer8::SetFX`, `DSEFFECTDESC`, `GUID_DSFX_*` | `svs.fFX` is hardcoded `FALSE` and `CWave::SetFX`'s body is compiled out |
+| `DuplicateSoundBuffer` | no call site left: `CWave::Duplicate` copies the PCM payload since `#96`, and `CWaveArray::Load`'s duplicate path is under `#if 0` |
+
+`lib/wave_stream.cpp` sits at 10 errors / 8 missing identifiers after `#152`
+(16 / 12 before it): the rows above plus `CopyMemory`. The four `#152` supplied
+it for free are `DSBUFFERDESC`, `DSBPLAY_LOOPING`, `DSERR_BUFFERLOST` and
+`IDirectSoundBuffer::Restore`. Closing them would mean
+writing a DirectSound notify shape for a class no caller constructs, so
+[#124](https://github.com/lollipop-onl/railsim2-portable/issues/124) leaves
+`lib/wave_stream.cpp` out of its completion condition until one appears.
 
 `port/stub/mmsystem.h` has `WAVEFORMATEX` and `timeGetTime` only. **`mmioOpen` / `Descend` / `Ascend` / `Read` / `Close` / `MMCKINFO` / `mmioFOURCC` are absent.** A parser slice should not add real mmio to the stub; put a small PCM reader in `lib/` or `port/` and keep `CWave::Load` as the single caller.
 
-`lib/sound.cpp` / `lib/wave.cpp` / `lib/wave_stream.cpp` are **not** in `port/native_sources.txt`. This document does not add them.
+`lib/wave.cpp` joined `port/native_sources.txt` at `#86` and `lib/sound.cpp` at
+`#152`. `lib/wave_stream.cpp` has not; this document did not add any of them.
 
 ## ADR: 3D audio backend
 
@@ -342,7 +368,7 @@ This is the portable stand-in for the [mmio* contract](#closed-mmio-set-wav-pars
 
 `CWave::Load` already yields `Rs2WavPcm` (#86). This slice interns that payload as an opaque buffer handle. Same format + bytes return the same handle. Non-PCM tag, empty payload, zero channels/rate, or 8/16-bit mismatch fail. Play records the handle on `rs2_audio_stub_last()`; stop / volume (hundredths of a dB) / 3D position (meters) overwrite that record. Listener pos / dir / distance factor live on `rs2_audio_stub_listener()`.
 
-The check preset links the stub only. There is no OpenAL, no DirectSound COM, and no `lib/sound.cpp` allowlist. `#96` maps `CWave::CreateBuffer` / `Play` / `Stop` / volume / 3D onto these handles.
+The check preset links the stub only. There is no OpenAL and no DirectSound COM. `lib/sound.cpp` was not allowlisted at `#93`; `#152` later added it, on stub declarations alone, without giving this backend a caller. `#96` maps `CWave::CreateBuffer` / `Play` / `Stop` / volume / 3D onto these handles.
 
 | DirectSound / `CWave` | `port/rs2_audio` | Later OpenAL |
 |-----------------------|------------------|--------------|
@@ -362,6 +388,6 @@ ctest: `rs2_audio_self_test` (`port/rs2_audio_test.cpp --self-test`). Do not lin
 
 `CreateBuffer` builds `Rs2WavPcm` from the WAVEFORMATEX + `m_pcm` payload and interns it. Intern failure (empty payload, non-PCM tag, broken fields) returns `FALSE`. DirectSound `CreateSoundBuffer` + `Lock` / `Unlock` still run when `svs.pDS` is set; they are not required for the portable play path. Without a DS device, intern success is enough for `Load` to return `TRUE`.
 
-`CWave::m_audio` holds the opaque handle. `Play(ms)` records it on `rs2_audio_stub_last()`; `Stop` / `SetVolume` (hundredths of a dB) / `SetPos` (meters) overwrite that record. Do not allowlist `lib/sound.cpp`, rewrite `CWaveStream` / `CSoundEffector` / `CWaveArray`, or link OpenAL in the `check` preset.
+`CWave::m_audio` holds the opaque handle. `Play(ms)` records it on `rs2_audio_stub_last()`; `Stop` / `SetVolume` (hundredths of a dB) / `SetPos` (meters) overwrite that record. Out of scope for `#96`: allowlisting `lib/sound.cpp` (`#152` did that later), rewriting `CWaveStream` / `CSoundEffector` / `CWaveArray`, and linking OpenAL in the `check` preset.
 
 ctest: `rs2_wave_load_self_test` (`port/wave_load_test.cpp --self-test`) checks that `CWave::Play` records the interned handle.
