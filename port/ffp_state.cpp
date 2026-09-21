@@ -378,27 +378,30 @@ HRESULT rs2_ffp_get_texture_stage_state(DWORD stage, D3DTEXTURESTAGESTATETYPE ty
 
 HRESULT rs2_ffp_set_transform(D3DTRANSFORMSTATETYPE type, const void *matrix) {
 	if (!matrix) return unknown_fail("D3DTS", static_cast<unsigned long>(type));
-	float *slot = nullptr;
+	// Pointer to the array, not to its first float, so the copy length is the
+	// destination slot's own size and a slot that is not float[16] stops the
+	// build here. The source length is pinned in port/ffp_state_test.cpp.
+	float (*slot)[16] = nullptr;
 	switch (type) {
 	case D3DTS_WORLD:
-		slot = g_snap.world;
+		slot = &g_snap.world;
 		break;
 	case D3DTS_VIEW:
-		slot = g_snap.view;
+		slot = &g_snap.view;
 		break;
 	case D3DTS_PROJECTION:
-		slot = g_snap.proj;
+		slot = &g_snap.proj;
 		break;
 	case D3DTS_TEXTURE0:
-		slot = g_snap.tex0;
+		slot = &g_snap.tex0;
 		break;
 	case D3DTS_TEXTURE1:
-		slot = g_snap.tex1;
+		slot = &g_snap.tex1;
 		break;
 	default:
 		return unknown_fail("D3DTS", static_cast<unsigned long>(type));
 	}
-	std::memcpy(slot, matrix, 16 * sizeof(float));
+	std::memcpy(slot, matrix, sizeof(*slot));
 	return S_OK;
 }
 

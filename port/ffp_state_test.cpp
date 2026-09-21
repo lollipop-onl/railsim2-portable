@@ -5,12 +5,37 @@
 
 #include <d3dx8.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
+// Sizes alone would not catch a reorder: Diffuse / Ambient / Specular /
+// Emissive are all D3DCOLORVALUE, so swapping two of them keeps sizeof equal
+// and leaves the rs2_ffp_set_material memcpy writing each colour into the
+// wrong Rs2FfpMaterial field.
 static_assert(sizeof(Rs2FfpMaterial) == sizeof(D3DMATERIAL8),
-              "Rs2FfpMaterial matches D3DMATERIAL8");
+              "Rs2FfpMaterial is the same size as D3DMATERIAL8");
+static_assert(offsetof(Rs2FfpMaterial, diffuse) == offsetof(D3DMATERIAL8, Diffuse),
+              "Rs2FfpMaterial::diffuse lands on D3DMATERIAL8::Diffuse");
+static_assert(offsetof(Rs2FfpMaterial, ambient) == offsetof(D3DMATERIAL8, Ambient),
+              "Rs2FfpMaterial::ambient lands on D3DMATERIAL8::Ambient");
+static_assert(offsetof(Rs2FfpMaterial, specular) == offsetof(D3DMATERIAL8, Specular),
+              "Rs2FfpMaterial::specular lands on D3DMATERIAL8::Specular");
+static_assert(offsetof(Rs2FfpMaterial, emissive) == offsetof(D3DMATERIAL8, Emissive),
+              "Rs2FfpMaterial::emissive lands on D3DMATERIAL8::Emissive");
+static_assert(offsetof(Rs2FfpMaterial, power) == offsetof(D3DMATERIAL8, Power),
+              "Rs2FfpMaterial::power lands on D3DMATERIAL8::Power");
+
+// rs2_ffp_set_transform copies a D3DXMATRIX into one of the snapshot's
+// float[16] slots as bytes. Offsets need no assert here -- _11 ... _44 name
+// their own positions, so nobody has a reason to reorder them -- but gaining or
+// losing a member would leave the copy moving a different number of floats than
+// the game wrote.
+static_assert(sizeof(D3DXMATRIX) == 16 * sizeof(float),
+              "D3DXMATRIX is exactly sixteen floats and nothing else");
+static_assert(sizeof(Rs2FfpSnapshot::world) == sizeof(D3DXMATRIX),
+              "a snapshot transform slot holds one whole D3DXMATRIX");
 
 namespace {
 
