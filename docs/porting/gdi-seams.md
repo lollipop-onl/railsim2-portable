@@ -98,7 +98,7 @@ Game UI text almost never calls GDI directly. It goes through **`g_StrTex`** (`C
 | `DeleteObject` | `lib/texture.cpp` | 207 | Temporary text bitmap |
 | `DeleteDC` | `lib/texture.cpp` | 208, 385 | Scratch DC teardown |
 
-Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `SetDIBitsToDevice`, `TransparentBlt`, clipboard helpers).
+Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `SetDIBitsToDevice`, `TransparentBlt`, `SetMapMode`, `SetBkMode`, `SetTextColor`, `DrawText`, clipboard helpers). Since `#180` put `lib/texture.cpp` on `port/native_sources.txt`, `DrawText` returns 0 and leaves the `DT_CALCRECT` rectangle as the caller initialized it, so `CalcTextRect` measures every non-empty string as 1 x 1, and `CreateDIBSection` hands back a null bits pointer, so `DrawInText` returns `FALSE` before touching the DIB.
 
 ### Clipboard
 

@@ -2,8 +2,7 @@
 # Progress denominator is every game translation unit: root *.cpp + lib/*.cpp.
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
-# Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard,
-# and D3DX font.
+# Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard.
 # Most errors are names the stubs do not declare yet. None waits on a real
 # backend or on a game-code edit. lib/sound.cpp and lib/wave.cpp showed that
 # compiling against a DirectX API needs its declarations, not a backend (#152).
@@ -157,3 +156,5 @@ lib/comm.cpp
 lib/music.cpp
 CPixelbitStamp.cpp
 lib/sprite.cpp
+lib/font.cpp
+lib/texture.cpp

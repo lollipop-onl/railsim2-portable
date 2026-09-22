@@ -229,6 +229,7 @@ typedef struct tagLOGFONTA {
   BYTE lfPitchAndFamily;
   CHAR lfFaceName[32];
 } LOGFONTA, *PLOGFONTA, *LPLOGFONTA;
+typedef LOGFONTA LOGFONT;
 
 #ifndef WINAPI
 #define WINAPI
@@ -709,19 +710,32 @@ inline HLOCAL LocalFree(HLOCAL) { return nullptr; }
 #define IDNO 7
 #define IDCANCEL 2
 
+#define BI_RGB 0L
 #define DIB_RGB_COLORS 0
 #define HALFTONE 4
 #define COLORONCOLOR 3
 #define SRCCOPY (DWORD)0x00CC0020
 #define SHIFTJIS_CHARSET 128
+#define DEFAULT_QUALITY 0
 #define PROOF_QUALITY 2
 #define OUT_DEFAULT_PRECIS 0
 #define CLIP_DEFAULT_PRECIS 0
+#define DEFAULT_PITCH 0
 #define VARIABLE_PITCH 2
+#define FF_DONTCARE 0x00
 #define FF_MODERN 0x30
 #define FW_REGULAR 400
 #define DEFAULT_CHARSET 1
 #define ANSI_CHARSET 0
+#define MM_TEXT 1
+#define TRANSPARENT 1
+#define CLR_INVALID 0xFFFFFFFF
+
+#define DT_LEFT 0x00000000
+#define DT_EXPANDTABS 0x00000040
+#define DT_NOCLIP 0x00000100
+#define DT_CALCRECT 0x00000400
+#define DT_NOPREFIX 0x00000800
 
 #define SW_SHOW 5
 #define SW_HIDE 0
@@ -752,8 +766,21 @@ inline BOOL BitBlt(HDC, int, int, int, int, HDC, int, int, DWORD) { return FALSE
 inline int SetDIBitsToDevice(HDC, int, int, DWORD, DWORD, int, int, UINT, UINT, const void*, const BITMAPINFO*, UINT) {
   return 0;
 }
+inline int SetMapMode(HDC, int) { return 0; }
+inline int SetBkMode(HDC, int) { return 0; }
+inline COLORREF SetTextColor(HDC, COLORREF) { return CLR_INVALID; }
+// DT_CALCRECT callers read the RECT back, but measuring text needs the font
+// metrics of a GDI backend. Returning the failure value and leaving the RECT
+// alone hands them the rectangle they initialized, not an invented size.
+inline int DrawTextA(HDC, LPCSTR, int, LPRECT, UINT) { return 0; }
+#ifndef DrawText
+#define DrawText DrawTextA
+#endif
 inline BOOL TransparentBlt(HDC, int, int, int, int, HDC, int, int, int, int, UINT) { return FALSE; }
-inline HBITMAP CreateDIBSection(HDC, const BITMAPINFO*, UINT, void**, HANDLE, DWORD) { return nullptr; }
+inline HBITMAP CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** bits, HANDLE, DWORD) {
+  *bits = nullptr;
+  return nullptr;
+}
 inline int GetObjectA(HANDLE, int, LPVOID) { return 0; }
 inline BOOL WaitMessage() { return TRUE; }
 inline DWORD GetTickCount() { return 0; }

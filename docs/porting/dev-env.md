@@ -70,7 +70,7 @@ a literal in `CMakeLists.txt`.
 | Blocker | Examples |
 |---------|----------|
 | Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
-| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`. `CPixelbitStamp.cpp` (`SetDIBitsToDevice`, `SRCCOPY`, closed by `#178`) and `lib/sprite.cpp` (`::SetRect`, closed by `#179`) sat here too |
+| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`). `CPixelbitStamp.cpp` (`SetDIBitsToDevice`, `SRCCOPY`, closed by `#178`), `lib/sprite.cpp` (`::SetRect`, closed by `#179`), `lib/font.cpp` (`LOGFONT`, `DT_*`) and `lib/texture.cpp` (`DrawText`, `SetBkMode`, closed by `#180`) sat here too |
 | Missing DirectSound notify / DirectMusic / DirectPlay8 declarations | None left. `lib/wave_stream.cpp` (closed by `#164`), `lib/comm.cpp` (closed by `#169`, see [network-seams.md](network-seams.md)) and `lib/music.cpp` (closed by `#174`) sat here. This row used to read "Needs a real backend, not a stub" and named `lib/comm.cpp` and `lib/sound.cpp`. Neither belonged: `#152` closed `lib/sound.cpp` with stub declarations alone, and `#124` counts all three TUs here as stub work -- its target is `152/152` with no exceptions, and no TU waits on a backend |
 | Type mismatch, nothing missing | None left. `lib/draw.cpp` (initializer-list narrowing, closed by `#161`) and `CWaveArray.cpp` (MSVC array-new bound expression, closed by `#162`) sat here, and both needed a game-source edit rather than a stub; `CWaveArray.cpp` was a parse failure, not a type mismatch |
 
@@ -78,8 +78,8 @@ A TU can sit in more than one row, so the rows are not a partition and the table
 alone does not tell you what a stub addition buys. `lib/height_field.cpp` used to
 appear under both a missing type and a type mismatch: `IDirect3DTexture8::GetLevelDesc`
 closed only 1 of its 3 errors, and the other 2 needed the `min` / `max` seam below.
-`lib/texture.cpp` wants `GetLevelDesc` too, yet is still blocked: it went 21 errors
-to 18, all of them under the GDI gap.
+`lib/texture.cpp` wanted `GetLevelDesc` too, yet stayed blocked: it went 21 errors
+to 18, all of them under the GDI gap, until `#180` declared those.
 
 The row a TU sits in is a guess until it is measured, and three of them were wrong.
 `lib/debug.cpp` sat under GDI because of `OSVERSIONINFO`, but that type and the
@@ -197,11 +197,11 @@ they stood, and the allowlist has caught up with it. Measuring every game
 | `lib/mesh.cpp` | 1 | 1 | `fatal error`, no `rmxfguid.h` anywhere in the tree (closed by `#150`) |
 | `CPixelbitStamp.cpp` | 3 | 3 | GDI (closed by `#178`) |
 | `lib/sprite.cpp` | 6 | 4 | Win32 (`::SetRect`) and a DX9-shaped `ID3DXSprite` (closed by `#179`) |
-| `lib/font.cpp` | 9 | 9 | GDI |
+| `lib/font.cpp` | 9 | 9 | GDI and a DX9-shaped `ID3DXFont` (closed by `#180`) |
 | `lib/draw.cpp` | 14 | 14 | initializer-list narrowing (closed by `#161`) |
 | `lib/sound.cpp` | 14 | 14 | DirectSound (closed by `#152`) |
 | `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify (closed by `#164`) |
-| `lib/texture.cpp` | 18 | 18 | GDI |
+| `lib/texture.cpp` | 18 | 18 | GDI (closed by `#180`) |
 | `CPixelbit.cpp` | 40 | 40 | GDI |
 | `lib/music.cpp` | 41 | 40 | DirectMusic (closed by `#174`) |
 | `lib/comm.cpp` | 70 | 68 | DirectPlay8 (closed by `#169`) |
@@ -243,7 +243,13 @@ arguments of. `#178` took `CPixelbitStamp.cpp` off it with `SetDIBitsToDevice`
 and `SRCCOPY`, the first GDI row to go. `#179` took `lib/sprite.cpp` off it
 with `::SetRect` and an `ID3DXSprite` reshaped to DX8: the stub had carried
 DX9's `Begin(DWORD)` and five-argument `Draw`, which no allowlisted TU
-called.
+called. `#180` took `lib/font.cpp` and `lib/texture.cpp` off it together,
+since both draw text with the same `DT_*` flags, and reshaped `ID3DXFont` to
+DX8 the same way. Its six-argument DX9 `DrawTextA` never showed up in the
+first measurement for the same reason as `MAX_PATH`: the one call passed an
+undeclared `DT_LEFT`. `SetMapMode`, `SetBkMode` and `DrawText` in
+`lib/texture.cpp` hid behind `MM_TEXT`, `TRANSPARENT` and `DT_CALCRECT` the
+same way.
 
 `#152` is also the first slice where growing a stub **broke** an allowlisted TU.
 `#86` had given `lib/wave.cpp` a local copy of the DirectSound names it needed,
