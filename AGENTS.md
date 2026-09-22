@@ -63,7 +63,7 @@ A slice is too big if it spans two Milestones, rewrites game logic, or cannot be
 
 ## Pull requests
 
-- Keep game-source diffs mechanical, or covered by a `check` test. "Mechanical" is not a closed list -- path separators, encoding-safe strings, `const` on an `operator<`, a header renamed to the case its includers spell, and dropping a local stub that `port/stub/` now owns have all shipped; a `(float)` cast on `lib/draw.cpp`'s six narrowing initializers is the same kind of edit and has not shipped yet. Put behavior in `lib/` or `port/`.
+- Keep game-source diffs mechanical, or covered by a `check` test. "Mechanical" is not a closed list -- path separators, encoding-safe strings, `const` on an `operator<`, a header renamed to the case its includers spell, dropping a local stub that `port/stub/` now owns, a `(float)` cast on `lib/draw.cpp`'s narrowing vertex initializers, and respelling `CWaveArray.cpp`'s MSVC-only `new (CWave[m_Number = n])` as `new CWave[m_Number = n]` have all shipped. Put behavior in `lib/` or `port/`.
 - `./scripts/check.sh` must be green.
 - Do not chain a second issue after CI goes green.
 
