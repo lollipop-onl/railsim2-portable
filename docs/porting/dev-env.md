@@ -65,12 +65,12 @@ sat that way from `dfd45ed` (`#76`) until `#145`, because the allowlist held onl
 root-level entries back then and `lib/` had nowhere else to go. It is no longer
 a literal in `CMakeLists.txt`.
 
-`stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. The TUs outside it were sorted into four groups; the header comment of `port/native_sources.txt` is the current summary of what still holds them, and `scripts/progress.sh` counts how many are left:
+`stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. The TUs outside it were sorted into four groups. Every row now reads "None left": `#181` allowlisted the last TU, and `scripts/progress.sh` reports `152/152`. The table stays as the record of what held each TU:
 
 | Blocker | Examples |
 |---------|----------|
-| Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
-| Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`). `CPixelbitStamp.cpp` (`SetDIBitsToDevice`, `SRCCOPY`, closed by `#178`), `lib/sprite.cpp` (`::SetRect`, closed by `#179`), `lib/font.cpp` (`LOGFONT`, `DT_*`) and `lib/texture.cpp` (`DrawText`, `SetBkMode`, closed by `#180`) sat here too |
+| Missing D3D8 / DirectX header or type in `port/stub/` | None left. `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
+| Missing GDI / Win32 UI types | None left. `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`, closed by `#181`), `CPixelbitStamp.cpp` (`SetDIBitsToDevice`, `SRCCOPY`, closed by `#178`), `lib/sprite.cpp` (`::SetRect`, closed by `#179`), `lib/font.cpp` (`LOGFONT`, `DT_*`) and `lib/texture.cpp` (`DrawText`, `SetBkMode`, closed by `#180`) sat here too |
 | Missing DirectSound notify / DirectMusic / DirectPlay8 declarations | None left. `lib/wave_stream.cpp` (closed by `#164`), `lib/comm.cpp` (closed by `#169`, see [network-seams.md](network-seams.md)) and `lib/music.cpp` (closed by `#174`) sat here. This row used to read "Needs a real backend, not a stub" and named `lib/comm.cpp` and `lib/sound.cpp`. Neither belonged: `#152` closed `lib/sound.cpp` with stub declarations alone, and `#124` counts all three TUs here as stub work -- its target is `152/152` with no exceptions, and no TU waits on a backend |
 | Type mismatch, nothing missing | None left. `lib/draw.cpp` (initializer-list narrowing, closed by `#161`) and `CWaveArray.cpp` (MSVC array-new bound expression, closed by `#162`) sat here, and both needed a game-source edit rather than a stub; `CWaveArray.cpp` was a parse failure, not a type mismatch |
 
@@ -202,7 +202,7 @@ they stood, and the allowlist has caught up with it. Measuring every game
 | `lib/sound.cpp` | 14 | 14 | DirectSound (closed by `#152`) |
 | `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify (closed by `#164`) |
 | `lib/texture.cpp` | 18 | 18 | GDI (closed by `#180`) |
-| `CPixelbit.cpp` | 40 | 40 | GDI |
+| `CPixelbit.cpp` | 40 | 40 | GDI and Win32 file I/O (closed by `#181`) |
 | `lib/music.cpp` | 41 | 40 | DirectMusic (closed by `#174`) |
 | `lib/comm.cpp` | 70 | 68 | DirectPlay8 (closed by `#169`) |
 
@@ -249,7 +249,11 @@ DX8 the same way. Its six-argument DX9 `DrawTextA` never showed up in the
 first measurement for the same reason as `MAX_PATH`: the one call passed an
 undeclared `DT_LEFT`. `SetMapMode`, `SetBkMode` and `DrawText` in
 `lib/texture.cpp` hid behind `MM_TEXT`, `TRANSPARENT` and `DT_CALCRECT` the
-same way.
+same way. `#181` took `CPixelbit.cpp`, the last row, off it with the Win32
+file I/O names, `BITMAPFILEHEADER`, `BI_BITFIELDS`, the `CF_DIB` clipboard
+constants, and the `LPBITMAPINFOHEADER` that only `port/stub/vfw.h` had
+declared. `CreateFile` hid behind `GENERIC_READ` and `GENERIC_WRITE` the
+same way, and that emptied the table.
 
 `#152` is also the first slice where growing a stub **broke** an allowlisted TU.
 `#86` had given `lib/wave.cpp` a local copy of the DirectSound names it needed,
@@ -269,13 +273,13 @@ initializer list fourteen times. **Those two were the only rows that could not b
 answered from `port/stub/`**, and at `#145` they were the only ones held for
 agreement on editing game code. `#157` removed the need for that agreement by
 grounding Hard constraint 1 in `AGENTS.md` on behavior preservation, and
-`#161` / `#162` shipped both edits. Every TU still outside the allowlist is a
-question of how much stub, not of whether a stub can do it -- the GDI rows
-(`#16`) are large, not categorically different, and `#124` records that a TU
+`#161` / `#162` shipped both edits. Every TU that stayed outside the allowlist turned out
+to be a question of how much stub, not of whether a stub can do it -- the GDI rows
+(`#16`) were large, not categorically different, and `#124` records that a TU
 can be allowlisted as soon as the stub satisfies its types, without waiting for
 `#5` / `#7` / `#11` to have a backend. A stub can also hold a TU by declaring a name in the wrong shape
-rather than leaving it out; the header of `port/native_sources.txt` names the
-TUs where that is the case today.
+rather than leaving it out, as the DX9-shaped `ID3DXSprite` and `ID3DXFont`
+held `lib/sprite.cpp` and `lib/font.cpp` until `#179` and `#180`.
 
 Nothing constructs `CWaveStream`, and nothing outside `lib/music.cpp` includes
 `music.h` (`lib/udx.h` has it commented out). `#152` briefly took
@@ -291,6 +295,15 @@ it compiles.
 So what is gone is the free sweep, not the headroom. Re-measuring after a stub
 grows is still worth doing -- that is how `#126` found 52 TUs at once -- but it
 no longer finds a TU that someone else's stub happened to finish.
+
+At `#181` the allowlist reached `152/152`, so there is no TU left for a
+re-measure to find. Compiling was never the same as behaving: every game TU
+now builds against stubs that mostly fail, and what remains is the backends
+behind them and the widths of `#155`. `CPixelbit.cpp` is the plainest case --
+it compiles, but on LP64 its `sizeof(BITMAPFILEHEADER)` is 22 and its
+`sizeof(BITMAPINFOHEADER)` 80, so its `.bmp` offsets stay wrong while `DWORD`
+and `LONG` are 8 bytes wide. It does no harm today only because
+`CreateDIBSection` fails and `Clear` returns before any of it runs.
 
 ### `min` / `max` under `NOMINMAX`
 

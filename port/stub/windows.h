@@ -356,6 +356,40 @@ inline HANDLE CreateThread(LPVOID, DWORD, LPTHREAD_START_ROUTINE, LPVOID, DWORD,
 inline BOOL CloseHandle(HANDLE) { return TRUE; }
 inline BOOL TerminateThread(HANDLE, DWORD) { return TRUE; }
 inline HANDLE CreateEvent(LPVOID, BOOL, BOOL, LPCSTR) { return (HANDLE)2; }
+
+// winnt.h writes (0x80000000L), which a 32-bit long cannot hold, so on Windows
+// the literal is unsigned long. LP64's long holds it, and the bare literal would
+// turn signed. The cast keeps Windows' type. GENERIC_WRITE fits a long on both.
+#define GENERIC_READ ((DWORD)0x80000000L)
+#define GENERIC_WRITE (0x40000000L)
+#define CREATE_ALWAYS 2
+#define OPEN_EXISTING 3
+#define FILE_ATTRIBUTE_NORMAL 0x00000080
+#define INVALID_FILE_SIZE ((DWORD)0xFFFFFFFF)
+
+struct _SECURITY_ATTRIBUTES;
+typedef struct _SECURITY_ATTRIBUTES* LPSECURITY_ATTRIBUTES;
+struct _OVERLAPPED;
+typedef struct _OVERLAPPED* LPOVERLAPPED;
+
+inline HANDLE CreateFileA(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE) {
+  return INVALID_HANDLE_VALUE;
+}
+#ifndef CreateFile
+#define CreateFile CreateFileA
+#endif
+inline DWORD GetFileSize(HANDLE, LPDWORD) { return INVALID_FILE_SIZE; }
+// Win32 zeroes the count before any error check, and CPixelbit::Save compares
+// WriteFile's count against the size it asked for without looking at the
+// return value, so these must write the count even though they fail.
+inline BOOL ReadFile(HANDLE, LPVOID, DWORD, LPDWORD count, LPOVERLAPPED) {
+  if (count) *count = 0;
+  return FALSE;
+}
+inline BOOL WriteFile(HANDLE, LPCVOID, DWORD, LPDWORD count, LPOVERLAPPED) {
+  if (count) *count = 0;
+  return FALSE;
+}
 inline void GlobalMemoryStatus(LPMEMORYSTATUS ms) {
   if (ms) {
     ms->dwLength = sizeof(MEMORYSTATUS);
@@ -463,9 +497,13 @@ inline void PostQuitMessage(int) {}
 #ifndef GMEM_DDESHARE
 #define GMEM_DDESHARE 0x2000
 #endif
+#define GMEM_ZEROINIT 0x0040
+#define GMEM_SHARE GMEM_DDESHARE
+#define GHND (GMEM_MOVEABLE | GMEM_ZEROINIT)
 #ifndef CF_TEXT
 #define CF_TEXT 1
 #endif
+#define CF_DIB 8
 
 inline HGLOBAL GlobalAlloc(UINT, SIZE_T) { return nullptr; }
 inline LPVOID GlobalLock(HGLOBAL) { return nullptr; }
@@ -603,7 +641,23 @@ typedef struct tagBITMAPINFOHEADER {
   LONG biYPelsPerMeter;
   DWORD biClrUsed;
   DWORD biClrImportant;
-} BITMAPINFOHEADER;
+} BITMAPINFOHEADER, *LPBITMAPINFOHEADER, *PBITMAPINFOHEADER;
+
+// Declared as wingdi.h declares it, pack(2) included, yet with DWORD 8 bytes
+// wide on LP64 this is 22 bytes rather than the 14 of a .bmp file header, just
+// as BITMAPINFOHEADER above is 80 rather than 40. CPixelbit takes sizeof of
+// both as on-disk offsets, so it reads and writes the wrong layout here. Do not
+// repack or hand-size either struct to hide that: the width comes from the
+// DWORD / LONG typedefs, and changing those is #155's decision.
+#pragma pack(push, 2)
+typedef struct tagBITMAPFILEHEADER {
+  WORD bfType;
+  DWORD bfSize;
+  WORD bfReserved1;
+  WORD bfReserved2;
+  DWORD bfOffBits;
+} BITMAPFILEHEADER, *LPBITMAPFILEHEADER, *PBITMAPFILEHEADER;
+#pragma pack(pop)
 
 typedef struct tagBITMAPINFO {
   BITMAPINFOHEADER bmiHeader;
@@ -711,6 +765,7 @@ inline HLOCAL LocalFree(HLOCAL) { return nullptr; }
 #define IDCANCEL 2
 
 #define BI_RGB 0L
+#define BI_BITFIELDS 3L
 #define DIB_RGB_COLORS 0
 #define HALFTONE 4
 #define COLORONCOLOR 3
@@ -778,7 +833,7 @@ inline int DrawTextA(HDC, LPCSTR, int, LPRECT, UINT) { return 0; }
 #endif
 inline BOOL TransparentBlt(HDC, int, int, int, int, HDC, int, int, int, int, UINT) { return FALSE; }
 inline HBITMAP CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** bits, HANDLE, DWORD) {
-  *bits = nullptr;
+  if (bits) *bits = nullptr;
   return nullptr;
 }
 inline int GetObjectA(HANDLE, int, LPVOID) { return 0; }

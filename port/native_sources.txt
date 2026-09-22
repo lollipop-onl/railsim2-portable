@@ -2,10 +2,10 @@
 # Progress denominator is every game translation unit: root *.cpp + lib/*.cpp.
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
-# Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard.
-# Most errors are names the stubs do not declare yet. None waits on a real
-# backend or on a game-code edit. lib/sound.cpp and lib/wave.cpp showed that
-# compiling against a DirectX API needs its declarations, not a backend (#152).
+# No TU is left outside this list: CPixelbit.cpp made it 152/152 (#181).
+# The last gaps were all closed in port/stub/, and none waited on a real
+# backend. lib/sound.cpp and lib/wave.cpp showed that compiling against a
+# DirectX API needs its declarations, not a backend (#152).
 # See docs/porting/dev-env.md.
 CCheckBox.cpp
 CCursor.cpp
@@ -158,3 +158,4 @@ CPixelbitStamp.cpp
 lib/sprite.cpp
 lib/font.cpp
 lib/texture.cpp
+CPixelbit.cpp

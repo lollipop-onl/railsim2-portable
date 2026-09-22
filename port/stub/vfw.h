@@ -29,8 +29,6 @@
 #define streamtypeAUDIO mmioFOURCC('a', 'u', 'd', 's')
 #define AVIIF_KEYFRAME 0x00000010L
 
-typedef BITMAPINFOHEADER* LPBITMAPINFOHEADER;
-
 struct IAVIFile;
 struct IAVIStream;
 typedef IAVIFile* PAVIFILE;
