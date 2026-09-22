@@ -64,6 +64,7 @@ A slice is too big if it spans two Milestones, rewrites game logic, or cannot be
 ## Pull requests
 
 - Keep game-source diffs mechanical, or covered by a `check` test. "Mechanical" is not a closed list -- path separators, encoding-safe strings, `const` on an `operator<`, a header renamed to the case its includers spell, dropping a local stub that `port/stub/` now owns, a `(float)` cast on `lib/draw.cpp`'s narrowing vertex initializers, and respelling `CWaveArray.cpp`'s MSVC-only `new (CWave[m_Number = n])` as `new CWave[m_Number = n]` have all shipped. Put behavior in `lib/` or `port/`.
+- A PR that changes, renames or deletes a file in upstream's tree (`git ls-tree -r --name-only 2324375`) adds a dated entry to `NOTICE` in the same PR, numbered by the slice issue. LGPL 2.1 section 2(b) requires the notice.
 - `./scripts/check.sh` must be green.
 - Do not chain a second issue after CI goes green.
 
