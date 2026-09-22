@@ -1,12 +1,14 @@
 # Agent notes
 
-Cross-platform port of RailSim2. Game logic stays close to upstream; platform code is replaced behind `lib/` and `port/stub/`.
+Cross-platform port of RailSim2. Upstream is frozen -- no further commits or tags are expected, and nothing here flows back to it. What this fork preserves is therefore not upstream's text but the game's observable behavior: platform code moves behind `lib/` and `port/stub/`, and the on-disk formats are pinned by `check` tests.
 
 Human-facing overview: [`README.md`](README.md). Strategies: [`docs/porting/upstream.md`](docs/porting/upstream.md). Build: [`docs/porting/dev-env.md`](docs/porting/dev-env.md).
 
 ## Hard constraints
 
-1. Prefer stubs and `lib/` backends over rewriting gameplay.
+1. Game source may be edited when the edit is mechanical, or when a `check` test -- one that already exists, or one added in the same PR -- covers the behavior it changes. Anything else belongs behind a `lib/` / `port/` seam.
+   Where no test covers the area yet, write one: `lib/input.cpp` lost its DirectInput poll (`+42 / -372`) in the PR that added `rs2_input_self_test`, and `lib/wave.cpp` lost `mmio*` in the PR that added `rs2_wave_load_self_test`. "No test here" is not permission to skip the test.
+   The reason is behavior preservation, not upstream sync: `rs2_roundtrip` keeps `Sample.rs2` byte-identical through Load/Save with 31 real game TUs linked, and `rs2_float_self_test` / `rs2_md5_self_test` / the `.x`, `.wav`, path and charset self-tests pin the remaining formats.
 2. No MinGW and no vendored DirectX SDK. Compile firewall is `port/stub/` via `-isystem`.
 3. Sources stay CP932 / ASCII. No mass UTF-8 conversion of game sources. `scripts/encoding-guard.sh` is law.
 4. Progress is monotonic: only add lines to `port/native_sources.txt`. The denominator is every game translation unit -- root `*.cpp` + `lib/*.cpp`, 152 today -- and `scripts/progress.sh` counts it.
@@ -61,7 +63,7 @@ A slice is too big if it spans two Milestones, rewrites game logic, or cannot be
 
 ## Pull requests
 
-- Keep game-code diffs mechanical (path separators, encoding-safe strings). Put behavior in `lib/` or `port/`.
+- Keep game-source diffs mechanical, or covered by a `check` test. "Mechanical" is not a closed list -- path separators, encoding-safe strings, `const` on an `operator<`, a header renamed to the case its includers spell, and dropping a local stub that `port/stub/` now owns have all shipped; a `(float)` cast on `lib/draw.cpp`'s six narrowing initializers is the same kind of edit and has not shipped yet. Put behavior in `lib/` or `port/`.
 - `./scripts/check.sh` must be green.
 - Do not chain a second issue after CI goes green.
 
