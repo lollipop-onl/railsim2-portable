@@ -3,7 +3,7 @@
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
 # Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard,
-# D3DX font and sprite, and DirectMusic.
+# and D3DX font and sprite.
 # Most errors are names the stubs do not declare yet. lib/sprite.cpp is also
 # held by ID3DXSprite's DX9-shaped Begin / Draw. None waits on a real backend
 # or on a game-code edit. lib/sound.cpp and lib/wave.cpp showed that compiling
@@ -155,3 +155,4 @@ lib/draw.cpp
 CWaveArray.cpp
 lib/wave_stream.cpp
 lib/comm.cpp
+lib/music.cpp

@@ -5,10 +5,6 @@
 // DirectShow no-op stubs. Opaque COM types for lib/movie.cpp.
 // CoCreateInstance stays E_NOTIMPL; InitDirectShow must soft-fail.
 
-#ifndef MAX_PATH
-#define MAX_PATH 260
-#endif
-
 #ifndef WS_CHILD
 #define WS_CHILD 0x40000000L
 #endif
@@ -53,8 +49,3 @@ struct IVideoWindow : IUnknown {
   HRESULT SetWindowPosition(long, long, long, long) { return E_NOTIMPL; }
 };
 
-inline int MultiByteToWideChar(UINT, DWORD, LPCSTR src, int, WCHAR* dst, int dstlen) {
-  if (!src || !dst || dstlen <= 0) return 0;
-  dst[0] = 0;
-  return 1;
-}

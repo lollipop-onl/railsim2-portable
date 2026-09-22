@@ -110,7 +110,7 @@ No other `_finddata_t` users.
 | `_fullpath` stub | `port/stub/direct.h` | `snprintf` copies `rel` unchanged. Not a real absolute path. `MoveToFile` + `CutPath` then no-op on a name with no `\`. |
 | `_getcwd` | **none** | stub `#define _getcwd getcwd` only |
 | `SetCurrentDirectory` / `CHANGE_DIR` | **none** (macro only) | stub always returns `TRUE` |
-| `GetCurrentDirectory` | `lib/music.cpp` `LoadMusic` | `music.h` is commented out of `lib/udx.h`. Out of scope for `#4` unless music is revived. |
+| `GetCurrentDirectory` | `lib/music.cpp` `LoadMusic` | `music.h` is commented out of `lib/udx.h`. Out of scope for `#4` unless music is revived. The stub returns failure with an empty buffer (`#174`) |
 
 `GetModuleFileName` (used by `GetAppPath`) is **not** in `port/stub/` yet. It only matters once `SystemCover.cpp` is allowlisted.
 

@@ -3,6 +3,7 @@
 #include "windows.h"
 #include "mmsystem.h"
 
+struct IDirectSound;
 struct IDirectSound8;
 struct IDirectSoundBuffer;
 struct IDirectSoundBuffer8;
@@ -45,14 +46,16 @@ typedef IDirectSoundNotify* LPDIRECTSOUNDNOTIFY;
 #define DSBSTATUS_PLAYING 0x00000001
 #define DSBSTATUS_BUFFERLOST 0x00000002
 
-// Zero, not the SDK's 6825a449-.. / 279afa86-.. / 279afa84-.. / b0210783-..:
-// the only QueryInterface these reach is the one IUnknown declares, which
-// ignores its GUID argument and returns E_NOTIMPL. Three call sites --
-// CWave::Query for Buffer8 and 3DBuffer, CreatePrimaryBuffer for 3DListener --
-// test only FAILED() on the result, and the fourth, CWaveStream::Begin for
-// Notify, discards it, so nothing can tell the values apart. Give them the
+// Zero, not the SDK's 279afa83-.. / 6825a449-.. / 279afa86-.. / 279afa84-.. /
+// b0210783-..: the only QueryInterface these reach is the one IUnknown
+// declares, which ignores its GUID argument and returns E_NOTIMPL. Three call
+// sites -- CWave::Query for Buffer8 and 3DBuffer, CreatePrimaryBuffer for
+// 3DListener -- test only FAILED() on the result, and the other two,
+// CWaveStream::Begin for Notify and CreatePerformance for IDirectSound,
+// discard it, so nothing can tell the values apart. Give them the
 // real IIDs when a backend starts dispatching on them; distinct placeholders
 // until then would only look like they carry meaning.
+static const GUID IID_IDirectSound = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 static const GUID IID_IDirectSoundBuffer8 = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 static const GUID IID_IDirectSound3DBuffer = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 static const GUID IID_IDirectSound3DListener = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
@@ -77,7 +80,9 @@ struct DSBPOSITIONNOTIFY {
 };
 typedef const DSBPOSITIONNOTIFY* LPCDSBPOSITIONNOTIFY;
 
-struct IDirectSound8 : IUnknown {
+struct IDirectSound : IUnknown {};
+
+struct IDirectSound8 : IDirectSound {
   HRESULT CreateSoundBuffer(const DSBUFFERDESC*, LPDIRECTSOUNDBUFFER*, LPVOID) { return DS_OK; }
   HRESULT SetCooperativeLevel(HWND, DWORD) { return S_OK; }
 };
