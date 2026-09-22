@@ -705,6 +705,7 @@ inline HLOCAL LocalFree(HLOCAL) { return nullptr; }
 #define DIB_RGB_COLORS 0
 #define HALFTONE 4
 #define COLORONCOLOR 3
+#define SRCCOPY (DWORD)0x00CC0020
 #define SHIFTJIS_CHARSET 128
 #define PROOF_QUALITY 2
 #define OUT_DEFAULT_PRECIS 0
@@ -741,6 +742,9 @@ inline HFONT CreateFont(int h, int w, int e, int o, int wt, DWORD i, DWORD u, DW
 inline int SetStretchBltMode(HDC, int) { return 0; }
 inline BOOL StretchBlt(HDC, int, int, int, int, HDC, int, int, int, int, DWORD) { return FALSE; }
 inline BOOL BitBlt(HDC, int, int, int, int, HDC, int, int, DWORD) { return FALSE; }
+inline int SetDIBitsToDevice(HDC, int, int, DWORD, DWORD, int, int, UINT, UINT, const void*, const BITMAPINFO*, UINT) {
+  return 0;
+}
 inline BOOL TransparentBlt(HDC, int, int, int, int, HDC, int, int, int, int, UINT) { return FALSE; }
 inline HBITMAP CreateDIBSection(HDC, const BITMAPINFO*, UINT, void**, HANDLE, DWORD) { return nullptr; }
 inline int GetObjectA(HANDLE, int, LPVOID) { return 0; }
