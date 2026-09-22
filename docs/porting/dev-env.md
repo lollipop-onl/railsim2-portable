@@ -48,7 +48,7 @@ cannot drift from the docs the way `254` did. Adding a line to the allowlist is 
 The denominator was **254** until #141: root-level `*.cpp` + `*.h`. Headers are not
 translation units, so 130 of those 254 -- every root `*.h` the count saw -- could
 never enter the numerator, and `254/254` was unreachable. The numerator meanwhile
-counts `lib/*.cpp` too (19 entries today), which the old denominator excluded --
+counted `lib/*.cpp` too (19 entries at `#141`), which the old denominator excluded --
 the two sides were measuring disjoint sets.
 `254` was also already stale as a count of its own definition: it was taken when
 `RSPV.H` still had an uppercase suffix and so missed a `*.h` glob, and #127 renaming it
@@ -65,14 +65,14 @@ sat that way from `dfd45ed` (`#76`) until `#145`, because the allowlist held onl
 root-level entries back then and `lib/` had nowhere else to go. It is no longer
 a literal in `CMakeLists.txt`.
 
-`stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. Remaining TUs split into four groups:
+`stdafx.h` already parses through the stubs. Include-order and MSVC-only extra qualification are no longer what blocks the allowlist. The TUs outside it were sorted into four groups; the header comment of `port/native_sources.txt` is the current summary of what still holds them, and `scripts/progress.sh` counts how many are left:
 
 | Blocker | Examples |
 |---------|----------|
 | Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/sprite.cpp` (`::SetRect` not in stub) |
-| Needs a real backend, not a stub | `lib/comm.cpp` (DirectPlay8) -- but see `#11`: no `network-seams.md` exists yet. `lib/sound.cpp` was listed here and did not belong: `#152` closed it with stub declarations alone |
-| Type mismatch, nothing missing | `lib/draw.cpp` (initializer-list narrowing), `CWaveArray.cpp` (MSVC array-new bound expression) |
+| Missing DirectSound notify / DirectMusic / DirectPlay8 declarations | `lib/music.cpp`, `lib/comm.cpp`; `lib/wave_stream.cpp` sat here too (closed by `#164`). This row used to read "Needs a real backend, not a stub" and named `lib/comm.cpp` and `lib/sound.cpp`. Neither belonged: `#152` closed `lib/sound.cpp` with stub declarations alone, and `#124` counts all three TUs here as stub work -- its target is `152/152` with no exceptions, and no TU waits on a backend |
+| Type mismatch, nothing missing | None left. `lib/draw.cpp` (initializer-list narrowing, closed by `#161`) and `CWaveArray.cpp` (MSVC array-new bound expression, closed by `#162`) sat here, and both needed a game-source edit rather than a stub; `CWaveArray.cpp` was a parse failure, not a type mismatch |
 
 A TU can sit in more than one row, so the rows are not a partition and the table
 alone does not tell you what a stub addition buys. `lib/height_field.cpp` used to
@@ -193,12 +193,12 @@ they stood, and the allowlist has caught up with it. Measuring every game
 
 | TU | macOS | Linux | Gap |
 |----|------:|------:|-----|
-| `CWaveArray.cpp` | 1 | 1 | MSVC array-new bound expression |
+| `CWaveArray.cpp` | 1 | 1 | MSVC array-new bound expression (closed by `#162`) |
 | `lib/mesh.cpp` | 1 | 1 | `fatal error`, no `rmxfguid.h` anywhere in the tree (closed by `#150`) |
 | `CPixelbitStamp.cpp` | 3 | 3 | GDI |
 | `lib/sprite.cpp` | 6 | 4 | GDI (`::SetRect`) |
 | `lib/font.cpp` | 9 | 9 | GDI |
-| `lib/draw.cpp` | 14 | 14 | initializer-list narrowing |
+| `lib/draw.cpp` | 14 | 14 | initializer-list narrowing (closed by `#161`) |
 | `lib/sound.cpp` | 14 | 14 | DirectSound (closed by `#152`) |
 | `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify (closed by `#164`) |
 | `lib/texture.cpp` | 18 | 18 | GDI |
@@ -245,13 +245,26 @@ undeclared identifier, an unknown type name, a member a stub struct does not
 carry -- and only two are the compiler refusing code it has fully understood.
 `CWaveArray.cpp` fails to parse (`new (CWave[m_Number = n])`, an assignment in an
 array-new bound, is MSVC-only) and `lib/draw.cpp` narrows `int` into a `float`
-initializer list fourteen times. **Those two are the only rows that cannot be
-answered from `port/stub/`**, and they are the only ones that need agreement on
-editing game code first. Everything else is a question of how much stub, not of
-whether a stub can do it -- the GDI rows (`#16`) and the DirectSound /
-DirectMusic / DirectPlay8 rows are large, not categorically different, and
-`#124` records that a TU can be allowlisted as soon as the stub satisfies its
-types, without waiting for `#5` / `#7` / `#11` to have a backend.
+initializer list fourteen times. **Those two were the only rows that could not be
+answered from `port/stub/`**, and at `#145` they were the only ones held for
+agreement on editing game code. `#157` removed the need for that agreement by
+grounding Hard constraint 1 in `AGENTS.md` on behavior preservation, and
+`#161` / `#162` shipped both edits. Every TU still outside the allowlist is a
+question of how much stub, not of whether a stub can do it -- the GDI rows
+(`#16`) and the DirectMusic / DirectPlay8 rows are large, not categorically
+different, and `#124` records that a TU can be allowlisted as
+soon as the stub satisfies its types, without waiting for `#5` / `#7` / `#11` to
+have a backend. A stub can also hold a TU by declaring a name in the wrong shape
+rather than leaving it out; the header of `port/native_sources.txt` names the
+TUs where that is the case today.
+
+Nothing constructs `CWaveStream`, and nothing outside `lib/music.cpp` includes
+`music.h` (`lib/udx.h` has it commented out). `#152` briefly took
+`lib/wave_stream.cpp` and `lib/music.cpp` off the target on those grounds
+(capping it at `150/152`), and parked `lib/comm.cpp` until `network-seams.md`
+existed; `#124` withdrew all three, and `#164` then allowlisted
+`lib/wave_stream.cpp` with no caller in sight. Whether a TU has a caller is a
+question for the backend work, not for whether it compiles.
 
 So what is gone is the free sweep, not the headroom. Re-measuring after a stub
 grows is still worth doing -- that is how `#126` found 52 TUs at once -- but it
