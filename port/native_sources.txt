@@ -3,7 +3,7 @@
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
 # Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard,
-# D3DX font and sprite, DirectSound notify, DirectMusic and DirectPlay8.
+# D3DX font and sprite, DirectMusic and DirectPlay8.
 # Most errors are names the stubs do not declare yet. lib/sprite.cpp is also
 # held by ID3DXSprite's DX9-shaped Begin / Draw, and lib/comm.cpp by a 16-bit
 # WCHAR that libc's mbstowcs does not take. None waits on a real backend or on
@@ -154,3 +154,4 @@ lib/mesh.cpp
 lib/sound.cpp
 lib/draw.cpp
 CWaveArray.cpp
+lib/wave_stream.cpp

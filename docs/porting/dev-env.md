@@ -200,7 +200,7 @@ they stood, and the allowlist has caught up with it. Measuring every game
 | `lib/font.cpp` | 9 | 9 | GDI |
 | `lib/draw.cpp` | 14 | 14 | initializer-list narrowing |
 | `lib/sound.cpp` | 14 | 14 | DirectSound (closed by `#152`) |
-| `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify; nothing constructs `CWaveStream` |
+| `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify (closed by `#164`) |
 | `lib/texture.cpp` | 18 | 18 | GDI |
 | `CPixelbit.cpp` | 40 | 40 | GDI |
 | `lib/music.cpp` | 41 | 40 | DirectMusic |
@@ -227,7 +227,9 @@ to offer", and that is the claim to keep; the heading it sat under overshot it
 into "the stubs have nothing left to offer", which is not the same sentence and
 is not true. `#150` took `lib/mesh.cpp` off this table with two new stub headers
 and six declarations, and no game-source diff at all. `#152` then took
-`lib/sound.cpp` off it with twelve more declarations in `port/stub/dsound.h`.
+`lib/sound.cpp` off it with twelve more declarations in `port/stub/dsound.h`,
+and `#164` took `lib/wave_stream.cpp` off it with the seven DirectSound notify
+names it was still missing plus `CopyMemory`.
 
 `#152` is also the first slice where growing a stub **broke** an allowlisted TU.
 `#86` had given `lib/wave.cpp` a local copy of the DirectSound names it needed,

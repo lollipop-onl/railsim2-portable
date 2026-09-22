@@ -590,6 +590,9 @@ typedef struct _RTL_CRITICAL_SECTION {
 #ifndef ZeroMemory
 #define ZeroMemory(dest, size) memset((dest), 0, (size))
 #endif
+#ifndef CopyMemory
+#define CopyMemory(dest, src, size) memcpy((dest), (src), (size))
+#endif
 #ifndef strcmpi
 #define strcmpi strcasecmp
 #endif

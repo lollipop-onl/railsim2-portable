@@ -90,7 +90,7 @@ All COM calls live in **`lib/sound.cpp`**, **`lib/wave.cpp`**, **`lib/wave.h`** 
 | `GetCurrentPosition` | `Enqueue` | clamp write cursor out of the play/write hazard |
 | `CreateEvent` / `WaitForSingleObject` | `Begin` / `Enqueue` | `STREAM_TIMEOUT` = `INFINITE` |
 
-No game or `lib/` TU constructs `CWaveStream`. Do not grow stubs for notify until a caller appears.
+No game or `lib/` TU constructs `CWaveStream`. `port/stub/dsound.h` declares the notify names above anyway ([#164](https://github.com/lollipop-onl/railsim2-portable/issues/164)), so `lib/wave_stream.cpp` compiles: those are types for the compile firewall, with `return S_OK` bodies. They are not a reason for `#7` to implement the notify ring. This section used to say "do not grow stubs for notify until a caller appears"; that was a backend-side rule (do not hold `#7` playback on a streamer), and [#124](https://github.com/lollipop-onl/railsim2-portable/issues/124) withdrew it as a compile-side limit because the two axes move independently.
 
 ### Listener / master callers
 
@@ -230,7 +230,12 @@ Now present: `DSBUFFERDESC`, `DSSCL_PRIORITY`, `DSBCAPS_PRIMARYBUFFER` /
 `DSERR_BUFFERLOST`, `IID_IDirectSoundBuffer8` / `IID_IDirectSound3DBuffer` /
 `IID_IDirectSound3DListener`, `DirectSoundCreate8`,
 `IDirectSoundBuffer::{SetFormat,GetVolume,Restore}` and
-`IDirectSound3DListener::SetDistanceFactor`.
+`IDirectSound3DListener::SetDistanceFactor`. `#164` added the notify set for
+`lib/wave_stream.cpp`: `DSBCAPS_LOCDEFER` / `DSBCAPS_CTRLPOSITIONNOTIFY` /
+`DSBCAPS_GETCURRENTPOSITION2`, `DSBPOSITIONNOTIFY`, `IID_IDirectSoundNotify`,
+`IDirectSoundNotify::SetNotificationPositions` and
+`IDirectSoundBuffer::GetCurrentPosition`, plus `CopyMemory` in
+`port/stub/windows.h`.
 
 `#86` had carried most of those names locally in `lib/wave.cpp` behind `#ifndef`
 guards. `DSBUFFERDESC` is a typedef, not a macro, so its guard never fired and
@@ -242,23 +247,21 @@ Still absent, each because its call site is compiled out or has no caller:
 | Symbol | Why it can wait |
 |--------|-----------------|
 | `IDirectSoundBuffer::SetCurrentPosition` | one call site, `CWave::Play`, inside `#if !defined(RS2_PORTABLE_COMPILE_FIREWALL)` |
-| `IDirectSoundBuffer::GetCurrentPosition` | `CWaveStream::Enqueue` only |
-| `IDirectSoundNotify::SetNotificationPositions`, `DSBPOSITIONNOTIFY`, `IID_IDirectSoundNotify`, `DSBCAPS_LOCDEFER` / `CTRLPOSITIONNOTIFY` / `GETCURRENTPOSITION2` | `lib/wave_stream.cpp` only; nothing constructs `CWaveStream` |
 | `IDirectSoundBuffer8::SetFX`, `DSEFFECTDESC`, `GUID_DSFX_*` | `svs.fFX` is hardcoded `FALSE` and `CWave::SetFX`'s body is compiled out |
 | `DuplicateSoundBuffer` | no call site left: `CWave::Duplicate` copies the PCM payload since `#96`, and `CWaveArray::Load`'s duplicate path is under `#if 0` |
 
-`lib/wave_stream.cpp` sits at 10 errors / 8 missing identifiers after `#152`
-(16 / 12 before it): the rows above plus `CopyMemory`. The four `#152` supplied
-it for free are `DSBUFFERDESC`, `DSBPLAY_LOOPING`, `DSERR_BUFFERLOST` and
-`IDirectSoundBuffer::Restore`. Closing them would mean
-writing a DirectSound notify shape for a class no caller constructs, so
-[#124](https://github.com/lollipop-onl/railsim2-portable/issues/124) leaves
-`lib/wave_stream.cpp` out of its completion condition until one appears.
+`lib/wave_stream.cpp` sat at 10 errors / 8 missing identifiers after `#152`
+(16 / 12 before it). The four `#152` supplied it for free are `DSBUFFERDESC`,
+`DSBPLAY_LOOPING`, `DSERR_BUFFERLOST` and `IDirectSoundBuffer::Restore`; `#164`
+declared the other eight. `#152` had kept it off the allowlist because no
+caller constructs `CWaveStream`. `#124` withdrew that exclusion: "no caller"
+decides what `#7` implements, not what the `check` preset compiles.
 
 `port/stub/mmsystem.h` has `WAVEFORMATEX` and `timeGetTime` only. **`mmioOpen` / `Descend` / `Ascend` / `Read` / `Close` / `MMCKINFO` / `mmioFOURCC` are absent.** A parser slice should not add real mmio to the stub; put a small PCM reader in `lib/` or `port/` and keep `CWave::Load` as the single caller.
 
-`lib/wave.cpp` joined `port/native_sources.txt` at `#86` and `lib/sound.cpp` at
-`#152`. `lib/wave_stream.cpp` has not; this document did not add any of them.
+`lib/wave.cpp` joined `port/native_sources.txt` at `#86`, `lib/sound.cpp` at
+`#152` and `lib/wave_stream.cpp` at `#164`; this document did not add any of
+them.
 
 ## ADR: 3D audio backend
 

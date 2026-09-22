@@ -36,22 +36,27 @@ typedef IDirectSoundNotify* LPDIRECTSOUNDNOTIFY;
 #define DSBCAPS_PRIMARYBUFFER 0x00000001
 #define DSBCAPS_CTRL3D 0x00000010
 #define DSBCAPS_CTRLVOLUME 0x00000080
+#define DSBCAPS_CTRLPOSITIONNOTIFY 0x00000100
+#define DSBCAPS_GETCURRENTPOSITION2 0x00010000
+#define DSBCAPS_LOCDEFER 0x00040000
 
 #define DSBPLAY_LOOPING 0x00000001
 
 #define DSBSTATUS_PLAYING 0x00000001
 #define DSBSTATUS_BUFFERLOST 0x00000002
 
-// Zero, not the SDK's 6825a449-.. / 279afa86-.. / 279afa84-..: the only
-// QueryInterface these reach is the one IUnknown declares, which ignores its
-// GUID argument and returns E_NOTIMPL. The three call sites -- CWave::Query
-// for Buffer8 and 3DBuffer, CreatePrimaryBuffer for 3DListener -- test only
-// FAILED() on the result, so nothing can tell the values apart. Give them the
+// Zero, not the SDK's 6825a449-.. / 279afa86-.. / 279afa84-.. / b0210783-..:
+// the only QueryInterface these reach is the one IUnknown declares, which
+// ignores its GUID argument and returns E_NOTIMPL. Three call sites --
+// CWave::Query for Buffer8 and 3DBuffer, CreatePrimaryBuffer for 3DListener --
+// test only FAILED() on the result, and the fourth, CWaveStream::Begin for
+// Notify, discards it, so nothing can tell the values apart. Give them the
 // real IIDs when a backend starts dispatching on them; distinct placeholders
 // until then would only look like they carry meaning.
 static const GUID IID_IDirectSoundBuffer8 = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 static const GUID IID_IDirectSound3DBuffer = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 static const GUID IID_IDirectSound3DListener = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+static const GUID IID_IDirectSoundNotify = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 // Members tracked sources read, in upstream dsound.h order; dwReserved and
 // guid3DAlgorithm are left out because nothing names them, so a later addition
@@ -66,12 +71,19 @@ struct DSBUFFERDESC {
   LPWAVEFORMATEX lpwfxFormat;
 };
 
+struct DSBPOSITIONNOTIFY {
+  DWORD dwOffset;
+  HANDLE hEventNotify;
+};
+typedef const DSBPOSITIONNOTIFY* LPCDSBPOSITIONNOTIFY;
+
 struct IDirectSound8 : IUnknown {
   HRESULT CreateSoundBuffer(const DSBUFFERDESC*, LPDIRECTSOUNDBUFFER*, LPVOID) { return DS_OK; }
   HRESULT SetCooperativeLevel(HWND, DWORD) { return S_OK; }
 };
 
 struct IDirectSoundBuffer : IUnknown {
+  HRESULT GetCurrentPosition(LPDWORD, LPDWORD) { return S_OK; }
   HRESULT Play(DWORD, DWORD, DWORD) { return S_OK; }
   HRESULT Stop() { return S_OK; }
   HRESULT GetStatus(DWORD*) { return S_OK; }
@@ -100,7 +112,9 @@ struct IDirectSound3DListener : IUnknown {
   HRESULT SetPosition(float, float, float, DWORD) { return S_OK; }
   HRESULT SetOrientation(float, float, float, float, float, float, DWORD) { return S_OK; }
 };
-struct IDirectSoundNotify : IUnknown {};
+struct IDirectSoundNotify : IUnknown {
+  HRESULT SetNotificationPositions(DWORD, LPCDSBPOSITIONNOTIFY) { return S_OK; }
+};
 
 // E_FAIL, because no device is what this actually produces. InitDirectSound
 // already has that path: FAILED() sends it down "svs.pDS = NULL; return TRUE",
