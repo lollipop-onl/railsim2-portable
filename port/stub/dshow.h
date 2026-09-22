@@ -5,10 +5,6 @@
 // DirectShow no-op stubs. Opaque COM types for lib/movie.cpp.
 // CoCreateInstance stays E_NOTIMPL; InitDirectShow must soft-fail.
 
-#ifndef CLSCTX_INPROC_SERVER
-#define CLSCTX_INPROC_SERVER 1
-#endif
-
 #ifndef MAX_PATH
 #define MAX_PATH 260
 #endif
