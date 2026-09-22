@@ -18,7 +18,7 @@
  */
 void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1, D3DCOLOR c2){
 	if(c2==0) c2 = c1;
-	VTX_TL vt[] = {x1, y1, 0, 1, c1, x2, y2, 0, 1, c2};
+	VTX_TL vt[] = {(float)x1, (float)y1, 0, 1, c1, (float)x2, (float)y2, 0, 1, c2};
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderLL();
@@ -53,11 +53,11 @@ void Draw3DLine(VEC3 p1, VEC3 p2, D3DCOLOR c1, D3DCOLOR c2){
  */
 void Draw2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 	VTX_TL vt[] = {
-		x1,		y1,		0.0f, 1.0f, c,
-		x1,		y2-1,	0.0f, 1.0f, c,
-		x2-1,	y2-1,	0.0f, 1.0f, c,
-		x2-1,	y1,		0.0f, 1.0f, c,
-		x1,		y1,		0.0f, 1.0f, c};
+		(float)x1,		(float)y1,		0.0f, 1.0f, c,
+		(float)x1,		(float)(y2-1),	0.0f, 1.0f, c,
+		(float)(x2-1),	(float)(y2-1),	0.0f, 1.0f, c,
+		(float)(x2-1),	(float)y1,		0.0f, 1.0f, c,
+		(float)x1,		(float)y1,		0.0f, 1.0f, c};
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderLS(4);
