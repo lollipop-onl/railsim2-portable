@@ -114,12 +114,14 @@ Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `SetDIBi
 
 ## `CPixelbit` public API inventory
 
-Compiled TUs today: `CPixelbit.cpp` (not yet on `port/native_sources.txt`) and `CPixelbitStamp.cpp` (on it since `#178`, with `SetDIBitsToDevice` returning 0, the failure value no caller reads). `CStringTexture.cpp` is on it too.
+Compiled TUs today: `CPixelbit.cpp` (on `port/native_sources.txt` since `#181`) and `CPixelbitStamp.cpp` (on it since `#178`, with `SetDIBitsToDevice` returning 0, the failure value no caller reads). `CStringTexture.cpp` is on it too.
+
+`CPixelbit.cpp` compiles against stubs that all fail, and nothing past `Clear` runs. `CreateDIBSection` returns a null handle (and a null bits pointer), so `Clear` returns `FALSE` before it assigns `m_PixelAdr` or `m_Width`, and every `CPixelbit` stays 0 x 0. `Save` then returns `FALSE` at its `m_Width*m_Height<1` check before `CreateFile`, and `Assign` returns `FALSE` at `Clear`. Behind that, `CreateFile` returns `INVALID_HANDLE_VALUE`, `GetFileSize` returns `INVALID_FILE_SIZE`, and `ReadFile` / `WriteFile` return `FALSE` with a zero count, so `Save`'s `wrote==size` is defined even if it were reached. `Load`, both clipboard methods and `InitExtFunc` have no caller, and both `Save` calls in `Capture.cpp` sit inside `#if 0`. On LP64 the stub `BITMAPFILEHEADER` is 22 bytes and `BITMAPINFOHEADER` 80, not 14 and 40, because `DWORD` and `LONG` are 8 bytes wide, so the offsets `CPixelbit` takes from `sizeof` do not match a `.bmp` file. That waits on [#155](https://github.com/lollipop-onl/railsim2-portable/issues/155), before any backend makes `Clear` succeed.
 
 | Category | Methods | Internal GDI / Win32 | Live external use |
 |----------|---------|----------------------|-------------------|
 | Lifecycle | ctor, dtor, `Clear`, `GetHDC`, pixel accessors | `CreateDIBSection`, DC ops above | `Capture.cpp` globals + locals |
-| File I/O | `Load`, `Save` | none beyond `Clear` | `Capture.cpp` `Save` (BMP export) |
+| File I/O | `Load`, `Save` | `CreateFile`, `GetFileSize`, `ReadFile`, `WriteFile` | **none** (both `Capture.cpp` `Save` calls, BMP export, sit inside `#if 0`) |
 | Clipboard | `PasteFromClipboard`, `CopyToClipboard` | clipboard + `Global*` | **none** |
 | Assign / convert | `Assign`, `Set4PAL*`, `Set4BGR*`, `PrepareDIB` | none | **none** (used internally) |
 | Stamp | `PlainStamp`, `PlainStamp32`, `AlphaBlendStamp`, `StretchStamp`, `BilinearStamp`, `NearestStamp`, `WindowStamp`, `FixLocation`, `ResetAlphaChannel` | `SetDIBitsToDevice`, `StretchBlt`, `TransparentBlt` | **`PlainStamp`, `BilinearStamp` in `Capture.cpp` only** |
