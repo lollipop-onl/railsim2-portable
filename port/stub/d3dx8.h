@@ -293,9 +293,12 @@ struct ID3DXMesh : IUnknown {
 };
 
 struct ID3DXSprite : IUnknown {
-  HRESULT Begin(DWORD) { return S_OK; }
+  HRESULT Begin() { return S_OK; }
+  HRESULT Draw(IDirect3DTexture8*, const RECT*, const D3DXVECTOR2*, const D3DXVECTOR2*, FLOAT, const D3DXVECTOR2*,
+               D3DCOLOR) {
+    return S_OK;
+  }
   HRESULT End() { return S_OK; }
-  HRESULT Draw(IDirect3DTexture8*, const RECT*, const D3DXVECTOR3*, const D3DXVECTOR3*, D3DCOLOR) { return S_OK; }
 };
 
 inline HRESULT D3DXCreateTextureFromFileExA(IDirect3DDevice8*, LPCSTR, UINT, UINT, UINT, DWORD, D3DFORMAT, DWORD, DWORD,

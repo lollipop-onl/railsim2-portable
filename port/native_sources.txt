@@ -3,11 +3,10 @@
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
 # Remaining TUs are blocked only on port/stub/: GDI and Win32 file/clipboard,
-# and D3DX font and sprite.
-# Most errors are names the stubs do not declare yet. lib/sprite.cpp is also
-# held by ID3DXSprite's DX9-shaped Begin / Draw. None waits on a real backend
-# or on a game-code edit. lib/sound.cpp and lib/wave.cpp showed that compiling
-# against a DirectX API needs its declarations, not a backend (#152).
+# and D3DX font.
+# Most errors are names the stubs do not declare yet. None waits on a real
+# backend or on a game-code edit. lib/sound.cpp and lib/wave.cpp showed that
+# compiling against a DirectX API needs its declarations, not a backend (#152).
 # See docs/porting/dev-env.md.
 CCheckBox.cpp
 CCursor.cpp
@@ -157,3 +156,4 @@ lib/wave_stream.cpp
 lib/comm.cpp
 lib/music.cpp
 CPixelbitStamp.cpp
+lib/sprite.cpp
