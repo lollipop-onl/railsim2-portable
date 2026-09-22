@@ -10,47 +10,6 @@
 
 #include <cstring>
 
-#ifndef DSBUFFERDESC
-typedef struct _DSBUFFERDESC {
-	DWORD dwSize;
-	DWORD dwFlags;
-	DWORD dwBufferBytes;
-	DWORD dwReserved;
-	LPWAVEFORMATEX lpwfxFormat;
-	GUID guid3DAlgorithm;
-} DSBUFFERDESC;
-#endif
-#ifndef DSBCAPS_CTRLVOLUME
-#define DSBCAPS_CTRLVOLUME 0x00000080
-#endif
-#ifndef DSBCAPS_CTRL3D
-#define DSBCAPS_CTRL3D 0x00000010
-#endif
-#ifndef DSERR_BUFFERTOOSMALL
-#define DSERR_BUFFERTOOSMALL ((HRESULT)0x8878004AL)
-#endif
-#ifndef DSERR_OUTOFMEMORY
-#define DSERR_OUTOFMEMORY ((HRESULT)0x00000007L)
-#endif
-#ifndef DSERR_BUFFERLOST
-#define DSERR_BUFFERLOST ((HRESULT)0x88780096L)
-#endif
-#ifndef DS_OK
-#define DS_OK S_OK
-#endif
-#ifndef DSBPLAY_LOOPING
-#define DSBPLAY_LOOPING 0x00000001
-#endif
-#ifndef DSBSTATUS_PLAYING
-#define DSBSTATUS_PLAYING 0x00000001
-#endif
-#ifndef IID_IDirectSoundBuffer8
-static const GUID IID_IDirectSoundBuffer8 = {0,0,0,{0,0,0,0,0,0,0,0}};
-#endif
-#ifndef IID_IDirectSound3DBuffer
-static const GUID IID_IDirectSound3DBuffer = {0,0,0,{0,0,0,0,0,0,0,0}};
-#endif
-
 /*
  *	コンストラクタ
  *

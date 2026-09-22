@@ -141,8 +141,10 @@ bool vb_roundtrip_ok() {
 	src.v = 0.25f;
 
 	Rs2FfpVertexBuffer *vb = nullptr;
-	// Host HRESULT is 64-bit; E_FAIL is not < 0, so do not use FAILED().
-	if (!expect(rs2_ffp_vb_create(sizeof(src), RS2_FVF_S, &vb) != S_OK, "vb reject S"))
+	// FAILED(), not "!= S_OK": this doubles as the assertion that HRESULT is
+	// still 32 bits. It was long until #152, which on LP64 left E_FAIL positive
+	// and FAILED() answering false for every error this tree can return.
+	if (!expect(FAILED(rs2_ffp_vb_create(sizeof(src), RS2_FVF_S, &vb)), "vb reject S"))
 		return false;
 	if (!expect(rs2_ffp_vb_create(sizeof(src), RS2_FVF_NX, &vb) == S_OK && vb,
 	            "vb create"))
