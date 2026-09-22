@@ -568,6 +568,13 @@ inline BOOL GetWindowRect(HWND, LPRECT rc) {
   }
   return TRUE;
 }
+inline BOOL SetRect(LPRECT rc, int left, int top, int right, int bottom) {
+  rc->left = left;
+  rc->top = top;
+  rc->right = right;
+  rc->bottom = bottom;
+  return TRUE;
+}
 inline HMENU GetMenu(HWND) { return nullptr; }
 inline BOOL AdjustWindowRectEx(LPRECT, DWORD, BOOL, DWORD) { return TRUE; }
 inline BOOL SetWindowPos(HWND, HWND, int, int, int, int, UINT) { return TRUE; }
