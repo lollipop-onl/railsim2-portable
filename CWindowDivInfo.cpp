@@ -6,7 +6,7 @@
 #include "CScene.h"
 #include "CSaveFile.h"
 
-//	“à•”’è”
+//	“à•”’è”
 const int DRAG_BAR_WIDTH = 1;
 
 CWindowInfo::CWindowInfo(){
@@ -66,10 +66,10 @@ void CWindowInfo::OnDeleteScene(CScene *scene){
 }
 
 /*
- *	“Ç
+ *	“Ç
  */
 char *CWindowInfo::Read(
-	char *str	//	‘ÎÛ•¶š—ñ
+	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *eee;
 	if(!(str = BeginBlock(eee = str, "WindowInfo"))) throw CSynErr(eee);
@@ -469,10 +469,10 @@ void CWindowDivInfo::OnDeleteScene(CScene *scene){
 }
 
 /*
- *	“Ç
+ *	“Ç
  */
 char *CWindowDivInfo::Read(
-	char *str	//	‘ÎÛ•¶š—ñ
+	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *eee;
 	if(!(str = BeginBlock(eee = str, "WindowDivInfo"))) throw CSynErr(eee);

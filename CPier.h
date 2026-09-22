@@ -8,19 +8,19 @@ class CPierPlugin;
  */
 class CPier{
 private:
-	static CPier **ms_Root;		//	旡続ル拏ト
-	static float ms_MinDist;	//	敘擣検捐距離
-	static CPier *ms_Detect;	//	検捐晟報
+	static CPier **ms_Root;		//	接続ルート
+	static float ms_MinDist;	//	最小検出距離
+	static CPier *ms_Detect;	//	検出情報
 	int m_Selected;				//	選択フラグ
-	bool m_Valid;				//	建昊有効フラグ
-	float m_SurfaceAlt;			//	地形検捐揩度
+	bool m_Valid;				//	建設有効フラグ
+	float m_SurfaceAlt;			//	地形検出高度
 	float m_PierArea;			//	橋脚部長さ
-	VEC3 m_SurfaceHit;			//	地表投影畋標
+	VEC3 m_SurfaceHit;			//	地表投影座標
 	CObject m_JointObject;		//	ジョイント部オブジェクト
 	CObject m_HeadObject;		//	ヘッド部オブジェクト
 	CObject m_BaseObject;		//	基礎部オブジェクト
-	VEC3 m_PierBegin;			//	橋脚部開始畋標
-	VEC3 m_PierEnd;				//	橋脚部扞了畋標
+	VEC3 m_PierBegin;			//	橋脚部開始座標
+	VEC3 m_PierEnd;				//	橋脚部終了座標
 	VEC3 m_PierRight;			//	橋脚部 right
 	VEC3 m_PierUp;				//	橋脚部 up
 	VEC3 m_PierDir;				//	橋脚部 dir
