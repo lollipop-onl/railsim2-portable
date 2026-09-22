@@ -71,7 +71,7 @@ a literal in `CMakeLists.txt`.
 |---------|----------|
 | Missing D3D8 / DirectX header or type in `port/stub/` | `lib/mesh.cpp` had no `rmxfguid.h` / `rmxftmpl.h` anywhere in the tree, so both hosts stopped at a `fatal error` (closed in `#150`) |
 | Missing GDI / Win32 UI types | `CPixelbit.cpp` (`BITMAPFILEHEADER`, `ReadFile`), `lib/font.cpp` (`LOGFONT`, `DT_*`), `lib/texture.cpp`, `lib/sprite.cpp` (`::SetRect` not in stub) |
-| Missing DirectSound notify / DirectMusic / DirectPlay8 declarations | `lib/music.cpp`; `lib/wave_stream.cpp` (closed by `#164`) and `lib/comm.cpp` (closed by `#169`, see [network-seams.md](network-seams.md)) sat here too. This row used to read "Needs a real backend, not a stub" and named `lib/comm.cpp` and `lib/sound.cpp`. Neither belonged: `#152` closed `lib/sound.cpp` with stub declarations alone, and `#124` counts all three TUs here as stub work -- its target is `152/152` with no exceptions, and no TU waits on a backend |
+| Missing DirectSound notify / DirectMusic / DirectPlay8 declarations | None left. `lib/wave_stream.cpp` (closed by `#164`), `lib/comm.cpp` (closed by `#169`, see [network-seams.md](network-seams.md)) and `lib/music.cpp` (closed by `#174`) sat here. This row used to read "Needs a real backend, not a stub" and named `lib/comm.cpp` and `lib/sound.cpp`. Neither belonged: `#152` closed `lib/sound.cpp` with stub declarations alone, and `#124` counts all three TUs here as stub work -- its target is `152/152` with no exceptions, and no TU waits on a backend |
 | Type mismatch, nothing missing | None left. `lib/draw.cpp` (initializer-list narrowing, closed by `#161`) and `CWaveArray.cpp` (MSVC array-new bound expression, closed by `#162`) sat here, and both needed a game-source edit rather than a stub; `CWaveArray.cpp` was a parse failure, not a type mismatch |
 
 A TU can sit in more than one row, so the rows are not a partition and the table
@@ -203,7 +203,7 @@ they stood, and the allowlist has caught up with it. Measuring every game
 | `lib/wave_stream.cpp` | 16 | 16 | DirectSound notify (closed by `#164`) |
 | `lib/texture.cpp` | 18 | 18 | GDI |
 | `CPixelbit.cpp` | 40 | 40 | GDI |
-| `lib/music.cpp` | 41 | 40 | DirectMusic |
+| `lib/music.cpp` | 41 | 40 | DirectMusic (closed by `#174`) |
 | `lib/comm.cpp` | 70 | 68 | DirectPlay8 (closed by `#169`) |
 
 No TU is blocked on one host and clear on the other. The three rows whose
@@ -232,7 +232,14 @@ and `#164` took `lib/wave_stream.cpp` off it with the seven DirectSound notify
 names it was still missing plus `CopyMemory`. `#169` took `lib/comm.cpp` off it
 with the DirectPlay8 names in `port/stub/dplay8.h`, `lstrlen`, and a `WCHAR`
 that is `wchar_t`, as `winnt.h` has it: the stub's `unsigned short` was why
-libc's `mbstowcs` did not match.
+libc's `mbstowcs` did not match. `#174` took `lib/music.cpp` off it with the
+DirectMusic names in `port/stub/dmusici.h`, `IDirectSound`, `CLSCTX_INPROC`,
+`CP_ACP` and `GetCurrentDirectory`, plus the `MAX_PATH` and
+`MultiByteToWideChar` that `port/stub/dshow.h` had carried with no caller in
+`lib/movie.cpp`. `GetCurrentDirectory` and `MultiByteToWideChar` never showed
+up in the first measurement: every call to them had an undeclared `MAX_PATH`
+as an argument, and clang does not report a callee it cannot resolve the
+arguments of.
 
 `#152` is also the first slice where growing a stub **broke** an allowlisted TU.
 `#86` had given `lib/wave.cpp` a local copy of the DirectSound names it needed,
@@ -254,10 +261,9 @@ agreement on editing game code. `#157` removed the need for that agreement by
 grounding Hard constraint 1 in `AGENTS.md` on behavior preservation, and
 `#161` / `#162` shipped both edits. Every TU still outside the allowlist is a
 question of how much stub, not of whether a stub can do it -- the GDI rows
-(`#16`) and the DirectMusic row are large, not categorically
-different, and `#124` records that a TU can be allowlisted as
-soon as the stub satisfies its types, without waiting for `#5` / `#7` / `#11` to
-have a backend. A stub can also hold a TU by declaring a name in the wrong shape
+(`#16`) are large, not categorically different, and `#124` records that a TU
+can be allowlisted as soon as the stub satisfies its types, without waiting for
+`#5` / `#7` / `#11` to have a backend. A stub can also hold a TU by declaring a name in the wrong shape
 rather than leaving it out; the header of `port/native_sources.txt` names the
 TUs where that is the case today.
 
@@ -267,7 +273,8 @@ Nothing constructs `CWaveStream`, and nothing outside `lib/music.cpp` includes
 (capping it at `150/152`), and parked `lib/comm.cpp` until `network-seams.md`
 existed; `#124` withdrew all three, and `#164` then allowlisted
 `lib/wave_stream.cpp` with no caller in sight. `#169` allowlisted
-`lib/comm.cpp` in the same slice that wrote the first `network-seams.md`.
+`lib/comm.cpp` in the same slice that wrote the first `network-seams.md`, and
+`#174` allowlisted `lib/music.cpp` with its header still commented out.
 Whether a TU has a caller is a question for the backend work, not for whether
 it compiles.
 

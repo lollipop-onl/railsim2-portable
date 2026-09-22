@@ -16,7 +16,7 @@
 | M4 exit is 3D running-sound localization | True for **rail wheel** (`CWaveArray` with `f3d=true`) and **plugin `SoundEffect`** (`CSoundEffector::SetPos`). Skin UI waves load with `f3d=false`. |
 | `CWaveStream` must be redesigned before M4 | **No live callers.** `docs/porting/api-surface.md` already lists it as unused from game. Do not block `#7` playback on a streamer that nothing enqueues. |
 
-`lib/music.cpp` (DirectMusic + `IDirectSound` QI) is commented out of `lib/udx.h` and `InitDirectMusic` is commented in `lib/main.cpp`. Out of this set (`#16` / media).
+`lib/music.cpp` (DirectMusic + `IDirectSound` QI) is commented out of `lib/udx.h` and `InitDirectMusic` is commented in `lib/main.cpp`. Out of this set (`#16` / media) as a backend target, but it compiles: `port/stub/dmusici.h` declares the DirectMusic names it calls with `return S_OK` bodies ([#174](https://github.com/lollipop-onl/railsim2-portable/issues/174)), on the same terms as the notify names below.
 
 ## Architecture
 

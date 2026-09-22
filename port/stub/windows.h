@@ -417,6 +417,15 @@ inline int MessageBoxA(HWND, LPCSTR, LPCSTR, UINT) { return 0; }
 inline int MessageBox(HWND h, LPCSTR t, LPCSTR c, UINT u) { return MessageBoxA(h, t, c, u); }
 inline BOOL SetCurrentDirectoryA(LPCSTR) { return TRUE; }
 inline BOOL SetCurrentDirectory(LPCSTR p) { return SetCurrentDirectoryA(p); }
+// Failure (0) with an empty buffer rather than getcwd(): which directory
+// LoadMusic hands DirectMusic as its search path is for the BGM backend to
+// decide, and path-seams.md keeps this caller out of #4 until then. LoadMusic
+// ignores the result.
+inline DWORD GetCurrentDirectoryA(DWORD n, LPSTR buf) {
+  if (buf && n) buf[0] = 0;
+  return 0;
+}
+inline DWORD GetCurrentDirectory(DWORD n, LPSTR buf) { return GetCurrentDirectoryA(n, buf); }
 inline BOOL PeekMessageA(LPMSG, HWND, UINT, UINT, UINT) { return FALSE; }
 inline BOOL TranslateMessage(const MSG*) { return FALSE; }
 inline LONG DispatchMessageA(const MSG*) { return 0; }
@@ -477,6 +486,12 @@ inline LPSTR lstrcpyA(LPSTR dest, LPCSTR src) {
 inline LPSTR lstrcpy(LPSTR dest, LPCSTR src) { return lstrcpyA(dest, src); }
 inline int lstrlenA(LPCSTR s) { return s ? (int)std::strlen(s) : 0; }
 inline int lstrlen(LPCSTR s) { return lstrlenA(s); }
+#define CP_ACP 0
+inline int MultiByteToWideChar(UINT, DWORD, LPCSTR src, int, WCHAR* dst, int dstlen) {
+  if (!src || !dst || dstlen <= 0) return 0;
+  dst[0] = 0;
+  return 1;
+}
 inline int wsprintfA(LPSTR dest, LPCSTR fmt, ...) {
   if (!dest || !fmt) return 0;
   va_list ap;
@@ -500,6 +515,8 @@ inline LPSTR CharPrev(LPCSTR s, LPCSTR p) { return CharPrevA(s, p); }
 inline HRESULT CoInitialize(LPVOID) { return S_OK; }
 inline void CoUninitialize() {}
 #define CLSCTX_INPROC_SERVER 1
+#define CLSCTX_INPROC_HANDLER 2
+#define CLSCTX_INPROC (CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER)
 inline HRESULT CoCreateInstance(const GUID&, LPVOID, DWORD, const GUID&, LPVOID*) { return E_NOTIMPL; }
 
 typedef BYTE* PBYTE;
@@ -736,6 +753,7 @@ inline void LeaveCriticalSection(LPCRITICAL_SECTION) {}
 inline FARPROC GetProcAddress(HMODULE, LPCSTR) { return nullptr; }
 inline DWORD GetLastError() { return 0; }
 
+#define MAX_PATH 260
 #ifndef _MAX_PATH
 #define _MAX_PATH 260
 #endif
