@@ -3,7 +3,7 @@
 # An entry must compile on both CI hosts (macOS AppleClang and Linux clang on a
 # case-sensitive filesystem), not just the one it was measured on.
 # Remaining TUs are blocked mainly on stub growth (D3D8 device/surface, GDI),
-# on game-code edits (MSVC array-new, narrowing), or on a real backend
+# on game-code edits (MSVC array-new), or on a real backend
 # (DirectPlay8). DirectSound is not on that list: lib/sound.cpp and
 # lib/wave.cpp needed declarations, not a backend (#152).
 # See docs/porting/dev-env.md.
@@ -149,3 +149,4 @@ lib/main.cpp
 lib/movie.cpp
 lib/mesh.cpp
 lib/sound.cpp
+lib/draw.cpp
