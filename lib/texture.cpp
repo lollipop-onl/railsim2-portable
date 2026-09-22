@@ -347,6 +347,7 @@ D3DCOLOR CheckTexTrans(LPCSTR str){
 			dot = ptr;
 			break;
 		case '\\':
+		case '/':
 			sharp = dot = NULL;
 			break;
 		}
@@ -361,7 +362,7 @@ D3DCOLOR CheckTexTrans(LPCSTR str){
 		case 'W': case 'w': return 0xffffffff;
 		}
 	}else if(len==9){
-		D3DCOLOR trans;
+		unsigned int trans;
 		if(sscanf(sharp+1, "%x", &trans)==1) return trans;
 	}
 	return 0x00000000;
