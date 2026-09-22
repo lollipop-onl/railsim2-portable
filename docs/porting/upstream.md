@@ -32,7 +32,7 @@ We do not track upstream for ongoing sync. The living rules are the **port strat
 
 Current strategies:
 
-1. **Game logic stays close to upstream** -- prefer stubs / `lib/` backends over rewriting gameplay.
+1. **Behavior is preserved, not upstream's text** -- upstream is frozen (see Remotes), so "stay close to upstream" is no longer a reason to leave game source alone. Edit it when the edit is mechanical or when a `check` test covers the behavior it changes; route everything else through stubs / `lib/` backends. The pinned behaviors are the on-disk formats: [`rs2-roundtrip.md`](rs2-roundtrip.md) (`Sample.rs2` byte identity, 31 real game TUs linked), [`rs2-float-format.md`](rs2-float-format.md), [`md5-layout-digest.md`](md5-layout-digest.md), [`x-file-parser.md`](x-file-parser.md), [`path-seams.md`](path-seams.md), [`charset-internal.md`](charset-internal.md).
 2. **No MinGW and no vendored DirectX SDK** -- compile firewall via `port/stub/` instead.
 3. **Sources stay CP932 / ASCII** -- encoding-guard enforces; no mass UTF-8 conversion of game sources.
 4. **Progress is monotonic** via `port/native_sources.txt` (denominator = every game TU, root `*.cpp` + `lib/*.cpp`).
@@ -51,5 +51,7 @@ There is no separate denylist of "do not touch" paths. Scope is defined by the s
 - X-File templates in `Distribution`: [`x-file-templates.md`](x-file-templates.md)
 - Closed text `.x` parser: [`x-file-parser.md`](x-file-parser.md)
 - `.rs2` roundtrip ctest: [`rs2-roundtrip.md`](rs2-roundtrip.md)
+- Save-side float format: [`rs2-float-format.md`](rs2-float-format.md)
+- Layout digest: [`md5-layout-digest.md`](md5-layout-digest.md)
 - Path I/O seams (`chdir` / `fopen` / `_findfirst`, case policy): [`path-seams.md`](path-seams.md)
 - Internal string encoding ADR: [`charset-internal.md`](charset-internal.md)
