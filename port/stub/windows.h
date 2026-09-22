@@ -118,7 +118,11 @@ typedef void** LPDWORD_PTR;
 
 typedef char TCHAR;
 typedef char CHAR;
-typedef unsigned short WCHAR;
+// wchar_t, not a 16-bit integer to match Windows' width: lib/comm.cpp hands a
+// WCHAR buffer to libc's mbstowcs and L"" keys to a const WCHAR* parameter,
+// both of which need WCHAR to be the same type as wchar_t, as winnt.h makes it.
+// No tracked source takes sizeof(WCHAR) or stores one on disk.
+typedef wchar_t WCHAR;
 typedef void VOID;
 typedef void* PVOID;
 typedef unsigned (*LPTHREAD_START_ROUTINE)(void*);
@@ -471,6 +475,8 @@ inline LPSTR lstrcpyA(LPSTR dest, LPCSTR src) {
   return std::strcpy(dest, src);
 }
 inline LPSTR lstrcpy(LPSTR dest, LPCSTR src) { return lstrcpyA(dest, src); }
+inline int lstrlenA(LPCSTR s) { return s ? (int)std::strlen(s) : 0; }
+inline int lstrlen(LPCSTR s) { return lstrlenA(s); }
 inline int wsprintfA(LPSTR dest, LPCSTR fmt, ...) {
   if (!dest || !fmt) return 0;
   va_list ap;
@@ -493,6 +499,7 @@ inline LPSTR CharNext(LPCSTR p) { return CharNextA(p); }
 inline LPSTR CharPrev(LPCSTR s, LPCSTR p) { return CharPrevA(s, p); }
 inline HRESULT CoInitialize(LPVOID) { return S_OK; }
 inline void CoUninitialize() {}
+#define CLSCTX_INPROC_SERVER 1
 inline HRESULT CoCreateInstance(const GUID&, LPVOID, DWORD, const GUID&, LPVOID*) { return E_NOTIMPL; }
 
 typedef BYTE* PBYTE;
