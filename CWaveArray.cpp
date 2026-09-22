@@ -26,7 +26,7 @@ void CWaveArray::Load(
 	int i;
 	BOOL f3dold = svs.f3D;
 	svs.f3D = f3d;
-	m_Wave = new (CWave[m_Number = n]);
+	m_Wave = new CWave[m_Number = n];
 #if 0 // duplicate?
 	m_Wave[0].Load(f);
 	for(i = 1; i<m_Number; i++) if(!m_Wave[i].Duplicate(&m_Wave[0])) m_Wave[i].Load(f);
