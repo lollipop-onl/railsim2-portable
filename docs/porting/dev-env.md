@@ -136,13 +136,29 @@ first stub commit (`#15`) until `#140`.
 in general. `D3DMATERIAL8` in `port/stub/d3dx8.h` is copied by layout:
 `rs2_ffp_set_material` in `port/ffp_state.cpp` memcpys the game's
 `D3DMATERIAL8` into `Rs2FfpMaterial` (`port/ffp_state.h`), a field-for-field
-twin declared in terms of `float`, and the `static_assert` in
-`port/ffp_state_test.cpp` compares the two sizes only. Reordering
-`D3DMATERIAL8` would leave `check` green and hand the FFP the wrong colours.
-The tree takes `sizeof` of a stub struct in three places: that one,
-`ZeroMemory(&sv3.d3dpp, ...)` in `lib/graphic.cpp` and
-`ZeroMemory(&svl.dir, sizeof(D3DLIGHT8))` in `lib/light.cpp`. Only the memcpy
-depends on the order of the members.
+twin declared in terms of `float`. Until `#147` the `static_assert` in
+`port/ffp_state_test.cpp` compared the two sizes only, so reordering
+`D3DMATERIAL8` left `check` green and handed the FFP the wrong colours:
+swapping `Ambient` and `Specular` was measured and all 29 tests still passed.
+`#147` added one `offsetof` per member, and that swap now stops the build.
+`rs2_ffp_set_transform` copies `D3DXMATRIX` the same way, into the snapshot's
+`float[16]` transform slots. Order needs no assert there -- `_11 ... _44` name
+their own positions, so nobody has a reason to move them -- but the length was a
+bare `16 * sizeof(float)` that nothing compared against `sizeof(D3DXMATRIX)`.
+`#153` took the length from the destination slot and pinned the two sizes
+against each other, so gaining or losing a member stops the build too.
+Neither memcpy takes `sizeof` of the stub type it copies: the material one is
+`sizeof(g_snap.material)`, the port's own `Rs2FfpMaterial`, and the transform
+one is the destination slot's. Everywhere else the tree sizes one of these
+stubs, it is clearing or copying the stub type into itself and member order
+cannot matter -- `ZeroMemory(&sv3.d3dpp, ...)` in `lib/graphic.cpp`
+(`D3DPRESENT_PARAMETERS`, `port/stub/d3d8.h`), `sizeof(D3DLIGHT8)` in
+`lib/light.cpp` and `sizeof(MAT8)` (a `D3DMATERIAL8` typedef from
+`lib/headers.h`) in `lib/mesh.cpp` and `CCustomizerMisc.cpp`, both from
+`port/stub/d3dx8.h`. Order matters only where the bytes cross into a port-side
+twin, which is these two functions, and `port/ffp_state_test.cpp` is the only
+place in the tree that names `sizeof(D3DMATERIAL8)` or `sizeof(D3DXMATRIX)` to
+object.
 
 The same rule applies to the shape of a stub function: the version the game was
 written against is **DX8**, and a signature copied from DX9 compiles until the

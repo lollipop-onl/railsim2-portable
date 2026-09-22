@@ -50,6 +50,8 @@ struct Rs2FfpRs {
 };
 
 // D3DMATERIAL8 layout (d3dx8.h). Stored here so ffp_state.h stays on d3d8.h.
+// Reordering either side breaks rs2_ffp_set_material's memcpy; the offsetof
+// asserts at the top of port/ffp_state_test.cpp are what stop it.
 struct Rs2FfpMaterial {
 	float diffuse[4];
 	float ambient[4];
