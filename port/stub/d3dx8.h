@@ -315,7 +315,9 @@ struct ID3DXFont;
 typedef ID3DXFont* LPD3DXFONT;
 
 struct ID3DXFont : IUnknown {
-  HRESULT DrawTextA(void*, LPCSTR, int, RECT*, DWORD, D3DCOLOR) { return S_OK; }
+  HRESULT Begin() { return S_OK; }
+  INT DrawTextA(LPCSTR, INT, LPRECT, DWORD, D3DCOLOR) { return 0; }
+  HRESULT End() { return S_OK; }
 };
 
 inline HRESULT D3DXCreateFontA(IDirect3DDevice8*, int, UINT, UINT, UINT, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR,
@@ -323,7 +325,7 @@ inline HRESULT D3DXCreateFontA(IDirect3DDevice8*, int, UINT, UINT, UINT, DWORD, 
   return E_NOTIMPL;
 }
 
-inline HRESULT D3DXCreateFontIndirect(IDirect3DDevice8*, const void*, LPD3DXFONT*) { return E_NOTIMPL; }
+inline HRESULT D3DXCreateFontIndirect(IDirect3DDevice8*, const LOGFONT*, LPD3DXFONT*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateSprite(IDirect3DDevice8*, LPD3DXSPRITE*) { return E_NOTIMPL; }
 inline UINT D3DXGetFVFVertexSize(DWORD) { return 0; }
 
