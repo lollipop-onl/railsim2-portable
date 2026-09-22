@@ -268,6 +268,12 @@ modified work but are not listed as "changed upstream files".
     CSaveFile.cpp       -- 1 comment line garbled by #54
     CWindowDivInfo.cpp  -- 5 comment lines garbled by #50
 
+2026-09-23 -- Read CheckTexTrans's #AARRGGBB into 32 bits, split on / (#182)
+
+  Modified upstream sources (pinned by rs2_tex_trans_self_test):
+    lib/texture.cpp -- CheckTexTrans: sscanf "%x" target D3DCOLOR ->
+                       unsigned int; '/' ends a directory like '\'
+
 Upstream is frozen, so what this fork keeps is the game's observable
 behavior, not upstream's text: game-source edits are mechanical or
 covered by a check test (see AGENTS.md). Further changes must update
