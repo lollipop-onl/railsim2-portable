@@ -43,14 +43,55 @@ def sjis_lead_bytes(line: bytes):
 
 # A round-trip through an ASCII codec turns each CP932 character into '?'.
 # Only comments are checked: Network.cpp keeps a literal "???" from upstream.
-def comment_text(line: bytes) -> bytes:
-    marker = line.find(b'//')
-    if marker >= 0:
-        return line[marker + 2:]
-    stripped = line.lstrip()
-    if stripped.startswith(b'/*') or stripped.startswith(b'*'):
-        return stripped
-    return b''
+# Any "??" in a comment fails, fork-written English included. A damaged line
+# is pure ASCII too ("//\t1 ?????????"), so nothing in the bytes tells
+# "why??" apart from two lost kanji, and rewording a fork comment costs less
+# than an exemption garbled text could slip through.
+def comments_by_line(lines: list[bytes]) -> list[bytes]:
+    comments = []
+    state = 'code'
+    for line in lines:
+        if state not in ('block', 'line'):
+            state = 'code'
+        pieces = []
+        start = 0
+        j = 0
+        while j < len(line) and state != 'line':
+            c = line[j]
+            nxt = line[j + 1] if j + 1 < len(line) else -1
+            if state == 'block':
+                if c == ord('*') and nxt == ord('/'):
+                    pieces.append(line[start:j])
+                    state = 'code'
+                    j += 2
+                    continue
+            elif state == 'code':
+                if c == ord('/') and nxt == ord('/'):
+                    state = 'line'
+                    start = j + 2
+                    continue
+                if c == ord('/') and nxt == ord('*'):
+                    state = 'block'
+                    j += 2
+                    start = j
+                    continue
+                if c in (ord('"'), ord("'")):
+                    state = chr(c)
+            elif c == ord('\\'):
+                j += 2
+                continue
+            elif c == ord(state):
+                state = 'code'
+            # Step over the whole SJIS pair, as sjis_lead_bytes does, so a
+            # trail 0x5C is not read as an escape that swallows the closing
+            # quote.
+            j += 2 if is_sjis_lead(c) else 1
+        if state in ('block', 'line'):
+            pieces.append(line[start:])
+        if state == 'line' and not line.rstrip().endswith(b'\\'):
+            state = 'code'
+        comments.append(b'\n'.join(pieces))
+    return comments
 
 for path in sorted(p for p in ROOT.rglob('*') if p.suffix in SOURCE_SUFFIXES):
     rel = path.as_posix()
@@ -71,14 +112,16 @@ for path in sorted(p for p in ROOT.rglob('*') if p.suffix in SOURCE_SUFFIXES):
             pass
 
     lines = data.splitlines()
-    for i, line in enumerate(lines, 1):
+    for i, (line, comment) in enumerate(zip(lines, comments_by_line(lines)), 1):
         if CP1252_FOLDED_LEAD in sjis_lead_bytes(line):
             errors.append(
-                f'{rel}:{i}: SJIS lead byte 0x9D (cp1252 round-trip damage; restore the line from upstream 2324375)'
+                f'{rel}:{i}: SJIS lead byte 0x9D (cp1252 round-trip damage; restore the line from upstream 2324375.'
+                ' To use a character that really is 0x9D40-0x9DFC: reword so the line does without it)'
             )
-        if b'??' in comment_text(line):
+        if b'??' in comment:
             errors.append(
-                f'{rel}:{i}: "??" in a comment (CP932 text lost to "?"; restore the line from upstream 2324375)'
+                f'{rel}:{i}: "??" in a comment (CP932 text lost to "?": restore the line from upstream 2324375.'
+                ' A comment the fork wrote: reword it without "??")'
             )
 
         # SJIS second-byte 0x5C inside string literals
