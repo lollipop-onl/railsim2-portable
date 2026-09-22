@@ -260,6 +260,14 @@ modified work but are not listed as "changed upstream files".
   Modified upstream sources:
     CWaveArray.cpp  -- new (CWave[n]) -> new CWave[n]
 
+2026-09-23 -- Restore CP932 comments a cp1252 round-trip garbled (#172)
+
+  Modified upstream sources (comment lines put back byte-identical to
+  upstream; the #50 / #54 code changes in these files stay):
+    CPier.h             -- 8 comment lines garbled by #54
+    CSaveFile.cpp       -- 1 comment line garbled by #54
+    CWindowDivInfo.cpp  -- 5 comment lines garbled by #50
+
 Upstream is frozen, so what this fork keeps is the game's observable
 behavior, not upstream's text: game-source edits are mechanical or
 covered by a check test (see AGENTS.md). Further changes must update

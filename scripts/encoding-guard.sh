@@ -22,6 +22,36 @@ def is_sjis_lead(b: int) -> bool:
 def is_sjis_trail(b: int) -> bool:
     return (0x40 <= b <= 0x7E) or (0x80 <= b <= 0xFC)
 
+# Diffing each upstream file against 2324375 would be exact, but CI checks
+# out at depth 1 and the Linux check runs on a `git archive` tree, so neither
+# has that commit. These are the two shapes a cp1252 round-trip leaves
+# (#50 / #54, fixed in #172), and both are absent from all of 2324375.
+#
+# cp1252 leaves 0x81 0x8D 0x8F 0x90 0x9D undefined and the round-trip folds
+# all five into 0x9D. The result is still structurally valid SJIS, so only the
+# lead byte gives it away: 2324375 has 52588 SJIS characters and no 0x9D lead.
+CP1252_FOLDED_LEAD = 0x9D
+
+def sjis_lead_bytes(line: bytes):
+    j = 0
+    while j < len(line):
+        if is_sjis_lead(line[j]):
+            yield line[j]
+            j += 2
+        else:
+            j += 1
+
+# A round-trip through an ASCII codec turns each CP932 character into '?'.
+# Only comments are checked: Network.cpp keeps a literal "???" from upstream.
+def comment_text(line: bytes) -> bytes:
+    marker = line.find(b'//')
+    if marker >= 0:
+        return line[marker + 2:]
+    stripped = line.lstrip()
+    if stripped.startswith(b'/*') or stripped.startswith(b'*'):
+        return stripped
+    return b''
+
 for path in sorted(p for p in ROOT.rglob('*') if p.suffix in SOURCE_SUFFIXES):
     rel = path.as_posix()
     if rel.startswith('.git/') or '/Distribution/' in rel or rel.startswith('port/stub/'):
@@ -42,6 +72,15 @@ for path in sorted(p for p in ROOT.rglob('*') if p.suffix in SOURCE_SUFFIXES):
 
     lines = data.splitlines()
     for i, line in enumerate(lines, 1):
+        if CP1252_FOLDED_LEAD in sjis_lead_bytes(line):
+            errors.append(
+                f'{rel}:{i}: SJIS lead byte 0x9D (cp1252 round-trip damage; restore the line from upstream 2324375)'
+            )
+        if b'??' in comment_text(line):
+            errors.append(
+                f'{rel}:{i}: "??" in a comment (CP932 text lost to "?"; restore the line from upstream 2324375)'
+            )
+
         # SJIS second-byte 0x5C inside string literals
         in_string = False
         j = 0

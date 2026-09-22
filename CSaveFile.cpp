@@ -881,7 +881,7 @@ bool CSaveFile::Load(
 		scene = scene->Next();
 	}
 	m_NetworkSyncCount = 0;
-	Simulate(1);	//	1 ?????????
+	Simulate(1);	//	1 回だけシミュレート
 	return true;
 #endif
 }
