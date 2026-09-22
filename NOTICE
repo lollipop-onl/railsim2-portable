@@ -29,7 +29,8 @@ modified work but are not listed as "changed upstream files".
     scripts/encoding-guard.sh, scripts/progress.sh
 
   Modified upstream sources (minimal, portability only):
-    lib/debug.cpp       -- ASCII-safe debug string (SJIS 0x5C trail)
+    .gitignore          -- ignore /build/
+    lib/debug.cpp      -- ASCII-safe debug string (SJIS 0x5C trail)
     lib/editbox.cpp     -- backslash include paths -> /
     lib/editbox.h       -- GetFEPCursorPos return type for Clang
     lib/graphic.cpp     -- ASCII-safe debug string (SJIS 0x5C trail)
@@ -85,6 +86,181 @@ modified work but are not listed as "changed upstream files".
   Modified upstream sources:
     lib/mutex.h     -- BeginSingleBoot always succeeds; no CreateMutex
 
-Further changes must update this file (date + summary) and keep git
-history as the detailed record. Prefer leaving game logic untouched so
-diffs against upstream stay reviewable.
+2026-09-01 -- Wire rs2_roundtrip through CSaveFile::Load/Save (#36)
+
+  Modified upstream sources:
+    .gitignore          -- ignore the roundtrip output under Layout
+    CDragContainer.h    -- forward-declare CDragInterface
+    CRailLink.h         -- drop the class qualifier on two inline ctors
+    CRailWay.h          -- forward-declare CTrainGroup
+    CTrainSetBuffer.h   -- forward-declare CTrain / CTrainGroup
+
+2026-09-01 -- Write .rs2 pointer IDs as 8-digit hex (#40)
+
+  Modified upstream sources (Save writes %p as RS2_PTR_FMT / rs2_ptr32):
+    CDiaInst.cpp, CLine.cpp, CPier.cpp, CRailConnector.cpp, CRailWay.cpp,
+    CSaveFile.cpp, CScene.cpp, CStation.cpp, CStruct.cpp, CTrainGroup.cpp,
+    CTrainSetCurve.cpp, CWindowDivInfo.cpp
+  Also:
+    CTrainGroup.cpp     -- DepartureTime written as two %08x words
+    Script.cpp          -- pointer values parsed as bare hex (rs2_parse_ptr),
+                           not sscanf %p
+    stdafx.h            -- include port/rs2_ptr.h
+
+2026-09-01 -- CMesh::Load reads .x through the portable parser (#45)
+
+  Modified upstream sources:
+    lib/mesh.cpp    -- under RS2_PORTABLE_COMPILE_FIREWALL, fill CMesh
+                       from rs2_cmesh_probe_xfile instead of D3DX
+
+2026-09-01 -- Pin the Save-side float format to RS2_FLOAT_FMT (#50)
+
+  Modified upstream sources (Save writes %f as RS2_FLOAT_FMT):
+    CCamera.cpp, CDiaInst.cpp, CParticle.cpp, CPier.cpp, CProfilePlugin.cpp,
+    CRailConnector.cpp, CRailWay.cpp, CRailwayMode.cpp,
+    CRailwayPluginSet.cpp, CTrainGroup.cpp, CTrainSetCurve.cpp,
+    CWindowDivInfo.cpp, SystemCover.h
+  Also:
+    stdafx.h            -- include port/rs2_float.h
+    CWindowDivInfo.cpp  -- five CP932 comment lines had bytes 0x8D / 0x8F /
+                           0x90 replaced by 0x9D by accident (comments only)
+
+2026-09-02 -- Byte-identical Sample.rs2 load-save roundtrip (#54)
+
+  Modified upstream sources (RS2_ROUNDTRIP-only paths unless noted):
+    CDiaInst.cpp, CDiaInst.h
+                        -- keep dia load order for Save
+    CEnvPlugin.h, CParticle.h, CRailWay.h
+                        -- const on operator< (all builds)
+    CListView.h, CRailEditMode.h, CStructPlugin.h
+                        -- forward declarations (all builds)
+    CRailTraceCurve.h   -- drop the class qualifier on an inline ctor
+                           (all builds)
+    CParticle.cpp, CRailConnector.cpp, CTrainSetCurve.cpp
+                        -- Save floats via RS2_FLOAT_SAVE_FMT / RS2_F
+    CPier.cpp, CPier.h  -- keep JointPos / JointDir / JointUp lexemes;
+                           RS2_FLOAT_SAVE_FMT. CPier.h: eight CP932 comment
+                           lines had bytes replaced by 0x9D by accident
+                           (comments only)
+    CPlugin.cpp, CPlugin.h
+                        -- ListIdsOnly; no plugin tree insertion
+    CProfilePlugin.cpp  -- explicit VEC3 cast of the light direction
+                           (all builds)
+    CRailWay.cpp        -- replay splitter / pier / pole float lexemes;
+                           tolerate a null g_RailEditMode; RS2_FLOAT_SAVE_FMT
+    CSaveFile.cpp       -- Wind Dir2 is read into m_WindDir2, not m_WindDir1
+                           (all builds); RailSimVersion is written from
+                           m_Version; LayoutInfo / TimeScale / Simulation /
+                           RailBlockList / Window Save blocks; one CP932
+                           comment replaced by '?' by accident
+    CTrainGroup.cpp, CTrainGroup.h
+                        -- ordered PointList / SeekList, DepartureTime pair,
+                           RS2_FLOAT_SAVE_FMT
+    Script.cpp, Script.h
+                        -- remember float lexemes; rs2_asgn_pointer32_pair
+    SystemCover.h       -- V3Save replays float lexemes
+
+2026-09-07 -- Replace _mbsicmp with rs2_text_icmp (#75)
+
+  Modified upstream sources (_mbsicmp -> rs2_text_icmp):
+    CFileMode.cpp, CPlugin.cpp, CTreeElement.cpp, lib/mesh.cpp,
+    lib/texture.cpp
+  Also:
+    stdafx.h            -- include port/rs2_text.h
+
+2026-09-07 -- No-op Capture / AVI / DirectShow paths (#76)
+
+  Modified upstream sources:
+    Capture.cpp     -- capture entry points return early (bodies kept
+                       under #if 0); vfw32.lib pragma dropped
+    lib/movie.cpp   -- no DirectShow graph is built; video open fails
+
+2026-09-07 -- Replace the DirectInput8 poll with the rs2_input backend (#82)
+
+  Modified upstream sources:
+    lib/input.cpp   -- device enumeration and poll thread removed;
+                       Init / ScanInputDevice go through rs2_input_*
+
+2026-09-07 -- CWave::Load parses WAV with rs2_wav_pcm_parse_file (#86)
+
+  Modified upstream sources:
+    lib/wave.cpp    -- mmio* chunk walk replaced; local DirectSound
+                       name stubs
+    lib/wave.h      -- CreateBuffer drops HMMIO; PCM format fields
+
+2026-09-07 -- Allowlist the TUs that call rs2_text_icmp (#87)
+
+  Modified upstream sources:
+    CFileMode.h         -- const on CLayoutInfo::operator<
+    CTreeDirElement.h, CTreeElement.h
+                        -- forward declarations
+
+2026-09-07 -- Route CWave playback through the rs2_audio stub (#96)
+
+  Modified upstream sources:
+    lib/wave.cpp    -- Load interns PCM; Play / Stop / SetVolume / SetPos
+                       also call rs2_audio_*
+    lib/wave.h      -- Stop / SetVolume / SetPos move out of line;
+                       m_audio handle
+
+2026-09-07 -- SystemCover dialogs leave the synchronous MessageBox (#97)
+
+  Modified upstream sources:
+    SystemCover.cpp -- Dialog enqueues a CSimpleDialog; ErrorDialog
+                       prints to stderr instead of a MessageBox
+
+2026-09-07 -- Route CEditBox Imm* through rs2_ime (#102)
+
+  Modified upstream sources:
+    lib/editbox.cpp -- Imm* replaced by rs2_ime_*; composition and
+                       result strings arrive as UTF-8
+    lib/editbox.h   -- IsFEPOpen / GetFEPCursorPos move out of line
+
+2026-09-07 -- WM_IME_SETCONTEXT hides the IME through rs2_ime (#104)
+
+  Modified upstream sources:
+    lib/window.cpp  -- rs2_ime_hide instead of ImmGetDefaultIMEWnd
+
+2026-09-07 -- Allowlist lib/editbox.cpp (#108)
+
+  Modified upstream sources:
+    lib/editbox.cpp -- include rs2_float.h for RS2_FLOAT_FMT
+
+2026-09-07 -- SDL2 input backend behind rs2_input (#122)
+
+  Modified upstream sources:
+    lib/input.cpp   -- comment names the RS2_HAVE_SDL2 backend
+
+2026-09-20 -- Track RSPV.h under the case its includers spell (#127)
+
+  Modified upstream sources:
+    RSPV.H -> RSPV.h    -- rename only, content unchanged
+    RailSim2.dsp, RailSim2.vcxproj, RailSim2.vcxproj.filters
+                        -- refer to RSPV.h
+
+2026-09-20 -- Const-qualify two operator< that libc++ rejects (#129)
+
+  Modified upstream sources:
+    CLensFlare.h, CRailwayPluginSet.h
+                        -- const on operator<
+
+2026-09-22 -- port/stub/dsound.h owns the DirectSound names (#152)
+
+  Modified upstream sources:
+    lib/wave.cpp    -- the local DirectSound name stubs from #86 removed
+
+2026-09-23 -- State lib/draw.cpp's int -> float vertex conversion (#161)
+
+  Modified upstream sources:
+    lib/draw.cpp    -- (float) on six narrowing vertex initializers;
+                       values unchanged
+
+2026-09-23 -- Respell CWaveArray's array-new (#162)
+
+  Modified upstream sources:
+    CWaveArray.cpp  -- new (CWave[n]) -> new CWave[n]
+
+Upstream is frozen, so what this fork keeps is the game's observable
+behavior, not upstream's text: game-source edits are mechanical or
+covered by a check test (see AGENTS.md). Further changes must update
+this file (date + summary) and keep git history as the detailed record.
