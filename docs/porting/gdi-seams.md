@@ -98,7 +98,7 @@ Game UI text almost never calls GDI directly. It goes through **`g_StrTex`** (`C
 | `DeleteObject` | `lib/texture.cpp` | 207 | Temporary text bitmap |
 | `DeleteDC` | `lib/texture.cpp` | 208, 385 | Scratch DC teardown |
 
-Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `TransparentBlt`, clipboard helpers).
+Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `SetDIBitsToDevice`, `TransparentBlt`, clipboard helpers).
 
 ### Clipboard
 
@@ -114,7 +114,7 @@ Stub only: `port/stub/windows.h` (`CreateFont`, `BitBlt`, `StretchBlt`, `Transpa
 
 ## `CPixelbit` public API inventory
 
-Compiled TUs today: `CPixelbit.cpp`, `CPixelbitStamp.cpp` (not yet on `port/native_sources.txt`; `CStringTexture.cpp` is).
+Compiled TUs today: `CPixelbit.cpp` (not yet on `port/native_sources.txt`) and `CPixelbitStamp.cpp` (on it since `#178`, with `SetDIBitsToDevice` returning 0, the failure value no caller reads). `CStringTexture.cpp` is on it too.
 
 | Category | Methods | Internal GDI / Win32 | Live external use |
 |----------|---------|----------------------|-------------------|

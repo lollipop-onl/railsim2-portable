@@ -156,3 +156,4 @@ CWaveArray.cpp
 lib/wave_stream.cpp
 lib/comm.cpp
 lib/music.cpp
+CPixelbitStamp.cpp
