@@ -27,7 +27,7 @@ Native linking, runtime bring-up, and a playable binary are **not** M0 goals. M1
 
 ## Status
 
-M1 (Surface): `./scripts/check.sh` still green. `cmake --build --preset check` links `railsim2` (POSIX `main` in `port/native_entry.cpp`). Allowlist progress is `port/native_sources.txt` (see `scripts/progress.sh`). Gameplay is later milestones.
+M1 (Surface): `./scripts/check.sh` still green. `cmake --build --preset check` links every game TU into `railsim2`, whose POSIX `main` (`port/native_entry.cpp`) enters the game's `WinMain`. Allowlist progress is `port/native_sources.txt` (see `scripts/progress.sh`). Gameplay is later milestones.
 
 ## Quick start
 

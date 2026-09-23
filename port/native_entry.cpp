@@ -1,5 +1,10 @@
-// POSIX process entry. Upstream lib/main.cpp exposes WinMain only.
-// This file is always linked on the native target so the check preset
-// produces an executable (game startup is still WinMain / later M3).
+#include <windows.h>
 
-int main() { return 0; }
+// Not extern "C": under port/stub WINAPI is empty, so lib/main.cpp defines
+// WinMain with C++ linkage and only this exact prototype mangles to it.
+INT WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, INT);
+
+int main() {
+  char cmdLine[] = "";
+  return WinMain(nullptr, nullptr, cmdLine, SW_SHOW);
+}
