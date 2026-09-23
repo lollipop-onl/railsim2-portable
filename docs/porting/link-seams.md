@@ -44,6 +44,8 @@ Adding the missing definitions closes the list on both hosts at this commit: a s
 
 2026-09-23: #197 defined `svm` and `svv` (`88177c0`). #198 then linked `railsim2` from `railsim2_native` whole (`$<LINK_LIBRARY:WHOLE_ARCHIVE,...>`) with `port/native_entry.cpp` calling `WinMain`, and replaced the `CMakeLists.txt` comment described next. On both hosts `railsim2` links with no undefined symbols and contains the 12 TUs listed below (`InitDirectMusic` from `lib/music.cpp` and `InitDirectShow` from `lib/movie.cpp`, for example). With #196's `CreateDevice` failure, the headless run now stops in `InitDirect3D`: the stream shows `InitDebugStream`, `InitDirect3D`, `FreeInput`, `FreeDirect3D`, and the process still exits 0.
 
+2026-09-23: #200 turned that run into the `check` test `rs2_headless_start` (`port/railsim2_headless_test.cmake`). It requires exit status 0 with no signal, the `InitDebugStream`, `InitDirect3D` and `FreeDirect3D` lines, and no `InitDirectInput` line, which is what separates the `InitDirect3D` failure from a run that got further. `rs2_whole_archive_members` requires `nm` to find `InitDirectMusic` and `InitDirectShow` defined in `railsim2`. The "Headless run" section below still describes the `4521f44` scratch run.
+
 ### `CMakeLists.txt`'s comment is stale
 
 The comment above `add_executable(railsim2 ...)` says the game objects "still need udx globals (sv3, g_frame, ...) from lib/". They do not. `lib/sysvalue.h` defines them (`sv3` at `:13`, `g_frame` at `:22`), and `lib/main.cpp` is the TU that includes it, so any link that pulls `lib/main.cpp` has them. The only udx globals still missing are `svm` and `svv` above.
