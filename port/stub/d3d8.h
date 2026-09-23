@@ -428,11 +428,9 @@ struct IDirect3DIndexBuffer8 : IUnknown {
 };
 
 struct IDirect3D8 : IUnknown {
-  // Fails rather than handing out a stub device: no backend stands behind one
-  // yet, and S_OK with an unwritten *dev left sv3.pDev null while InitDirect3D
-  // went on calling members through it. Failing sends Create3DDevice down its
-  // TnLHAL -> HAL -> REF fallback to the FAILED_ASSERT, so startup stops at
-  // InitDirect3D returning FALSE, the path a machine without Direct3D takes.
+  // Fails rather than returning a do-nothing device: no backend stands behind
+  // one yet, and failing takes the game's own no-device path (InitDirect3D
+  // returns FALSE), as on a machine that cannot create any Direct3D device.
   HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8** dev) {
     if (dev) *dev = nullptr;
     return D3DERR_NOTAVAILABLE;
