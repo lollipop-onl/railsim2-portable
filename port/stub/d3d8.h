@@ -218,6 +218,7 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 
 #define D3DERR_DEVICELOST ((HRESULT)0x88760868L)
 #define D3DERR_DEVICENOTRESET ((HRESULT)0x88760869L)
+#define D3DERR_NOTAVAILABLE ((HRESULT)0x8876086AL)
 
 enum D3DRESOURCETYPE { D3DRTYPE_SURFACE = 1, D3DRTYPE_TEXTURE = 3 };
 
@@ -384,7 +385,10 @@ struct IDirect3DDevice8 : IUnknown {
   }
   HRESULT CreateTexture(UINT, UINT, UINT, DWORD, D3DFORMAT, DWORD, IDirect3DTexture8**) { return S_OK; }
   HRESULT CopyRects(IDirect3DSurface8*, const RECT*, UINT, IDirect3DSurface8*, const POINT*) { return S_OK; }
-  HRESULT GetDeviceCaps(void*) { return S_OK; }
+  HRESULT GetDeviceCaps(D3DCAPS8* caps) {
+    std::memset(caps, 0, sizeof(*caps));
+    return S_OK;
+  }
   HRESULT Reset(D3DPRESENT_PARAMETERS*) { return S_OK; }
   HRESULT SetRenderTarget(IDirect3DSurface8*, IDirect3DSurface8*) { return S_OK; }
   HRESULT GetRenderTarget(IDirect3DSurface8**) { return S_OK; }
@@ -424,10 +428,24 @@ struct IDirect3DIndexBuffer8 : IUnknown {
 };
 
 struct IDirect3D8 : IUnknown {
-  HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8**) { return S_OK; }
+  // Fails rather than handing out a stub device: no backend stands behind one
+  // yet, and S_OK with an unwritten *dev left sv3.pDev null while InitDirect3D
+  // went on calling members through it. Failing sends Create3DDevice down its
+  // TnLHAL -> HAL -> REF fallback to the FAILED_ASSERT, so startup stops at
+  // InitDirect3D returning FALSE, the path a machine without Direct3D takes.
+  HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8** dev) {
+    if (dev) *dev = nullptr;
+    return D3DERR_NOTAVAILABLE;
+  }
   HRESULT GetAdapterCount() { return 1; }
-  HRESULT GetAdapterIdentifier(UINT, DWORD, D3DADAPTER_IDENTIFIER8*) { return S_OK; }
-  HRESULT GetAdapterDisplayMode(UINT, D3DDISPLAYMODE*) { return S_OK; }
+  HRESULT GetAdapterIdentifier(UINT, DWORD, D3DADAPTER_IDENTIFIER8* id) {
+    std::memset(id, 0, sizeof(*id));
+    return S_OK;
+  }
+  HRESULT GetAdapterDisplayMode(UINT, D3DDISPLAYMODE* mode) {
+    std::memset(mode, 0, sizeof(*mode));
+    return S_OK;
+  }
   UINT GetAdapterModeCount(UINT) { return 0; }
   HRESULT EnumAdapterModes(UINT, UINT, D3DDISPLAYMODE*) { return S_OK; }
   HRESULT CheckDeviceFormat(UINT, DWORD, D3DFORMAT, DWORD, D3DRESOURCETYPE, D3DFORMAT) { return S_OK; }
