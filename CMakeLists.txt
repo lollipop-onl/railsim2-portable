@@ -223,6 +223,14 @@ set_tests_properties(rs2_roundtrip PROPERTIES
   SKIP_RETURN_CODE 77
 )
 
+add_test(NAME rs2_headless_start
+  COMMAND "${CMAKE_COMMAND}" "-DRAILSIM2=$<TARGET_FILE:railsim2>"
+    -P "${CMAKE_SOURCE_DIR}/port/railsim2_headless_test.cmake"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+add_test(NAME rs2_whole_archive_members
+  COMMAND "${CMAKE_COMMAND}" "-DRAILSIM2=$<TARGET_FILE:railsim2>" "-DNM=${CMAKE_NM}"
+    -P "${CMAKE_SOURCE_DIR}/port/railsim2_whole_archive_test.cmake")
+
 # Closed text X-File parser (#28). Does not replace CMesh::Load (#6).
 add_executable(rs2_xfile_load port/xfile_load.cpp port/xfile.cpp)
 target_include_directories(rs2_xfile_load PRIVATE "${CMAKE_SOURCE_DIR}/port")
