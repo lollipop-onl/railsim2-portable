@@ -124,7 +124,7 @@ if(RS2_HAVE_SDL2)
 endif()
 
 # Whole archive, not a plain link: nothing reachable from WinMain references
-# 12 of the game TUs (lib/music.cpp, lib/movie.cpp, for example), so the
+# some game TUs (lib/music.cpp and lib/movie.cpp, for example), so the
 # linker would leave them out (docs/porting/link-seams.md).
 # Win32 .rc is skipped; icons stay as files until a later loader.
 add_executable(railsim2 port/native_entry.cpp)
