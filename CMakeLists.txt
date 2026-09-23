@@ -88,7 +88,8 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/rs2_input_sdl.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
-  "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp")
+  "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_media_globals.cpp")
 
 target_include_directories(railsim2_native SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
