@@ -39,7 +39,7 @@ brew bundle --file Brewfile
 
 Windows/DirectX headers are stubbed under `port/stub/` and injected with `-isystem port/stub` **before** system includes. Game code keeps `#include <d3d8.h>` etc.; only the include path changes.
 
-Native targets are listed in `port/native_sources.txt`. CMake compiles those into `railsim2_native.a` and links a stub `railsim2` from `port/native_entry.cpp` (`main` returns 0). Game objects are **not** linked into the executable yet. What a link of them lacks is inventoried in [link-seams.md](link-seams.md). SDL2 is not required for the `check` preset.
+Native targets are listed in `port/native_sources.txt`. CMake compiles those into `railsim2_native.a` and links all of it into `railsim2` (whole archive, so TUs nothing calls yet are linked too). `port/native_entry.cpp`'s `main` calls `lib/main.cpp`'s `WinMain`. What the link needed is recorded in [link-seams.md](link-seams.md). SDL2 is not required for the `check` preset.
 
 Progress denominator = every **game translation unit**: root-level `*.cpp` (124) + `lib/*.cpp` (28) = **152**.
 `scripts/progress.sh` counts the tree rather than carrying the number, so the definition

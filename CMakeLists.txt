@@ -123,16 +123,20 @@ if(RS2_HAVE_SDL2)
   target_link_libraries(railsim2_native PRIVATE SDL2::SDL2)
 endif()
 
-# Link skeleton: POSIX main only. Allowlisted game objects compile into
-# railsim2_native.a but are not linked yet — they still need udx globals
-# (sv3, g_frame, …) from lib/. SDL2 is not a check-preset dependency.
+# Whole archive, not a plain link: nothing reachable from WinMain references
+# 12 of the game TUs (lib/music.cpp, lib/movie.cpp, for example), so the
+# linker would leave them out (docs/porting/link-seams.md).
 # Win32 .rc is skipped; icons stay as files until a later loader.
 add_executable(railsim2 port/native_entry.cpp)
-add_dependencies(railsim2 railsim2_native)
+target_include_directories(railsim2 SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub"
+)
+target_compile_options(railsim2 PRIVATE -Wall -Wextra)
 target_compile_definitions(railsim2 PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
   NOMINMAX
 )
+target_link_libraries(railsim2 PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,railsim2_native>")
 
 # Sample.rs2 Load/Save via CSaveFile (#36 / #54). Real Read/Save TUs for the
 # layout object graph; port/rs2_roundtrip_stubs.cpp holds globals and UI seams.

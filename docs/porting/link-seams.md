@@ -42,6 +42,8 @@ Adding the missing definitions closes the list on both hosts at this commit: a s
 
 2026-09-23: #191 added `port/xfile.cpp` and `port/rs2_cmesh_xfile.cpp` to `railsim2_native` (`707c0b6`). Re-measured on macOS only, at that commit: a plain link from a `main` that calls `WinMain` now succeeds and the headless run below still exits 0, and a whole-archive link reports `svm` and `svv` alone. #195 tracks those two. The rest of this document is still the `4521f44` measurement.
 
+2026-09-23: #197 defined `svm` and `svv` (`88177c0`). #198 then linked `railsim2` from `railsim2_native` whole (`$<LINK_LIBRARY:WHOLE_ARCHIVE,...>`) with `port/native_entry.cpp` calling `WinMain`, and replaced the `CMakeLists.txt` comment described next. On both hosts `railsim2` links with no undefined symbols and contains the 12 TUs listed below (`InitDirectMusic` from `lib/music.cpp` and `InitDirectShow` from `lib/movie.cpp`, for example). With #196's `CreateDevice` failure, the headless run now stops in `InitDirect3D`: the stream shows `InitDebugStream`, `InitDirect3D`, `FreeInput`, `FreeDirect3D`, and the process still exits 0.
+
 ### `CMakeLists.txt`'s comment is stale
 
 The comment above `add_executable(railsim2 ...)` says the game objects "still need udx globals (sv3, g_frame, ...) from lib/". They do not. `lib/sysvalue.h` defines them (`sv3` at `:13`, `g_frame` at `:22`), and `lib/main.cpp` is the TU that includes it, so any link that pulls `lib/main.cpp` has them. The only udx globals still missing are `svm` and `svv` above.
