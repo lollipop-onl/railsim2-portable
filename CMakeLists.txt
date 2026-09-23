@@ -76,6 +76,8 @@ endif()
 add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
+  "${CMAKE_SOURCE_DIR}/port/xfile.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_cmesh_xfile.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_state.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_fvf.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_glsl.cpp"
