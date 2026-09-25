@@ -87,6 +87,45 @@ HRESULT rs2_ffp_set_transform(D3DTRANSFORMSTATETYPE type, const void *matrix);
 HRESULT rs2_ffp_set_viewport(const D3DVIEWPORT8 *viewport);
 HRESULT rs2_ffp_set_material(const void *material);
 
+enum Rs2FfpDepthFunc { RS2_FFP_DEPTH_LEQUAL, RS2_FFP_DEPTH_ALWAYS };
+
+enum Rs2FfpBlendFactor {
+	RS2_FFP_BLEND_ZERO,
+	RS2_FFP_BLEND_ONE,
+	RS2_FFP_BLEND_SRC_ALPHA,
+	RS2_FFP_BLEND_ONE_MINUS_SRC_ALPHA,
+};
+
+enum Rs2FfpFace { RS2_FFP_FACE_BACK, RS2_FFP_FACE_FRONT };
+enum Rs2FfpWinding { RS2_FFP_WINDING_CW, RS2_FFP_WINDING_CCW };
+
+// GL fixed raster state for one draw, in API-neutral terms so check can pin
+// it without a GL header. Rectangles: d3d_* is the resolved D3D viewport
+// (top-left origin, what u_viewport wants); gl_* is the same rectangle in
+// GL window coordinates (bottom-left origin, what glViewport wants).
+struct Rs2FfpRaster {
+	bool depth_test;
+	Rs2FfpDepthFunc depth_func;
+	bool depth_write;
+	bool blend;
+	Rs2FfpBlendFactor blend_src;
+	Rs2FfpBlendFactor blend_dst;
+	bool cull;
+	Rs2FfpFace cull_face;
+	Rs2FfpWinding front_face;
+	unsigned d3d_x, d3d_y, width, height;
+	int gl_x, gl_y;
+	float depth_near, depth_far;
+};
+
+// Map the D3D render state and viewport onto GL raster state for a render
+// target of target_w x target_h. A 0-sized viewport (never SetViewport,
+// which RailSim2 never calls) is the whole target, as D3D8 initialises it.
+// Values outside the docs/porting/ffp-render-states.md inventory, or an
+// empty target, fail.
+bool rs2_ffp_raster_state(const Rs2FfpRs &rs, const D3DVIEWPORT8 &viewport,
+                          unsigned target_w, unsigned target_h, Rs2FfpRaster *out);
+
 // Packed FVF + core-state key. Ambient / alpharef / fog distances stay as
 // uniforms on the snapshot, not variant bits. Unknown / deferred FVF returns 0.
 std::uint64_t rs2_ffp_shader_key(DWORD fvf);

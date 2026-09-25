@@ -355,6 +355,35 @@ ctest: `rs2_ffp_state_self_test` covers transform / viewport / material shadow w
 
 ctest: `rs2_ffp_device_self_test` (`port/ffp_device_test.cpp --self-test`). UP still records on the CPU. Present without a window is `S_OK` and does not create one.
 
+## GL raster state (port, #215)
+
+The shadowed depth / blend / cull state and the viewport now reach GL's fixed raster state. The mapping is a pure function in `port/ffp_state.*`, so `check` pins it without a GL header. `port/ffp_gl.cpp` applies the result right before `glDrawArrays`.
+
+| API | Role |
+|-----|------|
+| `rs2_ffp_raster_state(rs, viewport, target_w, target_h, &raster)` | Map `Rs2FfpRs` + `D3DVIEWPORT8` onto an API-neutral `Rs2FfpRaster`. A value outside this inventory fails (debug log). So does an empty target. |
+| `rs2_ffp_gl_draw` | Target size is `SDL_GL_GetDrawableSize` of the current window. Before the draw it applies `glEnable`/`glDisable` for depth / blend / cull, plus `glDepthFunc`, `glDepthMask`, `glBlendFunc`, `glCullFace`, `glFrontFace`, `glViewport`, and `glDepthRange`. A failed mapping, or no SDL window, skips the draw. |
+| `rs2_ffp_gl_apply_uniforms` | `u_viewport` is the resolved D3D rectangle, not the raw snapshot. The raw snapshot is `0x0` because the game never calls `SetViewport`, and that made the XYZRHW path divide by zero. |
+
+| D3D8 | GL |
+|------|----|
+| `ZENABLE` TRUE / FALSE | `GL_DEPTH_TEST` on / off. `ZFUNC` is only checked while Z is on. |
+| `ZFUNC` `LESSEQUAL` / `ALWAYS` | `GL_LEQUAL` / `GL_ALWAYS` |
+| `ZWRITEENABLE` | `glDepthMask` |
+| `ALPHABLENDENABLE` | `GL_BLEND`. The factors are only checked while blending. |
+| `SRCBLEND` / `DESTBLEND` `ZERO`, `ONE`, `SRCALPHA`, `INVSRCALPHA` | `GL_ZERO`, `GL_ONE`, `GL_SRC_ALPHA`, `GL_ONE_MINUS_SRC_ALPHA` |
+| `CULLMODE` `NONE` / `CCW` / `CW` | `GL_CULL_FACE` off / `GL_BACK` / `GL_FRONT`, always with `glFrontFace(GL_CW)` |
+| `D3DVIEWPORT8` `X, Y, Width, Height` | `glViewport(X, target_h - (Y + Height), Width, Height)`. `Width` or `Height` of `0` means the whole target, which is how D3D8 initialises the viewport. |
+| `MinZ` / `MaxZ` | `glDepthRange`. A defaulted viewport uses `0..1`. |
+
+**Winding.** In D3D8 the front face is clockwise, and `D3DCULL_CCW` discards counterclockwise triangles. The y flip in `glViewport` keeps the image the same way up on screen, and winding is judged on that image. So the front stays clockwise in GL. Only `glFrontFace(GL_CW)` is set, and nothing is inverted a second time.
+
+**Alpha test** is already handled in the fragment shader. `ALPHATESTENABLE` and `ALPHAFUNC` are shader-key bits (`RS2_FFP_ALPHATEST` / `RS2_FFP_ALPHAFUNC`, #88), and `ALPHAREF` is the `u_alpharef` uniform divided by 255 (#118). Core GL has no fixed alpha test, so nothing is added here.
+
+**Not covered yet.** D3D clip space is `0 <= z <= w`, but GL clips at `-w <= z <= w`. `glDepthRange` does not change that, so geometry that D3D clips in front of the near plane is still drawn. Depth ordering is preserved, but half of the depth precision is lost. Fixing it needs `z' = 2z - w` in the vertex shader, or `glClipControl` (GL 4.5, which is not in the 3.3 core context). Stencil stays rejected in the shadow.
+
+ctest: `rs2_ffp_state_self_test` pins the table above without GL.
+
 ## What #5 should implement next
 
 1. **M3 required tier (sample)** -- Drive the wired device path until `Distribution/jp/RailSim2/Layout/Sample.rs2` renders without shadow, flare, or particles. Allowlist `lib/graphic.cpp` / `lib/vertex.cpp` / `lib/texture.cpp` / `lib/draw.cpp` in later slices. File textures / DXT stay later. SDL2 stays off the check preset.
