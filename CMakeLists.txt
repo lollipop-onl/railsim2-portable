@@ -438,7 +438,8 @@ target_compile_definitions(rs2_ffp_device_test PRIVATE
 add_test(NAME rs2_ffp_device_self_test COMMAND rs2_ffp_device_test --self-test)
 
 # Runtime-only smoke: solid UP triangle through create/draw/present/destroy.
-# Not added to ctest / CI. Missing SDL2 or OpenGL leaves the target out.
+# Not a ctest: it needs a display. The runtime workflow runs it on Linux
+# under Xvfb. Missing SDL2 or OpenGL leaves the target out.
 if(RS2_RUNTIME AND RS2_HAVE_SDL2 AND RS2_HAVE_OPENGL)
   add_executable(rs2_ffp_smoke
     port/ffp_smoke.cpp

@@ -1,0 +1,60 @@
+name: runtime
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  runtime:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: Install Linux compiler, SDL2, GL and a software display
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libsdl2-dev libgl-dev libgl1-mesa-dri xvfb
+
+      - name: Install macOS SDL2
+        if: runner.os == 'macOS'
+        run: |
+          brew install sdl2
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix)" >> "$GITHUB_ENV"
+
+      - name: Install build tools
+        run: mise install
+
+      - name: Configure runtime preset
+        run: cmake --preset runtime --fresh
+
+      # find_package is QUIET, so a missing package would silently turn the
+      # SDL2 / GL path off and the build below would still pass.
+      - name: Assert SDL2 and OpenGL were found
+        run: |
+          cache=build/runtime/CMakeCache.txt
+          status=0
+          for flag in RS2_HAVE_SDL2 RS2_HAVE_OPENGL; do
+            if ! grep -q "^${flag}:BOOL=ON$" "${cache}"; then
+              echo "error: ${flag} is not ON in the runtime preset" >&2
+              grep "^${flag}:" "${cache}" >&2 || true
+              status=1
+            fi
+          done
+          exit "${status}"
+
+      - name: Build runtime preset
+        run: cmake --build --preset runtime
+
+      - name: Run rs2_ffp_smoke on Xvfb + llvmpipe
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          SDL_VIDEODRIVER: x11
+        run: xvfb-run -a -s "-screen 0 640x480x24" ./build/runtime/rs2_ffp_smoke
