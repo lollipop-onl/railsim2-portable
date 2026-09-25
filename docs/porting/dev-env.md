@@ -405,7 +405,7 @@ We do **not** vendor DirectX SDK headers or adopt MinGW for CI. The compile-fire
 
 GitHub Actions runs `./scripts/check.sh` on a **macOS + Linux matrix** (`macos-15`, `ubuntu-24.04`). Both jobs use `mise install` for cmake/ninja; Linux also installs `clang` from apt. Local Mac dev can use the same path via `.mise.toml`, or legacy `brew bundle`. Do **not** apt-install SDL2, OpenGL loaders, or OpenAL Soft on that job.
 
-A separate `runtime` workflow (`.github/workflows/runtime.yml`) builds the `runtime` preset on the same two runners. Linux installs `libsdl2-dev`, `libgl-dev`, Mesa and Xvfb from apt; macOS installs Homebrew `sdl2` and uses the system OpenGL framework. After configure it fails unless `RS2_HAVE_SDL2` and `RS2_HAVE_OPENGL` are `ON` in `CMakeCache.txt`, because `find_package` is QUIET and a missing package would otherwise switch the SDL2 / GL path off without failing the build. Linux then runs `rs2_ffp_smoke` once under `xvfb-run` with Mesa llvmpipe (`LIBGL_ALWAYS_SOFTWARE=1`); macOS only builds it. OpenAL is not installed or asserted there yet.
+A separate `runtime` workflow (`.github/workflows/runtime.yml`) builds the `runtime` preset on the same two runners. Linux installs `libsdl2-dev`, `libgl-dev`, Mesa and Xvfb from apt; macOS installs Homebrew `sdl2` and uses the system OpenGL framework. After configure it fails unless `RS2_HAVE_SDL2` and `RS2_HAVE_OPENGL` are `ON` in `CMakeCache.txt`, because `find_package` is QUIET and a missing package would otherwise switch the SDL2 / GL path off without failing the build. Linux then runs `rs2_ffp_smoke` once under `xvfb-run` with Mesa llvmpipe (`LIBGL_ALWAYS_SOFTWARE=1`); macOS only builds it. `RS2_HAVE_OPENAL` is not asserted: Linux does not install OpenAL Soft, and macOS reports `ON` only because CMake finds the system OpenAL framework.
 
 ## check vs runtime
 
@@ -416,7 +416,7 @@ A separate `runtime` workflow (`.github/workflows/runtime.yml`) builds the `runt
 | `check` (`./scripts/check.sh`, CI) | Everyone | **Not searched.** `RS2_RUNTIME=OFF`. Stubs only. |
 | `runtime` | Local machine with optional packages; `runtime` CI workflow | `find_package` **QUIET / not REQUIRED**. Missing package → feature off, configure still succeeds. CI installs SDL2 + OpenGL and asserts both are `ON`. |
 
-This slice does **not** draw, poll SDL events, or play OpenAL. `cmake --preset runtime` only records `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` (`ON` or `OFF` in the configure log). Do not link `lib/graphic.cpp` / `lib/vertex.cpp` / `lib/sound.cpp` from this preset yet.
+`cmake --preset runtime` records `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` (`ON` or `OFF` in the configure log). The only thing it builds that draws is `rs2_ffp_smoke`. `lib/graphic.cpp` / `lib/vertex.cpp` / `lib/sound.cpp` are linked into `railsim2` in every preset, but the game still stops at the D3D8 stub's failing `CreateDevice`, and `port/rs2_audio.cpp` only records, so the game itself does not draw through GL or play through OpenAL yet.
 
 Optional local packages (Homebrew; not in `Brewfile`, not required for `check`):
 
