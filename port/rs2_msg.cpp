@@ -35,9 +35,14 @@ struct State {
 	int quit_code = 0;
 };
 
-// Leaked, not a namespace-scope object: lib/main.cpp's global CApp calls
-// DestroyWindow from its destructor, and static destruction order across
-// TUs would let that run after these containers were already destroyed.
+// Leaked on purpose. lib/main.cpp's global theApp is constructed during
+// static initialization, and ~CApp calls DestroyWindow at exit. Neither
+// static form survives until then: a namespace-scope State may be destroyed
+// first (cross-TU order is unspecified), and a function-local `static State
+// s;` is constructed on first use, after theApp, so it is destroyed before
+// theApp. DestroyWindow would then touch a destroyed map. That is a
+// use-after-destroy, which need not crash the way the first push's double
+// free did, so rs2_headless_start passing does not prove it absent.
 State &state() {
 	static State *const s = new State;
 	return *s;
