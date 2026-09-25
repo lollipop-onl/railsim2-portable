@@ -36,7 +36,7 @@
     },
     {
       "name": "runtime",
-      "displayName": "Optional SDL2 / OpenGL / OpenAL (local; not CI)",
+      "displayName": "Optional SDL2 / OpenGL / OpenAL (runtime workflow)",
       "inherits": "check",
       "cacheVariables": {
         "RS2_RUNTIME": "ON"

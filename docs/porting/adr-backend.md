@@ -112,9 +112,11 @@ Wrappers in `render.h` / `texture.h` **and** raw `sv3.pDev` from the seven leak 
 
 ## CMake / CI notes (for #3 / #105)
 
-`check` (`./scripts/check.sh`, GitHub Actions) never searches SDL2, OpenGL, or OpenAL. Those packages stay off apt CI.
+`check` (`./scripts/check.sh`, the `check` GitHub Actions workflow) never searches SDL2, OpenGL, or OpenAL. Those packages stay off that workflow's apt step.
 
-The **`runtime`** preset sets `RS2_RUNTIME=ON` and calls `find_package` **without REQUIRED**. Configure succeeds with features off when a package is missing. `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` are the flags later GL-link / SDL-input / OpenAL-play slices consume. This preset does not draw, poll, or play.
+The separate `runtime` workflow installs SDL2 and OpenGL, builds the `runtime` preset on macOS and Linux, fails if either `RS2_HAVE_SDL2` or `RS2_HAVE_OPENGL` came out `OFF`, and runs `rs2_ffp_smoke` on Linux under Xvfb + Mesa llvmpipe (#202).
+
+The **`runtime`** preset sets `RS2_RUNTIME=ON` and calls `find_package` **without REQUIRED**. Configure succeeds with features off when a package is missing. `RS2_HAVE_SDL2` / `RS2_HAVE_OPENGL` / `RS2_HAVE_OPENAL` are the flags later GL-link / SDL-input / OpenAL-play slices consume. In this preset only `rs2_ffp_smoke` draws. The game's own TUs (`lib/graphic.cpp`, `lib/input.cpp`, `lib/sound.cpp`, ...) are linked into `railsim2` in every preset, but the game still stops at the D3D8 stub's failing `CreateDevice` and `port/rs2_audio.cpp` only records, so nothing the game does reaches GL or OpenAL yet.
 
 See [dev-env.md](dev-env.md) (`check` vs `runtime`).
 
