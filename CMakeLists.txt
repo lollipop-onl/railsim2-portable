@@ -86,6 +86,8 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_window.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input_sdl.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_msg.cpp"
+  "${CMAKE_SOURCE_DIR}/port/rs2_msg_sdl.cpp"
   "${CMAKE_SOURCE_DIR}/port/wav_pcm.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_audio.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_ime.cpp"
@@ -551,6 +553,22 @@ target_compile_options(rs2_input_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_input_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_input_self_test COMMAND rs2_input_test --self-test)
+
+# Win32 message queue: FIFO, WM_QUIT, WndProc dispatch, WM_ACTIVATEAPP on
+# create (#205). No SDL: the SDL pump lives in rs2_msg_sdl.cpp on
+# railsim2_native when RS2_HAVE_SDL2.
+add_executable(rs2_msg_test port/rs2_msg_test.cpp port/rs2_msg.cpp)
+target_include_directories(rs2_msg_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_msg_test PRIVATE "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_msg_test PRIVATE cxx_std_17)
+target_compile_options(rs2_msg_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_msg_test PRIVATE
+  RS2_PORTABLE_COMPILE_FIREWALL=1
+  NOMINMAX
+  RS2_HAVE_SDL2=0)
+
+add_test(NAME rs2_msg_self_test COMMAND rs2_msg_test --self-test)
 
 # Stub PCM buffer intern + play/stop/volume/3D/listener (#93). No OpenAL.
 add_executable(rs2_audio_test port/rs2_audio_test.cpp port/rs2_audio.cpp port/wav_pcm.cpp)
