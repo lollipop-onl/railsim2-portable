@@ -115,6 +115,68 @@ bool peek_without_pm_remove_leaves_the_message_queued() {
 	              "PM_NOREMOVE peek keeps the message for the next call");
 }
 
+bool hwnd_filter_takes_only_that_windows_messages() {
+	reset();
+	HWND a = create_window(640, 480);
+	HWND b = CreateWindowEx(0, kClass, "", 0, 0, 0, 1, 1, nullptr, nullptr,
+	                        nullptr, nullptr);
+	drain_queue();
+	PostMessage(a, WM_APP + 1, 0, 0);
+	PostMessage(b, WM_APP + 2, 0, 0);
+	MSG m;
+	if (!expect(PeekMessage(&m, b, 0, 0, PM_REMOVE) == TRUE && m.hwnd == b &&
+	                m.message == WM_APP + 2,
+	            "hWnd filter skips the earlier message for another window"))
+		return false;
+	if (!expect(PeekMessage(&m, b, 0, 0, PM_REMOVE) == FALSE,
+	            "hWnd filter finds nothing more for that window"))
+		return false;
+	return expect(PeekMessage(&m, nullptr, 0, 0, PM_REMOVE) == TRUE && m.hwnd == a,
+	              "the skipped message stays queued");
+}
+
+bool message_range_filter_takes_only_messages_inside_it() {
+	reset();
+	HWND hwnd = create_window(640, 480);
+	drain_queue();
+	PostMessage(hwnd, WM_APP + 1, 0, 0);
+	PostMessage(hwnd, WM_APP + 5, 0, 0);
+	PostMessage(hwnd, WM_APP + 9, 0, 0);
+	MSG m;
+	if (!expect(PeekMessage(&m, nullptr, WM_APP + 4, WM_APP + 6, PM_REMOVE) == TRUE &&
+	                m.message == WM_APP + 5,
+	            "range filter takes the message inside [min, max]"))
+		return false;
+	if (!expect(PeekMessage(&m, nullptr, WM_APP + 4, WM_APP + 6, PM_REMOVE) == FALSE,
+	            "range filter leaves messages outside [min, max]"))
+		return false;
+	return expect(PeekMessage(&m, nullptr, WM_APP + 9, WM_APP + 9, PM_REMOVE) == TRUE &&
+	                  m.message == WM_APP + 9,
+	              "min == max selects exactly one message number");
+}
+
+bool wm_quit_arrives_even_when_the_filter_excludes_it() {
+	reset();
+	HWND hwnd = create_window(640, 480);
+	drain_queue();
+	PostQuitMessage(4);
+	MSG m;
+	return expect(PeekMessage(&m, hwnd, WM_APP, WM_APP, PM_REMOVE) == TRUE &&
+	                  m.message == WM_QUIT && m.wParam == 4,
+	              "WM_QUIT ignores both the hWnd and the range filter");
+}
+
+bool wait_message_returns_at_once_on_the_stub_backend() {
+	reset();
+	HWND hwnd = create_window(640, 480);
+	drain_queue();
+	if (!expect(WaitMessage() == FALSE,
+	            "empty queue: WaitMessage returns FALSE instead of blocking"))
+		return false;
+	PostMessage(hwnd, WM_APP, 0, 0);
+	return expect(WaitMessage() == TRUE, "queued message: WaitMessage returns TRUE");
+}
+
 bool post_to_unknown_window_fails() {
 	reset();
 	MSG m;
@@ -231,6 +293,10 @@ int self_test() {
 	    unknown_class_creates_no_window,
 	    posted_messages_come_out_in_post_order,
 	    peek_without_pm_remove_leaves_the_message_queued,
+	    hwnd_filter_takes_only_that_windows_messages,
+	    message_range_filter_takes_only_messages_inside_it,
+	    wm_quit_arrives_even_when_the_filter_excludes_it,
+	    wait_message_returns_at_once_on_the_stub_backend,
 	    post_to_unknown_window_fails,
 	    dispatch_delivers_to_the_class_wndproc,
 	    send_message_calls_the_wndproc_without_queueing,
