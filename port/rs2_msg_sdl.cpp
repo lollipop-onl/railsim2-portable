@@ -50,14 +50,18 @@ void drain(Uint32 type, Fn fn) {
 void rs2_msg_backend_pump() {
 	SDL_PumpEvents();
 	HWND hwnd = rs2_msg_main_window();
+	// Return before draining: with no window to address, a drained SDL_QUIT
+	// would be lost, while left in SDL's queue it becomes WM_CLOSE once
+	// CreateWindowEx has run.
+	if (!hwnd) return;
 	// SDL_QUIT rather than SDL_WINDOWEVENT_CLOSE: SDL raises it for the
 	// last window's close button and for Cmd-Q / SIGINT alike, which is
 	// every way Windows would have sent the game WM_CLOSE.
 	drain(SDL_QUIT, [hwnd](const SDL_Event &) {
-		if (hwnd) PostMessageA(hwnd, WM_CLOSE, 0, 0);
+		PostMessageA(hwnd, WM_CLOSE, 0, 0);
 	});
 	drain(SDL_WINDOWEVENT, [hwnd](const SDL_Event &ev) {
-		if (hwnd) post_window_event(hwnd, ev.window);
+		post_window_event(hwnd, ev.window);
 	});
 }
 
