@@ -1,5 +1,7 @@
 // D3DX8 matrix / plane / quaternion / bound math the game calls (#204, parent #5).
 // Conventions: docs/porting/d3dx-math.md.
+// Formulas and degenerate-input behavior checked against Wine's d3dx9 math.c
+// (dlls/d3dx9_36/math.c, LGPL-2.1+).
 
 #include <d3dx8.h>
 
@@ -134,6 +136,9 @@ D3DXMATRIX *D3DXMatrixPerspectiveOffCenterLH(D3DXMATRIX *out, FLOAT l, FLOAT r, 
 	return out;
 }
 
+// dot(P, L) * I - P (x) L, as native d3dx and Wine compute it. The matrix in the
+// MSDN docs is this one negated: it projects to the same points but makes w < 0,
+// so every shadow polygon would be clipped away.
 D3DXMATRIX *D3DXMatrixShadow(D3DXMATRIX *out, const D3DXVECTOR4 *light, const D3DXPLANE *plane) {
 	D3DXPLANE p;
 	D3DXPlaneNormalize(&p, plane);
