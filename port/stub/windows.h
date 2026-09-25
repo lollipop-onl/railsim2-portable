@@ -461,14 +461,21 @@ inline DWORD GetCurrentDirectoryA(DWORD n, LPSTR buf) {
   return 0;
 }
 inline DWORD GetCurrentDirectory(DWORD n, LPSTR buf) { return GetCurrentDirectoryA(n, buf); }
-inline BOOL PeekMessageA(LPMSG, HWND, UINT, UINT, UINT) { return FALSE; }
+// The message queue and window table live in port/rs2_msg.cpp (#205).
+BOOL PeekMessageA(LPMSG, HWND, UINT, UINT, UINT);
+BOOL GetMessageA(LPMSG, HWND, UINT, UINT);
 inline BOOL TranslateMessage(const MSG*) { return FALSE; }
-inline LONG DispatchMessageA(const MSG*) { return 0; }
+LRESULT DispatchMessageA(const MSG*);
+BOOL PostMessageA(HWND, UINT, WPARAM, LPARAM);
+inline BOOL PostMessage(HWND h, UINT m, WPARAM w, LPARAM l) { return PostMessageA(h, m, w, l); }
 inline LRESULT DefWindowProcA(HWND, UINT, WPARAM, LPARAM) { return 0; }
 inline ATOM RegisterClassA(void*) { return 1; }
-inline HWND CreateWindowExA(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HANDLE, HINSTANCE, LPVOID) { return (HWND)1; }
+HWND CreateWindowExA(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HANDLE, HINSTANCE, LPVOID);
 #ifndef PeekMessage
 #define PeekMessage PeekMessageA
+#endif
+#ifndef GetMessage
+#define GetMessage GetMessageA
 #endif
 #ifndef DispatchMessage
 #define DispatchMessage DispatchMessageA
@@ -487,10 +494,10 @@ inline BOOL ShowWindow(HWND, int) { return TRUE; }
 inline BOOL UpdateWindow(HWND) { return TRUE; }
 inline HDC GetDC(HWND) { return nullptr; }
 inline int ReleaseDC(HWND, HDC) { return 0; }
-inline BOOL GetClientRect(HWND, LPRECT) { return TRUE; }
+BOOL GetClientRect(HWND, LPRECT);
 inline BOOL MoveWindow(HWND, int, int, int, int, BOOL) { return TRUE; }
-inline BOOL DestroyWindow(HWND) { return TRUE; }
-inline void PostQuitMessage(int) {}
+BOOL DestroyWindow(HWND);
+void PostQuitMessage(int);
 #ifndef GMEM_MOVEABLE
 #define GMEM_MOVEABLE 0x0002
 #endif
@@ -590,7 +597,7 @@ typedef struct tagPAINTSTRUCT {
   BYTE rgbReserved[32];
 } PAINTSTRUCT, *PPAINTSTRUCT, *LPPAINTSTRUCT;
 
-inline ATOM RegisterClassExA(const WNDCLASSEXA *) { return 1; }
+ATOM RegisterClassExA(const WNDCLASSEXA *);
 inline ATOM RegisterClassEx(const WNDCLASSEX *wc) { return RegisterClassExA(wc); }
 inline HICON LoadIconA(HINSTANCE, LPCSTR) { return nullptr; }
 inline HICON LoadIcon(HINSTANCE i, LPCSTR n) { return LoadIconA(i, n); }
@@ -626,7 +633,7 @@ inline HDC BeginPaint(HWND, LPPAINTSTRUCT ps) {
 inline BOOL EndPaint(HWND, const PAINTSTRUCT *) { return TRUE; }
 inline BOOL SetWindowTextA(HWND, LPCSTR) { return TRUE; }
 inline BOOL SetWindowText(HWND h, LPCSTR s) { return SetWindowTextA(h, s); }
-inline LRESULT SendMessageA(HWND, UINT, WPARAM, LPARAM) { return 0; }
+LRESULT SendMessageA(HWND, UINT, WPARAM, LPARAM);
 inline LRESULT SendMessage(HWND h, UINT m, WPARAM w, LPARAM l) { return SendMessageA(h, m, w, l); }
 
 typedef struct tagBITMAPINFOHEADER {
@@ -795,7 +802,7 @@ inline HLOCAL LocalFree(HLOCAL) { return nullptr; }
 #define SW_SHOW 5
 #define SW_HIDE 0
 
-inline void Sleep(DWORD) {}
+void Sleep(DWORD);
 inline int ShowCursor(BOOL) { return 0; }
 inline BOOL ClientToScreen(HWND, LPPOINT) { return TRUE; }
 inline BOOL ScreenToClient(HWND, LPPOINT) { return TRUE; }
@@ -837,7 +844,7 @@ inline HBITMAP CreateDIBSection(HDC, const BITMAPINFO*, UINT, void** bits, HANDL
   return nullptr;
 }
 inline int GetObjectA(HANDLE, int, LPVOID) { return 0; }
-inline BOOL WaitMessage() { return TRUE; }
+BOOL WaitMessage();
 inline DWORD GetTickCount() { return 0; }
 inline void InitializeCriticalSection(LPCRITICAL_SECTION) {}
 inline void DeleteCriticalSection(LPCRITICAL_SECTION) {}
