@@ -217,10 +217,10 @@ void GetAppPath(char *out) {
 }
 int GetKey(int) { return 0; }
 int GetButton(int) { return 0; }
-void Draw2DRect(int, int, int, int, unsigned long) {}
-void TexMap2DRect(int, int, int, int, unsigned long) {}
-void TexMap2DRect90(int, int, int, int, unsigned long) {}
-void TexMap3DRect(VEC3, VEC3, VEC3, VEC3, unsigned long) {}
+void Draw2DRect(int, int, int, int, D3DCOLOR) {}
+void TexMap2DRect(int, int, int, int, D3DCOLOR) {}
+void TexMap2DRect90(int, int, int, int, D3DCOLOR) {}
+void TexMap3DRect(VEC3, VEC3, VEC3, VEC3, D3DCOLOR) {}
 void CalcTextRect(int *, int *, const char *, void *) {}
 BOOL CheckArguments(LPCSTR) { return TRUE; }
 
@@ -317,7 +317,7 @@ int CEditBox::ScanInput() { return 0; }
 CTexture::CTexture() {}
 CTexture::~CTexture() {}
 BOOL CTexture::Create(int, int) { return FALSE; }
-BOOL CTexture::DrawInText(int, int, LPCSTR, HFONT, unsigned long, unsigned long, int, int) { return FALSE; }
+BOOL CTexture::DrawInText(int, int, LPCSTR, HFONT, D3DCOLOR, D3DCOLOR, int, int) { return FALSE; }
 
 void CGameMode::WakeUp() {}
 

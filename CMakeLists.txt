@@ -146,6 +146,7 @@ set(RS2_ROUNDTRIP_SOURCES
   port/rs2_roundtrip_plugins.cpp
   port/rs2_roundtrip_seams.cpp
   port/rs2_roundtrip_ptr.cpp
+  port/rs2_roundtrip_color.cpp
   port/rs2_float_lexeme.cpp
   port/path.cpp
   port/rs2_text.cpp
@@ -215,6 +216,8 @@ set(RS2_ROUNDTRIP_OUTPUT
 enable_testing()
 add_test(NAME rs2_smoke COMMAND "${CMAKE_COMMAND}" -E echo "ctest skeleton ok")
 add_test(NAME rs2_roundtrip_reports_diff COMMAND rs2_roundtrip --self-test-diff)
+# AsgnColor / ScaleColor at Win32's 32-bit D3DCOLOR (#203).
+add_test(NAME rs2_plugin_color_self_test COMMAND rs2_roundtrip --self-test-color)
 add_test(NAME rs2_roundtrip COMMAND rs2_roundtrip
   "${RS2_ROUNDTRIP_FIXTURE}"
   "${RS2_ROUNDTRIP_OUTPUT}")
@@ -316,6 +319,27 @@ target_compile_options(rs2_ffp_fvf_test PRIVATE -Wall -Wextra)
 target_compile_definitions(rs2_ffp_fvf_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
 
 add_test(NAME rs2_ffp_fvf_self_test COMMAND rs2_ffp_fvf_test --self-test)
+
+# lib/vertex.h VTX_* sizeof / offsetof against the closed FVF table (#203).
+add_executable(rs2_vertex_layout_test
+  port/vertex_layout_test.cpp
+  port/ffp_fvf.cpp
+  port/ffp_state.cpp
+  port/ffp_glsl.cpp
+  port/ffp_program.cpp)
+target_include_directories(rs2_vertex_layout_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_vertex_layout_test PRIVATE
+  "${CMAKE_SOURCE_DIR}/lib"
+  "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_vertex_layout_test PRIVATE cxx_std_17)
+target_compile_options(rs2_vertex_layout_test PRIVATE
+  -Wall
+  -Wextra
+  -Wno-invalid-source-encoding)
+target_compile_definitions(rs2_vertex_layout_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_vertex_layout_self_test COMMAND rs2_vertex_layout_test --self-test)
 
 # M3 core D3DRS / D3DTSS shadow + shader key (#80). No GLSL / GL.
 add_executable(rs2_ffp_state_test

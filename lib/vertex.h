@@ -17,7 +17,7 @@ void CalcNormal(VEC3 t[3], VEC3 *n);
 struct VTX_TL{
 	FLOAT x, y, z;
 	FLOAT rhw;
-	DWORD d;
+	D3DCOLOR d;
 };
 
 //	座標3D変換済み、ライティング済み、テクスチャ有り
@@ -26,7 +26,7 @@ struct VTX_TL{
 struct VTX_TLX{
 	FLOAT x, y, z;
 	FLOAT rhw;
-	DWORD d;
+	D3DCOLOR d;
 	FLOAT u;
 	FLOAT v;
 };
@@ -36,7 +36,7 @@ struct VTX_TLX{
 
 struct VTX_L{
 	FLOAT x, y, z;
-	DWORD d;
+	D3DCOLOR d;
 };
 
 //	ライティング済み、テクスチャ有り
@@ -44,7 +44,7 @@ struct VTX_L{
 
 struct VTX_LX{
 	FLOAT x, y, z;
-	DWORD d;
+	D3DCOLOR d;
 	FLOAT u, v;
 };
 
@@ -59,7 +59,7 @@ void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, D3DCOLOR c)
 
 struct VTX_LX2{
 	FLOAT x, y, z;
-	DWORD d;
+	D3DCOLOR d;
 	FLOAT u1, v1;
 	FLOAT u2, v2;
 };
@@ -70,7 +70,7 @@ struct VTX_LX2{
 struct VTX_N{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	D3DCOLOR d;
 };
 
 inline void SetVTX_N(
@@ -84,7 +84,7 @@ inline void SetVTX_N(
 struct VTX_NX{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	D3DCOLOR d;
 	FLOAT u, v;
 };
 
@@ -99,7 +99,7 @@ inline void SetVTX_NX(
 struct VTX_NX2{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	D3DCOLOR d;
 	FLOAT u1, v1;
 	FLOAT u2, v2;
 };

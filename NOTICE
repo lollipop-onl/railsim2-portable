@@ -282,6 +282,12 @@ modified work but are not listed as "changed upstream files".
                        CloseSession, EnumHosts and SendTo return FALSE
                        while svc.pDP is NULL
 
+2026-09-26 -- Declare VTX_* colours as D3DCOLOR (#203)
+
+  Modified upstream sources (pinned by rs2_vertex_layout_self_test):
+    lib/vertex.h    -- VTX_TL .. VTX_NX2: DWORD d -> D3DCOLOR d;
+                       Win32 layout unchanged, LP64 now matches the FVF
+
 Upstream is frozen, so what this fork keeps is the game's observable
 behavior, not upstream's text: game-source edits are mechanical or
 covered by a check test (see AGENTS.md). Further changes must update
