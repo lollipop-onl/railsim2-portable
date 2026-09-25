@@ -6,7 +6,6 @@
 #include <d3dx8.h>
 
 #include <cmath>
-#include <cstdint>
 #include <cstring>
 #include <utility>
 
@@ -214,9 +213,8 @@ UINT D3DXGetFVFVertexSize(DWORD fvf) {
 	}
 	if (fvf & D3DFVF_NORMAL) size += 3 * sizeof(float);
 	if (fvf & D3DFVF_PSIZE) size += sizeof(float);
-	// Win32 D3DCOLOR width; the stub's DWORD is unsigned long, 8 bytes on LP64.
-	if (fvf & D3DFVF_DIFFUSE) size += sizeof(std::uint32_t);
-	if (fvf & D3DFVF_SPECULAR) size += sizeof(std::uint32_t);
+	if (fvf & D3DFVF_DIFFUSE) size += sizeof(D3DCOLOR);
+	if (fvf & D3DFVF_SPECULAR) size += sizeof(D3DCOLOR);
 
 	static const UINT coord_floats[4] = {2, 3, 4, 1};
 	const DWORD tex_count = (fvf & D3DFVF_TEXCOUNT_MASK) >> D3DFVF_TEXCOUNT_SHIFT;
