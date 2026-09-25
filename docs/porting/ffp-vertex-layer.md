@@ -34,6 +34,10 @@ D3D8 `CreateVertexBuffer` / `DrawPrimitiveUP` / `IDirect3DVertexBuffer8` in `por
 
 Decode order is the D3D FVF packing order: position (`xyz` or `xyz+rhw`), optional normal, optional diffuse, then 8-byte UV pairs. Diffuse is always **4-byte `D3DCOLOR`**, not host `sizeof(DWORD)` (8 on LP64). Offsets use `RS2_FFP_ABSENT` when a field is not in the FVF.
 
+`lib/vertex.h` declares the diffuse field of every `VTX_*` as `D3DCOLOR`, and `port/stub/d3d8.h` makes `D3DCOLOR` a `std::uint32_t` ([#203](https://github.com/lollipop-onl/railsim2-portable/issues/203)). Before that the field was `DWORD`, so `sizeof(VTX_TLX)` was 32 on LP64 against a stride of 28 and `rs2_ffp_draw_primitive_up` rejected every game draw. `DWORD` itself stays `unsigned long`: game code keeps pointers in `DWORD` ([#155](https://github.com/lollipop-onl/railsim2-portable/issues/155)), so narrowing it would truncate them.
+
+ctest `rs2_vertex_layout_self_test` (`port/vertex_layout_test.cpp`) includes the real `lib/vertex.h` and pins, per `VTX_*`: `sizeof` equals `rs2_ffp_layout(...).stride`, every field `offsetof` equals the layout offset (absent fields are `RS2_FFP_ABSENT`), and `DrawPrimitiveUP` accepts `sizeof` as the stride. `static_assert`s in the same file pin `sizeof(D3DCOLOR) == 4`, the Win32 strides above, and `FVF_*` == `RS2_FVF_*`.
+
 ## Entrance for the GL slice
 
 1. Select a shader variant by `Rs2FfpLayout.fvf` (or `attrs`).

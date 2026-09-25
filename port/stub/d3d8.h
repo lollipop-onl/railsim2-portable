@@ -4,7 +4,9 @@
 
 #ifndef D3DCOLOR_DEFINED
 #define D3DCOLOR_DEFINED
-typedef DWORD D3DCOLOR;
+// Not DWORD: DWORD stays 8 bytes on LP64 because game code keeps pointers in
+// it (#155), but a colour must stay 4 bytes to match the FVF diffuse slot.
+typedef std::uint32_t D3DCOLOR;
 #endif
 
 typedef DWORD D3DFORMAT;
