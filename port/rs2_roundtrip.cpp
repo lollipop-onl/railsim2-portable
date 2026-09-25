@@ -5,7 +5,7 @@
 // Links real layout object-graph Read/Save TUs plus port roundtrip helpers.
 //
 // Exit codes:
-//   0  byte-identical, or --self-test-diff passed
+//   0  byte-identical, or --self-test-diff / --self-test-color passed
 //   1  roundtrip diff
 //   2  bad usage
 //  77  skipped (fixture missing) -- ctest SKIP_RETURN_CODE
@@ -28,6 +28,7 @@
 extern char g_BaseDir[1024];
 void rs2_roundtrip_init_stubs();
 void rs2_roundtrip_init_plugins();
+int rs2_roundtrip_color_self_test();
 
 namespace {
 
@@ -143,9 +144,12 @@ int main(int argc, char **argv) {
 	if (argc >= 2 && std::strcmp(argv[1], "--self-test-diff") == 0) {
 		return self_test_diff();
 	}
+	if (argc >= 2 && std::strcmp(argv[1], "--self-test-color") == 0) {
+		return rs2_roundtrip_color_self_test();
+	}
 	if (argc != 3) {
 		std::fprintf(stderr,
-			"usage: rs2_roundtrip <in.rs2> <out.rs2> | rs2_roundtrip --self-test-diff\n");
+			"usage: rs2_roundtrip <in.rs2> <out.rs2> | rs2_roundtrip --self-test-diff | rs2_roundtrip --self-test-color\n");
 		return 2;
 	}
 
