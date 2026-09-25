@@ -21,7 +21,8 @@ void rs2_msg_backend_pump();
 // Called by GetMessage / WaitMessage when the queue is empty after a pump.
 // Returns false when no message can ever arrive (the check stub), so
 // GetMessage fails instead of hanging. May return after a bounded wait
-// without anything having arrived.
+// without anything having arrived. Nothing polls input while the game
+// waits, so the SDL backend discards keyboard, mouse and wheel events here.
 bool rs2_msg_backend_wait();
 
 // --- port-only queries ---

@@ -1,7 +1,8 @@
-// SDL input backend self-test (#212). Runtime-only: needs SDL2 and a video
-// driver. The runtime workflow runs it on Linux under Xvfb. Not a ctest.
+// SDL input backend and inactive-wait self-test (#212). Runtime-only: needs
+// SDL2 and a video driver. The runtime workflow runs it on Linux under Xvfb. Not a ctest.
 
 #include "rs2_input.h"
+#include "rs2_msg.h"
 
 #include <SDL.h>
 
@@ -123,6 +124,35 @@ bool wheel_notches_sum_at_wheel_delta_with_flipped_inverted() {
 	return ok;
 }
 
+bool quit_survives_a_flood_while_the_game_waits_inactive() {
+	SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+	constexpr int kPerWait = 1024;
+	constexpr int kWaits = 96;
+	for (int w = 0; w < kWaits; ++w) {
+		if (!expect(push_unread_input_events(kPerWait) == kPerWait &&
+		                push_wheel(1, SDL_MOUSEWHEEL_NORMAL),
+		            "SDL queue filled with input events between inactive waits")) {
+			return false;
+		}
+		rs2_msg_backend_wait();
+	}
+	bool ok = expect(push_type(SDL_QUIT), "SDL_QUIT could not be queued after waits");
+	ok = expect(has_queued(SDL_QUIT, SDL_QUIT), "SDL_QUIT is not in the queue after waits") && ok;
+	SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+	return ok;
+}
+
+bool wheel_scrolled_while_inactive_is_not_summed_on_the_first_active_poll() {
+	SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+	bool ok = expect(push_wheel(3, SDL_MOUSEWHEEL_NORMAL), "push wheel +3");
+	rs2_msg_backend_wait();
+	unsigned char btn[RS2_INPUT_BTN_COUNT];
+	long wheel = -1;
+	rs2_input_backend_poll_mouse(btn, &wheel);
+	ok = expect(wheel == 0, "background wheel was summed after the wait") && ok;
+	return ok;
+}
+
 }  // namespace
 
 int main() {
@@ -135,6 +165,8 @@ int main() {
 	ok = poll_leaves_quit_and_window_events_for_the_message_pump() && ok;
 	ok = poll_discards_key_text_and_mouse_motion_button_events() && ok;
 	ok = wheel_notches_sum_at_wheel_delta_with_flipped_inverted() && ok;
+	ok = quit_survives_a_flood_while_the_game_waits_inactive() && ok;
+	ok = wheel_scrolled_while_inactive_is_not_summed_on_the_first_active_poll() && ok;
 	SDL_Quit();
 	return ok ? 0 : 1;
 }

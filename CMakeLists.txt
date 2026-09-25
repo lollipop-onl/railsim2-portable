@@ -490,13 +490,16 @@ if(RS2_RUNTIME AND RS2_HAVE_SDL2 AND RS2_HAVE_OPENGL)
   target_link_libraries(rs2_ffp_smoke PRIVATE OpenGL::GL SDL2::SDL2)
 endif()
 
-# Runtime-only: the SDL input backend discards the key/text/mouse events it
-# does not read, so SDL_QUIT still queues after a flood (#212). Not a ctest:
-# it needs a video driver. The runtime workflow runs it on Linux under Xvfb.
+# Runtime-only: the SDL input poll and the inactive message wait discard the
+# input events nothing reads, so SDL_QUIT still queues after a flood (#212).
+# Not a ctest: it needs a video driver. The runtime workflow runs it on Linux
+# under Xvfb.
 if(RS2_RUNTIME AND RS2_HAVE_SDL2)
   add_executable(rs2_input_sdl_test
     port/rs2_input_sdl_test.cpp
     port/rs2_input_sdl.cpp
+    port/rs2_msg.cpp
+    port/rs2_msg_sdl.cpp
     port/ffp_window.cpp)
   target_include_directories(rs2_input_sdl_test SYSTEM BEFORE PRIVATE
     "${CMAKE_SOURCE_DIR}/port/stub")

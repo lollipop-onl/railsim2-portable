@@ -1,6 +1,8 @@
 // SDL2 window-event pump for the Win32 message queue (#205, parent #8).
 // check/CI leave RS2_HAVE_SDL2 off; the stub pump stays in rs2_msg.cpp.
-// Keyboard, mouse and wheel events stay in SDL's queue for rs2_input_sdl.cpp.
+// Keyboard, mouse and wheel events are left to rs2_input_sdl.cpp, which reads
+// them and discards the rest on every poll. While the game waits inactive
+// nothing polls, so rs2_msg_backend_wait discards them itself.
 
 #include "rs2_msg.h"
 
@@ -45,6 +47,16 @@ void drain(Uint32 type, Fn fn) {
 	}
 }
 
+// Waiting means the game is inactive and ScanInputDevice does not run, yet
+// X11 still queues SDL_MOUSEMOTION for the window under the pointer. Left
+// queued, the input would fill SDL's queue and SDL would drop SDL_QUIT and
+// FOCUS_GAINED, leaving the game inactive for good (#212). The wheel goes
+// too: DirectInput reports none while in the background, and a stale sum
+// would scroll the view on the first active frame.
+void discard_input_events() {
+	SDL_FlushEvents(SDL_KEYDOWN, SDL_MOUSEWHEEL);
+}
+
 }  // namespace
 
 void rs2_msg_backend_pump() {
@@ -65,12 +77,12 @@ void rs2_msg_backend_pump() {
 	});
 }
 
-// Not SDL_WaitEvent: it returns at once while any event is queued, and the
-// input events rs2_input_sdl.cpp leaves in the queue would turn the wait
-// into a busy loop.
+// Not SDL_WaitEvent: it returns at once while any event is queued, so an
+// input event arriving during the wait would turn it into a busy loop.
 bool rs2_msg_backend_wait() {
 	SDL_Delay(kWaitPollMs);
 	rs2_msg_backend_pump();
+	discard_input_events();
 	return true;
 }
 

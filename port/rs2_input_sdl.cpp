@@ -115,6 +115,8 @@ long drain_wheel() {
 // dequeued, so flushing after the state read loses no input.
 // SDL_EventState(SDL_IGNORE) is not used: SDL_VideoInit's SDL_StartTextInput
 // re-enables the text events, so an ignore would depend on init order.
+// Once rs2_ime reads SDL_TEXTEDITING / SDL_TEXTINPUT, stop flushing those two
+// here, or rs2_ime would never see them.
 constexpr Uint32 kLastKeyboardEvent = SDL_MOUSEMOTION - 1;
 
 void discard_keyboard_events() {
