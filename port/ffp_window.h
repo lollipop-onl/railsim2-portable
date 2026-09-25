@@ -12,7 +12,8 @@ using Rs2FfpWindowHandle = Rs2FfpWindow *;
 //
 // RS2_HAVE_SDL2 off or RS2_HAVE_OPENGL off (check/CI): always false; writes
 // null when out_window.
-// Both on: SDL_CreateWindow + SDL_GL_CreateContext (3.3 core), make current.
+// Both on: SDL_CreateWindow + SDL_GL_CreateContext (3.3 core, 24-bit depth,
+// 8-bit stencil), make current.
 // width/height must be > 0. Null title becomes "RailSim2". Null out_window
 // fails.
 //

@@ -46,6 +46,8 @@ Adding the missing definitions closes the list on both hosts at this commit: a s
 
 2026-09-23: #200 turned that run into the `check` test `rs2_headless_start` (`port/railsim2_headless_test.cmake`). It requires exit status 0 with no signal, the `InitDebugStream`, `InitDirect3D` and `FreeDirect3D` lines, and no `InitDirectInput` line, which is what separates the `InitDirect3D` failure from a run that got further. `rs2_whole_archive_members` requires `nm` to find `InitDirectMusic` and `InitDirectShow` defined in `railsim2`. The "Headless run" section below still describes the `4521f44` scratch run.
 
+2026-09-26: #214 moved `IDirect3D8::CreateDevice` out of the stub header into `port/d3d8_device.cpp`. See [Device creation](#device-creation) below. `rs2_headless_start` is unchanged: without `RS2_NULL_DEVICE` a `check` build still fails `CreateDevice`.
+
 ### `CMakeLists.txt`'s comment is stale
 
 The comment above `add_executable(railsim2 ...)` says the game objects "still need udx globals (sv3, g_frame, ...) from lib/". They do not. `lib/sysvalue.h` defines them (`sv3` at `:13`, `g_frame` at `:22`), and `lib/main.cpp` is the TU that includes it, so any link that pulls `lib/main.cpp` has them. The only udx globals still missing are `svm` and `svv` above.
@@ -153,6 +155,25 @@ Two things in that run are not what a smoke test should pin:
 
 - **UBSan reports member calls on a null `IDirect3DDevice8`.** A macOS Debug build with `-fsanitize=address,undefined` reported 19 `runtime error: member call on null pointer of type 'IDirect3DDevice8'` lines in one run -- in `lib/graphic.cpp`, `lib/light.cpp`, `lib/render.h` and `lib/texture.h`, for example -- and still exited 0. The stub's `IDirect3D8::CreateDevice` (`port/stub/d3d8.h:427`) returns `S_OK` without writing its `IDirect3DDevice8**` out-parameter, so `sv3.pDev` stays null and `InitDirect3D` goes on to call methods through it. The calls do not crash only because the stub's methods do not dereference `this`. The Linux run was not sanitized.
 - **The logged adapter mode and caps change from run to run.** `InitDirect3D` prints values such as the current display mode and the maximum texture size that differ between runs on the same host, including negative widths. They are read from structs that the stub's query methods do not fill. Output comparison against this log would be flaky.
+
+## Device creation
+
+Since #214, `IDirect3D8::CreateDevice` (`port/stub/d3d8.h`) calls `rs2_d3d8_create_device` (`port/d3d8_device.cpp`), which picks one of three outcomes:
+
+| Condition | Result |
+|-----------|--------|
+| `RS2_NULL_DEVICE=1` in the environment, either preset | `S_OK` and a recording device: no window, no GL. `Clear` and `Present` are counted, and releasing the last reference prints `rs2_null_device clears=<n> presents=<n>` on `stderr` |
+| otherwise, `RS2_HAVE_SDL2` and `RS2_HAVE_OPENGL` (runtime preset) | `rs2_ffp_window_create` with `BackBufferWidth` x `BackBufferHeight`: an SDL window with a GL 3.3 core context, 24-bit depth and 8-bit stencil (`D3DFMT_D24S8`, the first format `FindDepthStencilFormat` tries). `D3DERR_NOTAVAILABLE` if that fails, for example with no display. Releasing the device destroys the window |
+| otherwise (`check`) | `D3DERR_NOTAVAILABLE`, as since #196 |
+
+Either device starts with the viewport covering the whole back buffer, as D3D8 does, and `GetViewport` returns what `SetViewport` last stored. `GetDeviceCaps` fills the members `GetDeviceCaps()` in `lib/graphic.cpp` reads; only `MaxPrimitiveCount` changes behaviour (`lib/height_field.cpp` splits draws above it), the rest are logged. Values follow what the FFP layer can back: 1024 x 1024 textures (GL 3.3's guaranteed minimum), 2 texture stages and 1 light (`port/ffp_glsl.cpp`), no bump mapping, vertex / table / range fog, alpha and mipmapped textures, and `0xFFFFF` primitives.
+
+`port/native_entry.cpp` reads two more variables before calling `WinMain`:
+
+- `RS2_DATA_DIR`: the game's data directory. It becomes the working directory `port/path.cpp` resolves relative paths against, and `<dir>/RailSim2.exe` becomes what `GetModuleFileName` returns, so `g_BaseDir` points there too. An environment variable rather than an argument because `__argc` / `__argv` belong to the game's `CheckArguments` (above).
+- `RS2_QUIT_AFTER_FRAMES=<n>`: from the `n`th `Present` on, every `Present` posts `WM_QUIT`. Every one, not the first only: `Main` runs several frame loops in a row (each `Opening` call, then `CGameMode::Spin`) and each takes its own `WM_QUIT` off the queue.
+
+The `check` test `rs2_null_device_start` (`port/railsim2_null_device_test.cmake`) copies `Distribution/en/RailSim2` into the build tree, because the game writes `Config.txt`, `Picture/` and `Video/` there on the way out, and runs `railsim2` on it with `RS2_NULL_DEVICE=1` and `RS2_QUIT_AFTER_FRAMES=3`. It requires exit status 0, `InitDirectInput` after `InitDirect3D`, `FreeDirect3D`, and after it the device record with at least one `Clear` and at least three `Present`s. `Present` is only called from `EndScene`, inside `Main`'s frame loops, so a recorded `Present` is what shows `CApp::Init` returned; a `Clear` alone would not, since `InitRenderState` clears once inside `InitDirect3D`.
 
 ## Mapping to #189's follow-up slices
 

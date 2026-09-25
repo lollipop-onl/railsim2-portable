@@ -58,6 +58,9 @@ bool rs2_ffp_window_create(int width, int height, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 #endif
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	// D3DFMT_D24S8, the first format lib/graphic.cpp FindDepthStencilFormat asks for.
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 	const char *name = title ? title : "RailSim2";
 	SDL_Window *win = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED,
