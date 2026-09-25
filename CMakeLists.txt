@@ -84,6 +84,7 @@ add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/ffp_program.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_gl.cpp"
   "${CMAKE_SOURCE_DIR}/port/ffp_window.cpp"
+  "${CMAKE_SOURCE_DIR}/port/d3d8_device.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_input_sdl.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_msg.cpp"
@@ -133,6 +134,7 @@ add_executable(railsim2 port/native_entry.cpp)
 target_include_directories(railsim2 SYSTEM BEFORE PRIVATE
   "${CMAKE_SOURCE_DIR}/port/stub"
 )
+target_include_directories(railsim2 PRIVATE "${CMAKE_SOURCE_DIR}/port")
 target_compile_options(railsim2 PRIVATE -Wall -Wextra)
 target_compile_definitions(railsim2 PRIVATE
   RS2_PORTABLE_COMPILE_FIREWALL=1
@@ -231,6 +233,15 @@ set_tests_properties(rs2_roundtrip PROPERTIES
 add_test(NAME rs2_headless_start
   COMMAND "${CMAKE_COMMAND}" "-DRAILSIM2=$<TARGET_FILE:railsim2>"
     -P "${CMAKE_SOURCE_DIR}/port/railsim2_headless_test.cmake"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+# RS2_NULL_DEVICE start (#214). The game writes Config.txt, Picture/ and
+# Video/ under its data directory on the way out, so the script runs it on a
+# fresh copy under the build tree rather than on Distribution/.
+add_test(NAME rs2_null_device_start
+  COMMAND "${CMAKE_COMMAND}" "-DRAILSIM2=$<TARGET_FILE:railsim2>"
+    "-DDATA_SOURCE=${CMAKE_SOURCE_DIR}/Distribution/en/RailSim2"
+    "-DDATA_COPY=${CMAKE_BINARY_DIR}/rs2_null_device_start/RailSim2"
+    -P "${CMAKE_SOURCE_DIR}/port/railsim2_null_device_test.cmake"
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 add_test(NAME rs2_whole_archive_members
   COMMAND "${CMAKE_COMMAND}" "-DRAILSIM2=$<TARGET_FILE:railsim2>" "-DNM=${CMAKE_NM}"

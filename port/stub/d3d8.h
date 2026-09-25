@@ -221,6 +221,7 @@ typedef DWORD D3DTEXTURETRANSFORMFLAGS;
 #define D3DERR_DEVICELOST ((HRESULT)0x88760868L)
 #define D3DERR_DEVICENOTRESET ((HRESULT)0x88760869L)
 #define D3DERR_NOTAVAILABLE ((HRESULT)0x8876086AL)
+#define D3DERR_INVALIDCALL ((HRESULT)0x8876086CL)
 
 enum D3DRESOURCETYPE { D3DRTYPE_SURFACE = 1, D3DRTYPE_TEXTURE = 3 };
 
@@ -341,7 +342,21 @@ void rs2_ffp_gl_try_after_up();
 void rs2_ffp_gl_try_clear(DWORD flags, D3DCOLOR color, float z);
 void rs2_ffp_window_try_present();
 
+// Called after every Present on a device CreateDevice returned, with the
+// number of Presents that device has made (#214). Port-only; null clears it.
+typedef void (*Rs2PresentHook)(UINT presents);
+void rs2_d3d8_set_present_hook(Rs2PresentHook hook);
+
+// Bodies in port/d3d8_device.cpp (#214).
+HRESULT rs2_d3d8_create_device(D3DPRESENT_PARAMETERS* params, IDirect3DDevice8** dev);
+void rs2_d3d8_fill_caps(D3DCAPS8* caps);
+
 struct IDirect3DDevice8 : IUnknown {
+  UINT rs2_clears = 0;
+  UINT rs2_presents = 0;
+  Rs2PresentHook rs2_present_hook = nullptr;
+  D3DVIEWPORT8 rs2_viewport = {};
+
   HRESULT SetRenderState(D3DRENDERSTATETYPE type, DWORD value) {
     return rs2_ffp_set_render_state(type, value);
   }
@@ -358,6 +373,7 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT SetLight(DWORD, const void*) { return S_OK; }
   HRESULT LightEnable(DWORD, BOOL) { return S_OK; }
   HRESULT Clear(DWORD, const void *, DWORD flags, D3DCOLOR color, float z, DWORD) {
+    ++rs2_clears;
     rs2_ffp_gl_try_clear(flags, color, z);
     return S_OK;
   }
@@ -378,17 +394,26 @@ struct IDirect3DDevice8 : IUnknown {
   HRESULT EndScene() { return S_OK; }
   // Swap last rs2_ffp_window_create handle if any. Never auto-creates a window.
   HRESULT Present(const RECT *, const RECT *, HWND, void *) {
+    ++rs2_presents;
     rs2_ffp_window_try_present();
+    if (rs2_present_hook) rs2_present_hook(rs2_presents);
     return S_OK;
   }
-  HRESULT GetViewport(D3DVIEWPORT8*) { return S_OK; }
+  HRESULT GetViewport(D3DVIEWPORT8* viewport) {
+    if (!viewport) return D3DERR_INVALIDCALL;
+    *viewport = rs2_viewport;
+    return S_OK;
+  }
   HRESULT SetViewport(const D3DVIEWPORT8* viewport) {
-    return rs2_ffp_set_viewport(viewport);
+    const HRESULT hr = rs2_ffp_set_viewport(viewport);
+    if (hr == S_OK) rs2_viewport = *viewport;
+    return hr;
   }
   HRESULT CreateTexture(UINT, UINT, UINT, DWORD, D3DFORMAT, DWORD, IDirect3DTexture8**) { return S_OK; }
   HRESULT CopyRects(IDirect3DSurface8*, const RECT*, UINT, IDirect3DSurface8*, const POINT*) { return S_OK; }
   HRESULT GetDeviceCaps(D3DCAPS8* caps) {
-    std::memset(caps, 0, sizeof(*caps));
+    if (!caps) return D3DERR_INVALIDCALL;
+    rs2_d3d8_fill_caps(caps);
     return S_OK;
   }
   HRESULT Reset(D3DPRESENT_PARAMETERS*) { return S_OK; }
@@ -430,12 +455,9 @@ struct IDirect3DIndexBuffer8 : IUnknown {
 };
 
 struct IDirect3D8 : IUnknown {
-  // Fails rather than returning a do-nothing device: no backend stands behind
-  // one yet, and failing takes the game's own no-device path (InitDirect3D
-  // returns FALSE), as on a machine that cannot create any Direct3D device.
-  HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS*, IDirect3DDevice8** dev) {
-    if (dev) *dev = nullptr;
-    return D3DERR_NOTAVAILABLE;
+  HRESULT CreateDevice(UINT, DWORD, HWND, DWORD, D3DPRESENT_PARAMETERS* params,
+                       IDirect3DDevice8** dev) {
+    return rs2_d3d8_create_device(params, dev);
   }
   HRESULT GetAdapterCount() { return 1; }
   HRESULT GetAdapterIdentifier(UINT, DWORD, D3DADAPTER_IDENTIFIER8* id) {
