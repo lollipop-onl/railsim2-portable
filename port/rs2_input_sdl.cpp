@@ -109,6 +109,24 @@ long drain_wheel() {
 	return delta;
 }
 
+// Nothing else dequeues these. Left queued they fill SDL's 65535-event queue,
+// and SDL then drops SDL_QUIT and window events as well (#212). The state
+// APIs are updated when SDL_PumpEvents generates the event, not when it is
+// dequeued, so flushing after the state read loses no input.
+// SDL_EventState(SDL_IGNORE) is not used: SDL_VideoInit's SDL_StartTextInput
+// re-enables the text events, so an ignore would depend on init order.
+// Once rs2_ime reads SDL_TEXTEDITING / SDL_TEXTINPUT, stop flushing those two
+// here, or rs2_ime would never see them.
+constexpr Uint32 kLastKeyboardEvent = SDL_MOUSEMOTION - 1;
+
+void discard_keyboard_events() {
+	SDL_FlushEvents(SDL_KEYDOWN, kLastKeyboardEvent);
+}
+
+void discard_mouse_motion_and_button_events() {
+	SDL_FlushEvents(SDL_MOUSEMOTION, SDL_MOUSEBUTTONUP);
+}
+
 void read_client_cursor(SDL_Window *win, int *x, int *y) {
 	if (SDL_GetMouseFocus() == win) {
 		SDL_GetMouseState(x, y);
@@ -132,13 +150,13 @@ void rs2_input_backend_poll_keys(unsigned char out[RS2_INPUT_KEY_COUNT]) {
 	SDL_PumpEvents();
 	int n = 0;
 	const Uint8 *state = SDL_GetKeyboardState(&n);
-	if (!state || n <= 0) return;
 	if (n > static_cast<int>(SDL_NUM_SCANCODES)) n = SDL_NUM_SCANCODES;
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0; state && i < n; ++i) {
 		if (!state[i]) continue;
 		const unsigned char dik = g_scan_to_dik[i];
 		if (dik) out[dik] = static_cast<unsigned char>(RS2_INPUT_DOWN);
 	}
+	discard_keyboard_events();
 }
 
 void rs2_input_backend_poll_mouse(unsigned char btn[RS2_INPUT_BTN_COUNT],
@@ -156,6 +174,7 @@ void rs2_input_backend_poll_mouse(unsigned char btn[RS2_INPUT_BTN_COUNT],
 		btn[2] = static_cast<unsigned char>(RS2_INPUT_DOWN);
 	}
 	if (wheel_delta) *wheel_delta = drain_wheel();
+	discard_mouse_motion_and_button_events();
 }
 
 void rs2_input_backend_get_cursor(int *x, int *y) {

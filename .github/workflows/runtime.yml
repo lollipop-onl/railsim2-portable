@@ -58,3 +58,9 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
           SDL_VIDEODRIVER: x11
         run: xvfb-run -a -s "-screen 0 640x480x24" ./build/runtime/rs2_ffp_smoke
+
+      - name: Run rs2_input_sdl_test on Xvfb
+        if: runner.os == 'Linux'
+        env:
+          SDL_VIDEODRIVER: x11
+        run: xvfb-run -a -s "-screen 0 640x480x24" ./build/runtime/rs2_input_sdl_test
