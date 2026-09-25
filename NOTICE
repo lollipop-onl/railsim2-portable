@@ -274,6 +274,14 @@ modified work but are not listed as "changed upstream files".
     lib/texture.cpp -- CheckTexTrans: sscanf "%x" target D3DCOLOR ->
                        unsigned int; '/' ends a directory like '\'
 
+2026-09-26 -- InitDirectPlay soft-fails without a DirectPlay8 peer (#206)
+
+  Modified upstream sources (pinned by rs2_comm_softfail_self_test):
+    lib/comm.cpp    -- InitDirectPlay leaves svc.pDP NULL and succeeds when
+                       CoCreateInstance fails; CreateSession, JoinSession,
+                       CloseSession, EnumHosts and SendTo return FALSE
+                       while svc.pDP is NULL
+
 Upstream is frozen, so what this fork keeps is the game's observable
 behavior, not upstream's text: game-source edits are mechanical or
 covered by a check test (see AGENTS.md). Further changes must update

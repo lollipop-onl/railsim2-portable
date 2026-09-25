@@ -522,6 +522,23 @@ target_link_libraries(rs2_tex_trans_test PRIVATE Iconv::Iconv)
 
 add_test(NAME rs2_tex_trans_self_test COMMAND rs2_tex_trans_test --self-test)
 
+# InitDirectPlay soft-fails without a DirectPlay8 peer; comm calls then fail (#206).
+add_executable(rs2_comm_softfail_test port/comm_softfail_test.cpp lib/comm.cpp)
+target_include_directories(rs2_comm_softfail_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_include_directories(rs2_comm_softfail_test PRIVATE
+  "${CMAKE_SOURCE_DIR}"
+  "${CMAKE_SOURCE_DIR}/lib"
+  "${CMAKE_SOURCE_DIR}/port")
+target_compile_features(rs2_comm_softfail_test PRIVATE cxx_std_17)
+target_compile_options(rs2_comm_softfail_test PRIVATE
+  -Wall
+  -Wextra
+  -Wno-invalid-source-encoding)
+target_compile_definitions(rs2_comm_softfail_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_comm_softfail_self_test COMMAND rs2_comm_softfail_test --self-test)
+
 # Stub keyboard/mouse/joy poll + ScanInputDevice merge (#82). No SDL.
 # SDL poll lives in rs2_input_sdl.cpp on railsim2_native when RS2_HAVE_SDL2.
 add_executable(rs2_input_test port/rs2_input_test.cpp port/rs2_input.cpp)

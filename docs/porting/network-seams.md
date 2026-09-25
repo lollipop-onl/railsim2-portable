@@ -50,8 +50,8 @@ The stub bodies return `S_OK` and ignore their arguments. The GUIDs are zero pla
 
 ## What the stub does at run time
 
-Nothing is linked yet, so none of this runs today. It is what a linked build would do:
+`railsim2` links `lib/comm.cpp` since [#199](https://github.com/lollipop-onl/railsim2-portable/issues/199), but a headless run stops at `InitDirect3D` before `InitDirectPlay`. This is what a run that gets past it does:
 
-- `CoCreateInstance` returns `E_NOTIMPL`, so `InitDirectPlay`'s `FAILED_ASSERT` shows a message box and returns `FALSE`, and `lib/main.cpp:112` returns `FALSE` from `CApp::Init`. A linked build needs either `NO_COMM` or a `CoCreateInstance` that yields a peer. Unlike `InitDirectSound`, this path does not soft-fail.
+- `CoCreateInstance` returns `E_NOTIMPL`. Since [#206](https://github.com/lollipop-onl/railsim2-portable/issues/206) `InitDirectPlay` soft-fails the way `InitDirectSound` does: it leaves `svc.pDP` `NULL` and returns `TRUE`, so `CApp::Init` goes on. With `svc.pDP` `NULL`, `CreateSession`, `JoinSession`, `CloseSession`, `EnumHosts`, `SendTo` and `SendToAll` return `FALSE` without a message box, and `FreeDirectPlay` does nothing. `RSNCreateSession` / `RSNJoinSession` then return 3, the code they already return when a session cannot be opened, and `g_NetworkInitialized` stays `false`. `rs2_comm_softfail_self_test` pins this.
 - `CreateSession` / `JoinSession` / `EnumHosts` check `FAILED()` on `InitDeviceAddress` / `InitHostAddress`, which return `BOOL`. Neither `TRUE` nor `FALSE` is `FAILED()`, so those checks never fire, with or without the stub.
 - `WCHAR` is `wchar_t` (4 bytes on both CI hosts, 2 on Windows). `pwszSessionName` goes nowhere under the stub. A transport that puts it on the wire has to pick an encoding explicitly. The only name the game passes is ASCII.
