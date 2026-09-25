@@ -215,7 +215,6 @@ inline D3DXVECTOR3* D3DXVec3TransformCoord(D3DXVECTOR3* out, const D3DXVECTOR3* 
   if (!out || !v || !m) return nullptr;
   float x = v->x, y = v->y, z = v->z;
   float w = m->_14 * x + m->_24 * y + m->_34 * z + m->_44;
-  if (w == 0.0f) w = 1.0f;
   out->x = (m->_11 * x + m->_21 * y + m->_31 * z + m->_41) / w;
   out->y = (m->_12 * x + m->_22 * y + m->_32 * z + m->_42) / w;
   out->z = (m->_13 * x + m->_23 * y + m->_33 * z + m->_43) / w;
@@ -234,28 +233,45 @@ inline D3DXVECTOR3* D3DXVec3TransformNormal(D3DXVECTOR3* out, const D3DXVECTOR3*
 #define D3DXToRadian(deg) ((deg) * (D3DX_PI / 180.0f))
 #define D3DXToDegree(rad) ((rad) * (180.0f / D3DX_PI))
 
-inline D3DXMATRIX* D3DXMatrixRotationAxis(D3DXMATRIX* out, const D3DXVECTOR3* axis, float angle) {
-  if (out) *out = D3DXMATRIX();
-  (void)axis;
-  (void)angle;
-  return out;
-}
 inline D3DXMATRIX* D3DXMatrixTranslation(D3DXMATRIX* out, float x, float y, float z) {
   if (out) *out = D3DXMATRIX(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1);
   return out;
 }
-inline D3DXMATRIX* D3DXMatrixRotationX(D3DXMATRIX* out, float) {
-  if (out) *out = D3DXMATRIX();
-  return out;
-}
-inline D3DXMATRIX* D3DXMatrixRotationY(D3DXMATRIX* out, float) {
-  if (out) *out = D3DXMATRIX();
-  return out;
-}
-inline D3DXMATRIX* D3DXMatrixRotationZ(D3DXMATRIX* out, float) {
-  if (out) *out = D3DXMATRIX();
-  return out;
-}
+
+struct D3DXPLANE {
+  float a, b, c, d;
+};
+
+// Defined in port/d3dx_math.cpp; conventions in docs/porting/d3dx-math.md.
+D3DXMATRIX* D3DXMatrixRotationX(D3DXMATRIX* out, FLOAT angle);
+D3DXMATRIX* D3DXMatrixRotationY(D3DXMATRIX* out, FLOAT angle);
+D3DXMATRIX* D3DXMatrixRotationZ(D3DXMATRIX* out, FLOAT angle);
+D3DXMATRIX* D3DXMatrixRotationAxis(D3DXMATRIX* out, const D3DXVECTOR3* axis, FLOAT angle);
+D3DXMATRIX* D3DXMatrixRotationYawPitchRoll(D3DXMATRIX* out, FLOAT yaw, FLOAT pitch, FLOAT roll);
+D3DXMATRIX* D3DXMatrixRotationQuaternion(D3DXMATRIX* out, const D3DXQUATERNION* q);
+D3DXMATRIX* D3DXMatrixInverse(D3DXMATRIX* out, FLOAT* determinant, const D3DXMATRIX* m);
+D3DXMATRIX* D3DXMatrixLookAtLH(D3DXMATRIX* out, const D3DXVECTOR3* eye, const D3DXVECTOR3* at,
+                               const D3DXVECTOR3* up);
+D3DXMATRIX* D3DXMatrixPerspectiveFovLH(D3DXMATRIX* out, FLOAT fovy, FLOAT aspect, FLOAT zn, FLOAT zf);
+D3DXMATRIX* D3DXMatrixPerspectiveOffCenterLH(D3DXMATRIX* out, FLOAT l, FLOAT r, FLOAT b, FLOAT t, FLOAT zn,
+                                             FLOAT zf);
+D3DXMATRIX* D3DXMatrixShadow(D3DXMATRIX* out, const D3DXVECTOR4* light, const D3DXPLANE* plane);
+
+FLOAT D3DXPlaneDotCoord(const D3DXPLANE* p, const D3DXVECTOR3* v);
+D3DXPLANE* D3DXPlaneNormalize(D3DXPLANE* out, const D3DXPLANE* p);
+D3DXPLANE* D3DXPlaneFromPointNormal(D3DXPLANE* out, const D3DXVECTOR3* point, const D3DXVECTOR3* normal);
+D3DXPLANE* D3DXPlaneFromPoints(D3DXPLANE* out, const D3DXVECTOR3* v1, const D3DXVECTOR3* v2,
+                               const D3DXVECTOR3* v3);
+
+D3DXQUATERNION* D3DXQuaternionSlerp(D3DXQUATERNION* out, const D3DXQUATERNION* q1, const D3DXQUATERNION* q2,
+                                    FLOAT t);
+
+UINT D3DXGetFVFVertexSize(DWORD fvf);
+HRESULT D3DXComputeBoundingBox(const void* points, DWORD count, DWORD fvf, D3DXVECTOR3* min, D3DXVECTOR3* max);
+BOOL D3DXBoxBoundProbe(const D3DXVECTOR3* min, const D3DXVECTOR3* max, const D3DXVECTOR3* ray_pos,
+                       const D3DXVECTOR3* ray_dir);
+BOOL D3DXSphereBoundProbe(const D3DXVECTOR3* center, FLOAT radius, const D3DXVECTOR3* ray_pos,
+                          const D3DXVECTOR3* ray_dir);
 
 #define D3DCOLOR_ARGB(a, r, g, b) ((D3DCOLOR)((((a)&0xffu) << 24) | (((r)&0xffu) << 16) | (((g)&0xffu) << 8) | ((b)&0xffu)))
 #define D3DCOLOR_XRGB(r, g, b) D3DCOLOR_ARGB(0xffu, r, g, b)
@@ -327,49 +343,13 @@ inline HRESULT D3DXCreateFontA(IDirect3DDevice8*, int, UINT, UINT, UINT, DWORD, 
 
 inline HRESULT D3DXCreateFontIndirect(IDirect3DDevice8*, const LOGFONT*, LPD3DXFONT*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateSprite(IDirect3DDevice8*, LPD3DXSPRITE*) { return E_NOTIMPL; }
-inline UINT D3DXGetFVFVertexSize(DWORD) { return 0; }
 
 inline D3DXMATRIX* D3DXMatrixIdentity(D3DXMATRIX* out) {
   if (out) *out = D3DXMATRIX();
   return out;
 }
-inline D3DXMATRIX* D3DXMatrixInverse(D3DXMATRIX* out, FLOAT*, const D3DXMATRIX* m) {
-  if (out && m) *out = *m;
-  return out;
-}
-inline D3DXMATRIX* D3DXMatrixLookAtLH(D3DXMATRIX* out, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
-  return D3DXMatrixIdentity(out);
-}
-inline D3DXMATRIX* D3DXMatrixPerspectiveFovLH(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT, FLOAT) {
-  return D3DXMatrixIdentity(out);
-}
-inline D3DXMATRIX* D3DXMatrixPerspectiveOffCenterLH(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT) {
-  return D3DXMatrixIdentity(out);
-}
 inline D3DXMATRIX* D3DXMatrixScaling(D3DXMATRIX* out, FLOAT x, FLOAT y, FLOAT z) {
   if (out) *out = D3DXMATRIX(x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1);
-  return out;
-}
-inline D3DXMATRIX* D3DXMatrixRotationYawPitchRoll(D3DXMATRIX* out, FLOAT, FLOAT, FLOAT) {
-  return D3DXMatrixIdentity(out);
-}
-inline D3DXMATRIX* D3DXMatrixRotationQuaternion(D3DXMATRIX* out, const D3DXQUATERNION*) {
-  return D3DXMatrixIdentity(out);
-}
-inline D3DXMATRIX* D3DXMatrixShadow(D3DXMATRIX* out, const D3DXVECTOR4*, const void*) {
-  return D3DXMatrixIdentity(out);
-}
-
-struct D3DXPLANE {
-  float a, b, c, d;
-};
-inline FLOAT D3DXPlaneDotCoord(const D3DXPLANE*, const D3DXVECTOR3*) { return 0; }
-inline D3DXPLANE* D3DXPlaneFromPointNormal(D3DXPLANE* out, const D3DXVECTOR3*, const D3DXVECTOR3*) { return out; }
-inline D3DXPLANE* D3DXPlaneFromPoints(D3DXPLANE* out, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
-  return out;
-}
-inline D3DXQUATERNION* D3DXQuaternionSlerp(D3DXQUATERNION* out, const D3DXQUATERNION* a, const D3DXQUATERNION*, FLOAT) {
-  if (out && a) *out = *a;
   return out;
 }
 
@@ -394,9 +374,4 @@ inline HRESULT D3DXLoadMeshFromXof(void*, DWORD, IDirect3DDevice8*, LPD3DXBUFFER
 inline HRESULT D3DXCreateBox(IDirect3DDevice8*, FLOAT, FLOAT, FLOAT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateSphere(IDirect3DDevice8*, FLOAT, UINT, UINT, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
 inline HRESULT D3DXCreateTeapot(IDirect3DDevice8*, LPD3DXMESH*, LPD3DXBUFFER*) { return E_NOTIMPL; }
-inline HRESULT D3DXComputeBoundingBox(const void*, DWORD, DWORD, D3DXVECTOR3*, D3DXVECTOR3*) { return S_OK; }
 inline HRESULT D3DXComputeBoundingSphere(D3DXVECTOR3*, DWORD, DWORD, D3DXVECTOR3*, FLOAT*) { return S_OK; }
-inline BOOL D3DXBoxBoundProbe(const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*) {
-  return FALSE;
-}
-inline BOOL D3DXSphereBoundProbe(const D3DXVECTOR3*, FLOAT, const D3DXVECTOR3*, const D3DXVECTOR3*) { return FALSE; }
