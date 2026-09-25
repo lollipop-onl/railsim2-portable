@@ -75,6 +75,7 @@ endif()
 # allowlist alone, so naming one here instead leaves it out of the numerator.
 add_library(railsim2_native STATIC ${RS2_NATIVE_SOURCES}
   "${CMAKE_SOURCE_DIR}/port/path.cpp"
+  "${CMAKE_SOURCE_DIR}/port/d3dx_math.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_text.cpp"
   "${CMAKE_SOURCE_DIR}/port/xfile.cpp"
   "${CMAKE_SOURCE_DIR}/port/rs2_cmesh_xfile.cpp"
@@ -153,6 +154,7 @@ set(RS2_ROUNDTRIP_SOURCES
   port/path.cpp
   port/rs2_text.cpp
   port/ffp_state.cpp
+  port/d3dx_math.cpp
   CSaveFile.cpp
   Script.cpp
   md5.cpp
@@ -610,3 +612,13 @@ target_compile_options(rs2_ime_test PRIVATE -Wall -Wextra)
 target_link_libraries(rs2_ime_test PRIVATE Iconv::Iconv)
 
 add_test(NAME rs2_ime_self_test COMMAND rs2_ime_test --self-test)
+
+# D3DX8 matrix / plane / quaternion / bound math, known values (#204).
+add_executable(rs2_d3dx_math_test port/d3dx_math_test.cpp port/d3dx_math.cpp)
+target_include_directories(rs2_d3dx_math_test SYSTEM BEFORE PRIVATE
+  "${CMAKE_SOURCE_DIR}/port/stub")
+target_compile_features(rs2_d3dx_math_test PRIVATE cxx_std_17)
+target_compile_options(rs2_d3dx_math_test PRIVATE -Wall -Wextra)
+target_compile_definitions(rs2_d3dx_math_test PRIVATE RS2_PORTABLE_COMPILE_FIREWALL=1 NOMINMAX)
+
+add_test(NAME rs2_d3dx_math_self_test COMMAND rs2_d3dx_math_test --self-test)
