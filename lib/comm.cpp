@@ -26,15 +26,17 @@ BOOL InitDirectPlay()
 	Debug("InitDirectPlay\n");
 
 	// DirectPlay の初期化
-	FAILED_ASSERT(
-		"DirectPlay が初期化できませんでした.",
-		CoCreateInstance(
+	// No DirectPlay8 peer leaves networking off instead of failing CApp::Init:
+	// the peer is absent off Windows and optional on current Windows (#206).
+	if(FAILED(CoCreateInstance(
 			CLSID_DirectPlay8Peer,
 			NULL,
 			CLSCTX_INPROC_SERVER,
 			IID_IDirectPlay8Peer,
-			(LPVOID*)&svc.pDP)
-	);
+			(LPVOID*)&svc.pDP))){
+		svc.pDP = NULL;
+		return TRUE;
+	}
 
 	svc.pReceiveFunc = &ReceiveFunc;
 
@@ -148,6 +150,7 @@ void SetReceiveFunc(PFN_RECEIVE pReceiveFunc, LPARAM lParam)
  */
 BOOL CreateSession(const GUID* pguidApp, LPCTSTR lpszSessionName, DWORD dwPort)
 {
+	if(!svc.pDP) return FALSE;
  	InitPeer();
 
 	svc.bHost = TRUE;
@@ -189,6 +192,7 @@ BOOL CreateSession(const GUID* pguidApp, LPCTSTR lpszSessionName, DWORD dwPort)
  */
 BOOL JoinSession(const GUID* pguidApp, LPCTSTR lpszHostIP, DWORD dwHostPort, DWORD dwLocalPort)
 {
+	if(!svc.pDP) return FALSE;
 	InitPeer();
 
 	svc.bHost = FALSE;
@@ -228,6 +232,7 @@ BOOL JoinSession(const GUID* pguidApp, LPCTSTR lpszHostIP, DWORD dwHostPort, DWO
 
 BOOL CloseSession()
 {
+	if(!svc.pDP) return FALSE;
 	if(svc.pDP->Close(0)!=S_OK) return FALSE;
 	return TRUE;
 }
@@ -240,6 +245,7 @@ BOOL CloseSession()
  */
 BOOL EnumHosts(const GUID* pguidApp, LPCTSTR lpszIP)
 {
+	if(!svc.pDP) return FALSE;
 	// デバイスアドレスの初期化
 	if(FAILED(InitDeviceAddress(NULL))) return FALSE;
 
@@ -292,6 +298,7 @@ BOOL SendToAll(const PVOID pData, DWORD dwSize)
  */
 BOOL SendTo(DPNID dest, const PVOID pData, DWORD dwSize)
 {
+	if(!svc.pDP) return FALSE;
 	DPN_BUFFER_DESC dpnBuffer;
 
 	dpnBuffer.pBufferData = (BYTE*)pData;
