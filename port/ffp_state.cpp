@@ -116,7 +116,105 @@ unsigned fvf_index(DWORD fvf) {
 	}
 }
 
+bool depth_func(DWORD cmp, Rs2FfpDepthFunc *out) {
+	switch (cmp) {
+	case D3DCMP_LESSEQUAL:
+		*out = RS2_FFP_DEPTH_LEQUAL;
+		return true;
+	case D3DCMP_ALWAYS:
+		*out = RS2_FFP_DEPTH_ALWAYS;
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool blend_factor(DWORD blend, Rs2FfpBlendFactor *out) {
+	switch (blend) {
+	case D3DBLEND_ZERO:
+		*out = RS2_FFP_BLEND_ZERO;
+		return true;
+	case D3DBLEND_ONE:
+		*out = RS2_FFP_BLEND_ONE;
+		return true;
+	case D3DBLEND_SRCALPHA:
+		*out = RS2_FFP_BLEND_SRC_ALPHA;
+		return true;
+	case D3DBLEND_INVSRCALPHA:
+		*out = RS2_FFP_BLEND_ONE_MINUS_SRC_ALPHA;
+		return true;
+	default:
+		return false;
+	}
+}
+
 }  // namespace
+
+bool rs2_ffp_raster_state(const Rs2FfpRs &rs, const D3DVIEWPORT8 &viewport,
+                          unsigned target_w, unsigned target_h, Rs2FfpRaster *out) {
+	if (!out || target_w == 0 || target_h == 0) return false;
+	Rs2FfpRaster r{};
+
+	r.depth_test = rs.zenable != FALSE;
+	r.depth_func = RS2_FFP_DEPTH_LEQUAL;
+	if (r.depth_test && !depth_func(rs.zfunc, &r.depth_func)) {
+		(void)unknown_fail("D3DRS_ZFUNC", rs.zfunc);
+		return false;
+	}
+	r.depth_write = rs.zwrite != FALSE;
+
+	r.blend = rs.alphablend != FALSE;
+	r.blend_src = RS2_FFP_BLEND_ONE;
+	r.blend_dst = RS2_FFP_BLEND_ZERO;
+	if (r.blend && (!blend_factor(rs.srcblend, &r.blend_src) ||
+	                !blend_factor(rs.destblend, &r.blend_dst))) {
+		(void)unknown_fail("D3DRS_SRCBLEND/DESTBLEND", (rs.srcblend << 8) | rs.destblend);
+		return false;
+	}
+
+	// The GL viewport below flips y so the image lands the same way up as in
+	// D3D. Winding is judged on that image, so D3D's clockwise front stays
+	// clockwise in GL; flipping it here as well would cull the front faces.
+	r.front_face = RS2_FFP_WINDING_CW;
+	r.cull_face = RS2_FFP_FACE_BACK;
+	switch (rs.cullmode) {
+	case D3DCULL_NONE:
+		r.cull = false;
+		break;
+	case D3DCULL_CCW:
+		r.cull = true;
+		r.cull_face = RS2_FFP_FACE_BACK;
+		break;
+	case D3DCULL_CW:
+		r.cull = true;
+		r.cull_face = RS2_FFP_FACE_FRONT;
+		break;
+	default:
+		(void)unknown_fail("D3DRS_CULLMODE", rs.cullmode);
+		return false;
+	}
+
+	if (viewport.Width == 0 || viewport.Height == 0) {
+		r.d3d_x = 0;
+		r.d3d_y = 0;
+		r.width = target_w;
+		r.height = target_h;
+		r.depth_near = 0.0f;
+		r.depth_far = 1.0f;
+	} else {
+		r.d3d_x = viewport.X;
+		r.d3d_y = viewport.Y;
+		r.width = viewport.Width;
+		r.height = viewport.Height;
+		r.depth_near = viewport.MinZ;
+		r.depth_far = viewport.MaxZ;
+	}
+	r.gl_x = static_cast<int>(r.d3d_x);
+	r.gl_y = static_cast<int>(target_h) - static_cast<int>(r.d3d_y + r.height);
+
+	*out = r;
+	return true;
+}
 
 void rs2_ffp_state_reset() { apply_init_defaults(&g_snap); }
 

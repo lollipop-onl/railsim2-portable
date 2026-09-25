@@ -339,6 +339,133 @@ bool transform_shadow_ok() {
 	return true;
 }
 
+bool raster_of_current(unsigned w, unsigned h, Rs2FfpRaster *r) {
+	const Rs2FfpSnapshot *s = rs2_ffp_state_get();
+	return rs2_ffp_raster_state(s->rs, s->viewport, w, h, r);
+}
+
+bool raster_defaults_ok() {
+	rs2_ffp_state_reset();
+	Rs2FfpRaster r{};
+	if (!expect(raster_of_current(640, 480, &r), "InitRenderState maps to GL raster"))
+		return false;
+	if (!expect(r.depth_test && r.depth_func == RS2_FFP_DEPTH_LEQUAL && r.depth_write,
+	            "default depth is test LEQUAL with writes"))
+		return false;
+	if (!expect(r.blend && r.blend_src == RS2_FFP_BLEND_SRC_ALPHA &&
+	                r.blend_dst == RS2_FFP_BLEND_ONE_MINUS_SRC_ALPHA,
+	            "default blend is SRCALPHA / INVSRCALPHA"))
+		return false;
+	if (!expect(r.cull && r.cull_face == RS2_FFP_FACE_BACK &&
+	                r.front_face == RS2_FFP_WINDING_CW,
+	            "default CCW cull keeps clockwise fronts and drops the backs"))
+		return false;
+	if (!expect(r.d3d_x == 0 && r.d3d_y == 0 && r.width == 640 && r.height == 480 &&
+	                r.gl_x == 0 && r.gl_y == 0,
+	            "a viewport never set covers the whole render target"))
+		return false;
+	if (!expect(r.depth_near == 0.0f && r.depth_far == 1.0f,
+	            "a viewport never set has depth range 0..1"))
+		return false;
+	return true;
+}
+
+bool raster_cull_ok() {
+	rs2_ffp_state_reset();
+	Rs2FfpRaster r{};
+	if (!expect(rs2_ffp_set_render_state(D3DRS_CULLMODE, D3DCULL_NONE) == S_OK &&
+	                raster_of_current(640, 480, &r) && !r.cull,
+	            "D3DCULL_NONE draws both windings"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_CULLMODE, D3DCULL_CW) == S_OK &&
+	                raster_of_current(640, 480, &r) && r.cull &&
+	                r.cull_face == RS2_FFP_FACE_FRONT &&
+	                r.front_face == RS2_FFP_WINDING_CW,
+	            "D3DCULL_CW drops the clockwise fronts (shadow volume back pass)"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_CULLMODE, 0) == S_OK &&
+	                !raster_of_current(640, 480, &r),
+	            "a cull mode outside NONE / CW / CCW fails"))
+		return false;
+	return true;
+}
+
+bool raster_depth_ok() {
+	rs2_ffp_state_reset();
+	Rs2FfpRaster r{};
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ZFUNC, D3DCMP_ALWAYS) == S_OK &&
+	                raster_of_current(640, 480, &r) && r.depth_test &&
+	                r.depth_func == RS2_FFP_DEPTH_ALWAYS,
+	            "decal ZFUNC ALWAYS keeps the depth test on with GL_ALWAYS"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ZWRITEENABLE, FALSE) == S_OK &&
+	                raster_of_current(640, 480, &r) && !r.depth_write,
+	            "ZWRITEENABLE FALSE masks depth writes"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ZFUNC, D3DCMP_GREATER) == S_OK &&
+	                !raster_of_current(640, 480, &r),
+	            "a depth func outside LESSEQUAL / ALWAYS fails while Z is on"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ZENABLE, FALSE) == S_OK &&
+	                raster_of_current(640, 480, &r) && !r.depth_test,
+	            "ZENABLE FALSE turns the depth test off whatever ZFUNC holds"))
+		return false;
+	return true;
+}
+
+bool raster_blend_ok() {
+	rs2_ffp_state_reset();
+	Rs2FfpRaster r{};
+	if (!expect(rs2_ffp_set_render_state(D3DRS_DESTBLEND, D3DBLEND_ONE) == S_OK &&
+	                raster_of_current(640, 480, &r) && r.blend &&
+	                r.blend_src == RS2_FFP_BLEND_SRC_ALPHA &&
+	                r.blend_dst == RS2_FFP_BLEND_ONE,
+	            "devBLEND_ADD2 is SRCALPHA / ONE"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_SRCBLEND, D3DBLEND_ZERO) == S_OK &&
+	                raster_of_current(640, 480, &r) &&
+	                r.blend_src == RS2_FFP_BLEND_ZERO && r.blend_dst == RS2_FFP_BLEND_ONE,
+	            "the shadow volume's ZERO / ONE maps through"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR) == S_OK &&
+	                !raster_of_current(640, 480, &r),
+	            "a blend factor outside the inventory fails while blending"))
+		return false;
+	if (!expect(rs2_ffp_set_render_state(D3DRS_ALPHABLENDENABLE, FALSE) == S_OK &&
+	                raster_of_current(640, 480, &r) && !r.blend,
+	            "ALPHABLENDENABLE FALSE turns blending off whatever the factors hold"))
+		return false;
+	return true;
+}
+
+bool raster_viewport_ok() {
+	rs2_ffp_state_reset();
+	D3DVIEWPORT8 vp{};
+	vp.X = 10;
+	vp.Y = 20;
+	vp.Width = 320;
+	vp.Height = 240;
+	vp.MinZ = 0.25f;
+	vp.MaxZ = 0.75f;
+	if (!expect(rs2_ffp_set_viewport(&vp) == S_OK, "set viewport")) return false;
+	Rs2FfpRaster r{};
+	if (!expect(raster_of_current(640, 480, &r), "viewport maps")) return false;
+	if (!expect(r.d3d_x == 10 && r.d3d_y == 20 && r.width == 320 && r.height == 240,
+	            "the D3D rectangle stays top-left based for u_viewport"))
+		return false;
+	if (!expect(r.gl_x == 10 && r.gl_y == 480 - (20 + 240),
+	            "the GL rectangle measures y from the target's bottom edge"))
+		return false;
+	if (!expect(r.depth_near == 0.25f && r.depth_far == 0.75f,
+	            "MinZ / MaxZ become the depth range"))
+		return false;
+	if (!expect(!rs2_ffp_raster_state(rs2_ffp_state_get()->rs, vp, 0, 480, &r) &&
+	                !rs2_ffp_raster_state(rs2_ffp_state_get()->rs, vp, 640, 0, &r),
+	            "an empty render target fails"))
+		return false;
+	return true;
+}
+
 int self_test() {
 	if (!defaults_ok()) return 1;
 	if (!hook_and_unknown_ok()) return 1;
@@ -346,6 +473,11 @@ int self_test() {
 	if (!fvf_keys_ok()) return 1;
 	if (!up_snapshot_ok()) return 1;
 	if (!transform_shadow_ok()) return 1;
+	if (!raster_defaults_ok()) return 1;
+	if (!raster_cull_ok()) return 1;
+	if (!raster_depth_ok()) return 1;
+	if (!raster_blend_ok()) return 1;
+	if (!raster_viewport_ok()) return 1;
 	return 0;
 }
 

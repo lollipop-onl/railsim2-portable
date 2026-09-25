@@ -183,6 +183,72 @@ void bind_stage(unsigned stage, GLuint white) {
 	glActiveTexture(GL_TEXTURE0 + stage);
 	glBindTexture(GL_TEXTURE_2D, name);
 }
+
+GLenum gl_blend_factor(Rs2FfpBlendFactor f) {
+	switch (f) {
+	case RS2_FFP_BLEND_ZERO:
+		return GL_ZERO;
+	case RS2_FFP_BLEND_ONE:
+		return GL_ONE;
+	case RS2_FFP_BLEND_SRC_ALPHA:
+		return GL_SRC_ALPHA;
+	case RS2_FFP_BLEND_ONE_MINUS_SRC_ALPHA:
+		return GL_ONE_MINUS_SRC_ALPHA;
+	}
+	return GL_ONE;
+}
+
+void gl_toggle(GLenum cap, bool on) {
+	if (on)
+		glEnable(cap);
+	else
+		glDisable(cap);
+}
+
+void apply_raster(const Rs2FfpRaster &r) {
+	gl_toggle(GL_DEPTH_TEST, r.depth_test);
+	glDepthFunc(r.depth_func == RS2_FFP_DEPTH_ALWAYS ? GL_ALWAYS : GL_LEQUAL);
+	glDepthMask(r.depth_write ? GL_TRUE : GL_FALSE);
+
+	gl_toggle(GL_BLEND, r.blend);
+	glBlendFunc(gl_blend_factor(r.blend_src), gl_blend_factor(r.blend_dst));
+
+	gl_toggle(GL_CULL_FACE, r.cull);
+	glCullFace(r.cull_face == RS2_FFP_FACE_FRONT ? GL_FRONT : GL_BACK);
+	glFrontFace(r.front_face == RS2_FFP_WINDING_CCW ? GL_CCW : GL_CW);
+
+	glViewport(r.gl_x, r.gl_y, static_cast<GLsizei>(r.width),
+	           static_cast<GLsizei>(r.height));
+	glDepthRange(static_cast<double>(r.depth_near), static_cast<double>(r.depth_far));
+}
+
+// The default framebuffer's size is window-system state; core GL has no query
+// for it, so without SDL there is no render target to map the viewport onto.
+bool current_target_size(unsigned *w, unsigned *h) {
+#if RS2_HAVE_SDL2
+	SDL_Window *win = SDL_GL_GetCurrentWindow();
+	if (!win) return false;
+	int dw = 0;
+	int dh = 0;
+	SDL_GL_GetDrawableSize(win, &dw, &dh);
+	if (dw <= 0 || dh <= 0) return false;
+	*w = static_cast<unsigned>(dw);
+	*h = static_cast<unsigned>(dh);
+	return true;
+#else
+	(void)w;
+	(void)h;
+	return false;
+#endif
+}
+
+bool current_raster(Rs2FfpRaster *out) {
+	unsigned w = 0;
+	unsigned h = 0;
+	if (!current_target_size(&w, &h)) return false;
+	const Rs2FfpSnapshot *snap = rs2_ffp_state_get();
+	return snap && rs2_ffp_raster_state(snap->rs, snap->viewport, w, h, out);
+}
 #endif
 
 bool has_current_gl_context() {
@@ -272,6 +338,8 @@ bool rs2_ffp_gl_draw(const Rs2FfpUpRecord *record) {
 	if (!rs2_ffp_gl_link(record->program, &prog) || prog == 0) return false;
 	const GLenum mode = gl_prim(record->prim_type);
 	if (mode == 0) return false;
+	Rs2FfpRaster raster{};
+	if (!current_raster(&raster)) return false;
 
 	static VboSlot ring[kVboRing];
 	static unsigned head = 0;
@@ -285,6 +353,7 @@ bool rs2_ffp_gl_draw(const Rs2FfpUpRecord *record) {
 	glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(record->bytes),
 	             record->vertices, GL_STREAM_DRAW);
 	bind_layout(layout);
+	apply_raster(raster);
 	const GLsizei nvert = static_cast<GLsizei>(record->bytes / record->stride);
 	glDrawArrays(mode, 0, nvert);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -312,11 +381,13 @@ bool rs2_ffp_gl_apply_uniforms(unsigned program) {
 	set_mat4(prog, "u_tex0_xform", snap->tex0);
 	set_mat4(prog, "u_tex1_xform", snap->tex1);
 
+	Rs2FfpRaster raster{};
+	if (!current_raster(&raster)) return false;
 	const float vp[4] = {
-	    static_cast<float>(snap->viewport.X),
-	    static_cast<float>(snap->viewport.Y),
-	    static_cast<float>(snap->viewport.Width),
-	    static_cast<float>(snap->viewport.Height),
+	    static_cast<float>(raster.d3d_x),
+	    static_cast<float>(raster.d3d_y),
+	    static_cast<float>(raster.width),
+	    static_cast<float>(raster.height),
 	};
 	set_vec4(prog, "u_viewport", vp);
 
